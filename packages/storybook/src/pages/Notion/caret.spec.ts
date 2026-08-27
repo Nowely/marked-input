@@ -19,8 +19,16 @@ import * as NotionStories from './Notion.stories'
 
 const {Showcase, Empty} = composePage(NotionStories)
 
-/** The page as a CONTROLLED field, echoing `onChange` back — the mode every value assertion runs in. */
-const mountControlled = (Story: typeof Showcase, value: string = APOLLO_DOC) => mountEcho(Story, {value})
+/**
+ * The page as a CONTROLLED field, echoing `onChange` back — the mode every value assertion runs in,
+ * and the harder of the two for a caret: an uncontrolled verb can name its own caret and a
+ * controlled one cannot, so the window's mapping is what answers here.
+ *
+ * THE VALUE IS REQUIRED, as it is in `Notion.spec.ts`. A default here would decide both the mode and
+ * the mirror's baseline for a caller that wrote neither — and `value()` starts at whatever it is, so
+ * a `toContain` on a gesture that emitted NOTHING would still have the whole document to match.
+ */
+const mountControlled = (Story: typeof Showcase, value: string) => mountEcho(Story, {value})
 
 /** The theme's own variables; see `Notion.spec.ts` for why they go on the document. */
 beforeEach(() => {
@@ -134,7 +142,7 @@ describe('the caret goes where a person can follow it', () => {
 	 * used to be handed to whatever row the recovery's forward search reached first.
 	 */
 	it('claims the row a click landed in, not a neighbour', async () => {
-		const {host, value} = await mountControlled(Showcase)
+		const {host, value} = await mountControlled(Showcase, APOLLO_DOC)
 
 		await userEvent.click(controlIn(rowStarting(host, 'Vendor SLA unsigned'), '[class*="listBullet"]'))
 		await settle()
@@ -271,7 +279,7 @@ describe('the caret goes where a person can follow it', () => {
 	 * rule under test is the editor's: the pointer's row outranks the anchor the browser named.
 	 */
 	it('hands no keystroke to the first row when a draggable card is pressed', async () => {
-		const {host} = await mountControlled(Showcase)
+		const {host} = await mountControlled(Showcase, APOLLO_DOC)
 
 		host.focus()
 		controlIn(rowStarting(host, 'To do'), '[class*="boardCardDraggable"]').dispatchEvent(
@@ -289,7 +297,7 @@ describe('the caret goes where a person can follow it', () => {
 
 		// The board holds no position a caret may take, so the characters are refused outright. Read
 		// off the HOST rather than off `value()`: a refused key writes nothing, so `onChange` never
-		// fires and the controlled mirror would answer `''` whatever happened on screen.
+		// fires and the mirror answers the document it was mounted with, whatever happened on screen.
 		expect(host.textContent).not.toContain('ZZZ')
 		expect(host.textContent).toContain('To do')
 	})
@@ -336,7 +344,7 @@ describe('the caret goes where a person can follow it', () => {
 	 * landed in the value with no visible caret.
 	 */
 	it('refuses to indent a row into a closed toggle', async () => {
-		const {host, value} = await mountControlled(Showcase)
+		const {host, value} = await mountControlled(Showcase, APOLLO_DOC)
 
 		const toggle = toggleStarting(host, 'Single-region GA first')
 		const title = lineTextOf(toggle)
@@ -407,7 +415,7 @@ describe('the caret goes where a person can follow it', () => {
 	 * text nobody could see.
 	 */
 	it('takes the caret out of a toggle that closes under it', async () => {
-		const {host, value} = await mountControlled(Showcase)
+		const {host, value} = await mountControlled(Showcase, APOLLO_DOC)
 
 		const toggle = toggleStarting(host, 'Why we cut the Android target')
 		const child = [...toggle.querySelectorAll<HTMLElement>(ROW)][0]
@@ -433,7 +441,7 @@ describe('the caret goes where a person can follow it', () => {
 	 * it. Pasting the same clip on an empty row was clean, which is the two readings this closes.
 	 */
 	it('opens a two-row clip as rows when it is pasted at a caret', async () => {
-		const {host, value} = await mountControlled(Showcase)
+		const {host, value} = await mountControlled(Showcase, APOLLO_DOC)
 
 		await focusAtEnd(rowStarting(host, 'Awaiting quota approval'))
 		await userEvent.keyboard('{Escape}')
