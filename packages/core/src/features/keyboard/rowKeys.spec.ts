@@ -1470,6 +1470,42 @@ describe('rowKeys the row keymap', () => {
 			container.remove()
 		})
 
+		/**
+		 * AND FOR A BODY THAT IS EMPTY, which is the length the round-nine pin above happens not to
+		 * have. Most atomic kinds a menu offers seed no text at all, so an empty frozen body is the
+		 * ordinary case rather than the exotic one — and it is the case the refusal's own overlap test
+		 * cannot see: the row's line is a ZERO-LENGTH range, the resolution collapses onto it, and a
+		 * span that touches a point overlaps nothing. Measured before this: one `'a'` emitted
+		 * `'before⏎@card a⏎after'` — not the row deleted, the row CORRUPTED, with bytes in a body the
+		 * kind cannot read back.
+		 */
+		it('CONSUMES the key over a frozen body that is EMPTY', () => {
+			const {store, container} = frozen('before\n@card \nafter')
+			selectRowElement(store, 1)
+
+			expect(typeInto(container, 'a').defaultPrevented).toBe(true)
+
+			expect(store.tokens.value()).toBe('before\n@card \nafter')
+			container.remove()
+		})
+
+		/**
+		 * AND THE ROWS A PLAIN SWEEP CROSSES, which is the other direction the resolution moves an
+		 * edge: from mid-text to mid-text across a frozen row, both edges are inside content, so the
+		 * span resolves to NOTHING and the raw pair reaches the write. Measured before this: one `'Z'`
+		 * emitted `'aZb'` — the atomic row and both row boundaries gone in one keystroke.
+		 */
+		it('refuses a plain cross-row sweep that passes THROUGH a frozen row', () => {
+			const {store, container} = frozen('aa\n@card panel\nbb')
+			store.tokens.selection.select(store.tokens.anchorAt(1), store.tokens.anchorAt(16))
+			expect(store.rows.selected()).toHaveLength(0)
+
+			expect(typeInto(container, 'Z').defaultPrevented).toBe(true)
+
+			expect(store.tokens.value()).toBe('aa\n@card panel\nbb')
+			container.remove()
+		})
+
 		it('still lets Backspace take the row, which is the gesture that says so', () => {
 			const {store, container} = frozen('before\n@card panel\nafter')
 			selectRowElement(store, 1)

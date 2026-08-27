@@ -568,13 +568,15 @@ export class TokenModel {
 	 * `#placeInRow` makes, and the reason it is a DOM one: whether a kind paints its own text is
 	 * the consumer's fact, not the tree's.
 	 *
-	 * ASKED OF THE SPAN A WRITE IS ABOUT TO TAKE, never of the pair an event named, and that is the
-	 * whole of what it is for. {@link rowSelectionText} resolves each edge off the structural bytes
-	 * it landed on, so the rows the write ends up covering are not the rows the raw pair covered:
-	 * measured on `'aa⏎@card panel⏎```js⏎code⏎```'` with the card frozen, a sweep from `aa`'s start
-	 * into `code` is an ordinary TEXT selection by the raw pair — no row held, nothing refused —
-	 * while the resolved span stops at the fence's own boundary and covers the frozen row whole. One
-	 * `'Z'` emitted `'Z⏎```js⏎code⏎```'`, the frozen row gone through the very door this guards.
+	 * ASKED OF EITHER PAIR THE WRITE PATH HOLDS, because neither is a witness on its own — see
+	 * `replaceRowSelection` for the three shapes that measured it. {@link rowSelectionText} resolves
+	 * each edge off the structural bytes it landed on, so the rows the write ends up covering are
+	 * not the rows the raw pair covered, and the disagreement runs BOTH ways: the resolution
+	 * acquires rows the raw pair never held — a sweep from `aa`'s start into a fence's `code` on
+	 * `'aa⏎@card panel⏎```js⏎code⏎```'` is an ordinary TEXT selection by the raw pair while the
+	 * resolved span stops at the fence's boundary and covers the frozen row whole, where one `'Z'`
+	 * emitted `'Z⏎```js⏎code⏎```'` — and it also LOSES rows the raw pair held, by collapsing onto an
+	 * empty body or by coming back `undefined` for a plain cross-row sweep.
 	 *
 	 * OVERLAP, NOT COVER, and that is the difference from {@link rowSelection}: the write takes
 	 * whatever of a line lies inside it, so a span that holds only PART of a frozen row's own line

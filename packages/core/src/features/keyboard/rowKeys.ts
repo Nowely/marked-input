@@ -370,13 +370,27 @@ export function replaceRowSelection(
 			replacement.markup ? replacement.text : replacement.text.split(LINE_BREAK)
 		)
 	}
+	// AND A ROW THAT HOLDS NO EDITABLE POSITION IS CONSUMED AND LEFT ALONE. A frozen row's body is
+	// the kind's own markup rather than prose, so the character has nothing in that row to replace
+	// and the key does nothing.
+	//
+	// ASKED OF BOTH PAIRS, because neither one alone is a witness. The RESOLVED span acquires rows
+	// the raw pair never held — a sweep from a plain row into a fence's interior is an ordinary text
+	// selection by the raw pair while the resolution stops at the fence's boundary and covers the
+	// frozen row whole — and that is the shape this refusal moved onto the span for. But the
+	// resolution also LOSES rows the raw pair held, in three measured ways, and each one wrote:
+	// a frozen row whose body is EMPTY resolves to a collapsed position INSIDE it, which overlaps
+	// no line, and `'before⏎@card ⏎after'` typed over emitted `'before⏎@card a⏎after'` — bytes in a
+	// body the kind cannot read back; and a plain sweep across a frozen row resolves to NO span at
+	// all, so the raw pair reached the write and `'aa⏎@card panel⏎bb'` swept mid-`aa` to mid-`bb`
+	// emitted `'aZb'`. The union is the rule the invariant actually states: a typed character may
+	// not reach any part of such a row, by either reading.
+	//
+	// SELECT-ALL IS NOT THIS QUESTION and never arrives here: `isAllSelected` replaces the whole
+	// value one layer up (`input.ts`), which is what Mod+A and a keystroke mean everywhere.
+	if (store.tokens.holdsFrozenRow(anchors)) return true
 	const span = store.tokens.rowSelectionText(anchors)
 	if (span) {
-		// AND A ROW THAT HOLDS NO EDITABLE POSITION IS CONSUMED AND LEFT ALONE. A frozen row's body
-		// is the kind's own markup rather than prose, so the character has nothing in that row to
-		// replace and the key does nothing. Asked of the SPAN this line is about to write, which is
-		// the one pair that answers about the rows the character would actually take — see
-		// {@link TokenModel.holdsFrozenRow} for the sweep the raw pair let through.
 		if (store.tokens.holdsFrozenRow(span)) return true
 		store.edit.replace(span.anchor, span.head, replacement.text)
 		return true
