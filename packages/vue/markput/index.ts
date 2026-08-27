@@ -2,11 +2,20 @@
 import './src/augment'
 
 export {default as MarkedInput} from './src/components/MarkedInput.vue'
+// `useControlRef` on one wrapper, and the second of the two shapes a control takes: the hook marks
+// a single control, this marks a whole interior that is not document surface. React has shipped
+// both since the showcase measured what forgetting one costs — four of its seven atomic kinds had
+// no control root, and a click into any of them swallowed every keystroke after it.
+export {default as Atomic} from './src/components/Atomic.vue'
 // THE shipped overlay list, and the DEFAULT one: core is framework-agnostic and ships no
 // components, so the paint lives here. It is exported for a consumer who wants it beside a
 // custom overlay on another option — wiring a row menu needs no component at all, since
 // `{overlay: {trigger: '/'}}` already resolves to this.
 export {default as OverlayList} from './src/components/OverlayList/OverlayList.vue'
+// What a consumer's own control — a toggle arrow, a checkbox, a `<select>` — takes so the
+// caret and the browser's own editing stay out of it. `TokenModel.control()` is the SPI behind
+// it, and reaching for that means reaching through `store.tokens`.
+export {useControlRef} from './src/lib/hooks/useControlRef'
 export {useMark} from './src/lib/hooks/useMark'
 export {useMarkInfo} from './src/lib/hooks/useMarkInfo'
 export {useOverlay} from './src/lib/hooks/useOverlay'

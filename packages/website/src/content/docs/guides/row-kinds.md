@@ -211,6 +211,21 @@ several is the measured failure: when this site's own showcase first shipped its
 of the seven had no control root, and a click parked a blinking caret in a properties grid where
 every keystroke was swallowed.
 
+`@markput/vue` publishes both under the same names. `useControlRef()` returns a callback a template
+binds with `:ref`, and it takes Vue's ref argument rather than an element, so a control painted by a
+component of your own registers the element that component rendered:
+
+```ts
+import {defineComponent} from 'vue'
+import {Atomic, useControlRef} from '@markput/vue'
+
+const Bullet = defineComponent({
+    components: {Atomic},
+    setup: () => ({setControlRef: useControlRef()}),
+    template: '<div><span class="bullet" :ref="setControlRef" /><slot /><slot name="rows" /></div>',
+})
+```
+
 A control that is FOCUSABLE — a checkbox, a `<select>`, a `<button>` — takes DOM focus when it is
 clicked, which is the browser's own default, and it leaves the selection where it was. The editor
 takes its focus back, so the user can go on typing where the caret already is, and it does so at
