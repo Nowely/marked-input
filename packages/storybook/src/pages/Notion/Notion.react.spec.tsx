@@ -1088,6 +1088,29 @@ describe('the keymap on the showcase kinds', () => {
 	})
 
 	/**
+	 * AND ON A PAGE NOBODY HAS TYPED IN, WHICH IS WHERE IT ANSWERED DIFFERENTLY. The rule above was
+	 * stated for a document that already held a caret; with none, the pointer's fresh-page arm
+	 * claimed the row the control is painted in, and claiming a row PLACES a caret — which focuses
+	 * the editing host and closes the popup the click had just opened. MEASURED: fresh load, click
+	 * the language `<select>`, press `Q`, and the `Q` landed at the start of the code body with
+	 * `document.activeElement` back on the container. One gesture with two answers, decided by a
+	 * fact about the document rather than about the gesture.
+	 */
+	it('leaves it the focus on a page with no caret in it at all', async () => {
+		const {host, value} = await mountControlled(Showcase, '```bash\nls\n```\nafter')
+		const select = host.querySelector<HTMLElement>('select')
+		if (!select) throw new Error('no language select')
+
+		await userEvent.click(select)
+		await settle()
+		expect(document.activeElement).toBe(select)
+
+		await userEvent.keyboard('Q')
+		await settle()
+		expect(value()).toBe('```bash\nls\n```\nafter')
+	})
+
+	/**
 	 * AND THE EDIT IS TAKE-BACK-ABLE from where the user is standing. The `Mod+Z` after a tick was
 	 * swallowed whole: the entry was on the stack and replayed fine once you clicked back into a
 	 * text row, but from the control the key was dead. Kept beside the reclaim above, because the

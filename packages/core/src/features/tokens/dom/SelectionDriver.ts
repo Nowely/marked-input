@@ -301,13 +301,31 @@ export class SelectionDriver {
 	 * on `'+ Add a property'` and a comment thread's `'Reply…'` — zero ranges in the document, focus
 	 * on the BUTTON, and without this the next two characters went nowhere.
 	 *
+	 * EXCEPT WHERE THE CONTROL OWNS A KEYBOARD, and that exception is what took ONE GESTURE'S THREE
+	 * ANSWERS down to two. {@link KEYBOARD_OWNERS} keep the focus their click gave them — the rule
+	 * the `click` listener below already states — and the arm above walked straight past it: on a
+	 * page nobody had typed in, clicking the fence's language `<select>` claimed the fence's row,
+	 * and CLAIMING A ROW PLACES A CARET, which focuses the editing host and closes the popup the
+	 * click had just opened. MEASURED on the showcase: fresh load, click the `<select>`, press `Q` —
+	 * `document.activeElement` was the container and the `Q` landed at the start of the code body,
+	 * three lines from the control. With a prior caret the same click kept it, which is what made
+	 * one gesture answer differently depending on a fact about the document. It reads
+	 * `document.activeElement` for the same reason the reclaim does: the consumer's own handler has
+	 * run by the time this microtask does, and where the focus ENDED is the question.
+	 *
 	 * WHAT THE MODEL DOES WITH IT is the other half and is the model's alone: a landing outranks every
 	 * reading the gesture could not have produced, and defers to the one it could
 	 * (`TokenModel.#gestureCouldRead`).
 	 */
 	#claimLanding(pointer: Node | undefined, container: HTMLElement): boolean {
 		if (!pointer) return false
-		if (document.activeElement !== container && this.domAnchors()) return false
+		const active = document.activeElement
+		// `active !== container` FIRST, and it is load-bearing rather than an ordering taste: the
+		// editing HOST is itself `contenteditable="true"` and matches {@link KEYBOARD_OWNERS}, so a
+		// bare `matches` here declines every claim frozen presentation makes — which is all of them,
+		// since that is the case where the host keeps the focus. Four pins said so at once.
+		if (active !== container && active instanceof Element && active.matches(KEYBOARD_OWNERS)) return false
+		if (active !== container && this.domAnchors()) return false
 		return this.deps.claimRow(pointer)
 	}
 
@@ -481,7 +499,7 @@ export class SelectionDriver {
 		//
 		// ONLY WHILE THE FOCUS IS STILL OURS. Focus leaving the container empties the selection too,
 		// and re-applying there would call `focusEditingHost` and take the focus back off whatever the
-		// user just clicked. The `focusout` rule below owns that case and clears the pair instead.
+		// user just clicked. The `focusout` rule above owns that case and clears the pair instead.
 		//
 		// AND ONLY THE RE-APPLY, never {@link restoreCaret}'s second arm: a model holding NO anchors has
 		// nothing to lose here, and releasing would BLUR the host on a plain `container.focus()` — which

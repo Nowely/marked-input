@@ -1158,3 +1158,20 @@ becomes a ticket here.
     `background` would not, which is exactly how the board hid it. The subscription is a SCALAR per
     row, the same shape `isDragging` already uses, so a selection change re-renders only the rows whose
     own answer flipped.
+  - **ONE GESTURE'S THREE ANSWERS WERE TWO PLUS A DEFECT** (`SelectionDriver.#claimLanding`). Measured
+    across a button decoration, frozen presentation and a `<select>`, with and without a prior caret:
+    the `<select>` was the odd one. On a page nobody had typed in, the fresh-page arm claimed the row
+    it is painted in — and claiming a row PLACES a caret, which focuses the host and closes the popup
+    the click had just opened; `Q` after it landed at the start of the code body. A KEYBOARD OWNER's
+    click is never a landing now, and `active !== container` comes first in that test rather than
+    second: the editing host is itself `contenteditable="true"` and matches `KEYBOARD_OWNERS`, so the
+    bare `matches` declined every claim frozen presentation makes — four pins at once. What remains is
+    two answers to two gestures: a control that took the FOCUS answered the pointer itself and your
+    caret is yours; presentation that took nothing did not, and the pointer names the row.
+  - **JUDGED CORRECT AS IT STANDS: `+ New`.** The table footer's button is `node.turnInto(tableLine,
+    {text: '\n|+ ' + slot})` — an insert-a-row-above expressed through a turn-THIS-row verb, which
+    names no caret. Measured three ways: with a prior caret elsewhere the character lands there
+    (`'leadQ'`), with none the click's own claim puts the caret in the row the button is painted in,
+    which after the retype is still the FOOTER. The editor did exactly what its landing rule says. The
+    gap is the option API's and is already named in `options.tsx`: `addSibling` opens BELOW, there is
+    no insert-above verb, and no published way to say "put the caret in the row I just made".
