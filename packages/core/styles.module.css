@@ -89,7 +89,8 @@
 .Row {
 	/* Kept after the controls left the row: markput positions nothing inside a row any more,
 	   but the rule is also a CONSUMER's containing block, and dropping it would silently
-	   re-parent their absolutely-positioned row content to the container. */
+	   re-parent their absolutely-positioned row content to the container. Also the containing
+	   block `.RowSelected`'s overlay needs. */
 	position: relative;
 	margin-left: 0;
 	transition: opacity 0.2s ease;
@@ -132,6 +133,23 @@
 .Row > span:first-child:empty:not([contenteditable]):is(:last-child, :has(+ span:last-child:empty)) {
 	display: inline-block;
 	min-height: 1em;
+}
+
+/* THE ROW SELECTION, PAINTED BY THE EDITOR. The browser's own highlight was the only thing that
+   said a block was selected, and a kind that paints its own backgrounds covers it: clicking one
+   board card selected all ELEVEN lines of the board, and the only thing on screen that changed was
+   a faint tint on three column headers — with Backspace one key away. An overlay says it for every
+   kind, frozen or not, because it does not depend on what the kind paints.
+
+   `::after` rather than a `background`, and that is the whole of why it is legible: a background
+   sits UNDER the consumer's own, which is exactly how the board hid it. */
+.RowSelected::after {
+	position: absolute;
+	inset: 0;
+	content: '';
+	pointer-events: none;
+	border-radius: 3px;
+	background: var(--markput-row-selected, rgb(35 131 226 / 28%));
 }
 
 /* ONE row-controls layer per editor, inside the container: it paints the grip, the drop

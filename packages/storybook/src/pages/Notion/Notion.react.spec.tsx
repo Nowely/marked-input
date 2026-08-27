@@ -1777,4 +1777,39 @@ describe('the board', () => {
 
 		await expect.poll(value).toBe(BOARD_DOC)
 	})
+
+	/**
+	 * A BLOCK SELECTION IS LEGIBLE BEFORE A DESTRUCTIVE KEY ACTS ON IT, and the board is the shape
+	 * that proved it was not. Clicking one card selects the whole ten-line block by design, and the
+	 * only thing on screen that said so was a faint tint on three column headers: the platform's own
+	 * highlight paints UNDER a kind's backgrounds, and every card has one. Backspace was one key
+	 * away from taking all ten lines.
+	 *
+	 * THE ASSERTION IS THE PAINT, not the class: a class name is exactly the decorative pin this
+	 * effort keeps finding, so what is read is the computed overlay — its background must be opaque
+	 * enough to see and its box must be the ROW's, which is what "over the cards" means.
+	 */
+	it('paints the selected block itself, over what the kind painted', async () => {
+		const {host} = await mountControlled(Showcase, BOARD_DOC)
+
+		await userEvent.click(cardTitled(host, 'Sign the vendor SLA'))
+		await settle()
+
+		const row = rowsOf(host).find(candidate => candidate.contains(cardTitled(host, 'Sign the vendor SLA')))!
+		const overlay = window.getComputedStyle(row, '::after')
+		expect(overlay.content).toBe('""')
+		expect(overlay.backgroundColor).not.toBe('rgba(0, 0, 0, 0)')
+		expect(overlay.width).toBe(`${row.getBoundingClientRect().width}px`)
+	})
+
+	/** And nothing is painted where nothing is selected — a caret is not a block selection. */
+	it('paints nothing while the selection is an ordinary caret', async () => {
+		const {host} = await mountControlled(Showcase, `head\n${BOARD_DOC}`)
+
+		await focusAtEnd(rowAt(host, 'head'))
+		await settle()
+
+		const row = rowsOf(host).find(candidate => candidate.contains(cardTitled(host, 'Beta invites')))!
+		expect(window.getComputedStyle(row, '::after').content).toBe('none')
+	})
 })

@@ -206,6 +206,7 @@ involved, and an editor nobody themes looks exactly as it did.
 | `--markput-popup-item-text`        | `#2589f5`                        | Hovered / highlighted row    |
 | `--markput-grip-color`             | `#9ca3af`                        | The drag grip                |
 | `--markput-drop-indicator`         | `#3b82f6`                        | The row drop line            |
+| `--markput-row-selected`           | `rgb(35 131 226 / 28%)`          | The row selection overlay    |
 
 ```css
 .my-dark-page {

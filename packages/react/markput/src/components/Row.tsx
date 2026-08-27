@@ -1,5 +1,5 @@
 import type {RowNode} from '@markput/core'
-import {renderSubscription} from '@markput/core'
+import {cx, renderSubscription} from '@markput/core'
 import type {CSSProperties} from 'react'
 import {memo, useMemo} from 'react'
 
@@ -7,6 +7,8 @@ import {useMarkput} from '../lib/hooks/useMarkput'
 // oxlint-disable-next-line import/no-cycle -- A recursive component pair: `Rows` maps a sibling list and `Row` paints one row and its own list. The cycle is the recursion, and both sides are used only inside a render body.
 import {Rows} from './Rows'
 import {Token} from './Token'
+
+import styles from '@markput/core/styles.module.css'
 
 /** What `Rows` hands one row. Named apart from the published `RowProps`, which is what a row
  * KIND's component receives and is a wider shape. */
@@ -45,6 +47,11 @@ export const Row = memo(({node, depth, index}: RowRenderProps) => {
 	// when THIS row's own answer flips. The closure is safe for `Token`'s reason: the component
 	// is keyed by `node.id` and ids are never reused.
 	const isDragging = useMarkput(s => () => s.rows.state.dragging() === node.id)
+	// THE ROW SELECTION, and a SCALAR for the same reason: `rows.selected()` is one editor-level
+	// signal, so reading the array here would re-render every row on every selection change. The
+	// paint is the editor's because the platform's own highlight is not legible over a kind that
+	// draws its own backgrounds — see `.RowSelected` in `styles.module.css`.
+	const isSelected = useMarkput(s => () => s.rows.selected().includes(node.id))
 	// The per-row subscription: a row's kind, its meta and its children are what this component
 	// paints, so an edit to any of them must re-render it — `renderSubscription`'s row arm, the
 	// same job its mark arm does for Token.
@@ -90,6 +97,10 @@ export const Row = memo(({node, depth, index}: RowRenderProps) => {
 			{...props}
 			{...(isKind ? {rows} : {})}
 			ref={setRowRef}
+			// The selection class rides the same merge the drag opacity does — the resolver owns the
+			// consumer/`styles.Row` merge, and this appends the editor's own paint to its answer.
+			// oxlint-disable-next-line no-unsafe-type-assertion -- props.className is raw consumer input
+			className={cx(props.className as string | undefined, isSelected && styles.RowSelected)}
 			// oxlint-disable-next-line no-unsafe-type-assertion -- props.style is raw and needs casting to CSSProperties
 			style={{opacity: isDragging ? 0.4 : 1, ...(props.style as CSSProperties | undefined)}}
 		>

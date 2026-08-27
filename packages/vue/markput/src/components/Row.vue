@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type {CSSProperties, RowNode} from '@markput/core'
-import {renderSubscription} from '@markput/core'
+import {cx, renderSubscription} from '@markput/core'
 import {computed} from 'vue'
 
 import {useMarkput} from '../lib/hooks/useMarkput'
@@ -9,6 +9,8 @@ import {unwrapEl} from '../lib/unwrapEl'
 // oxlint-disable-next-line import/no-cycle -- A recursive component pair: `Rows` maps a sibling list and `Row` paints one row and its own list. The cycle is the recursion, and both sides are used only inside a render body.
 import Rows from './Rows.vue'
 import Token from './Token.vue'
+
+import styles from '@markput/core/styles.module.css'
 
 /**
  * A row, painted by its KIND's component — a paragraph falls back to `slots.paragraph`. The grip,
@@ -31,6 +33,11 @@ const resolveNodeSlot = useMarkput(s => s.slots.node)
 // A SCALAR subscription: read as a boolean, the derivation notifies only when THIS row's own
 // answer flips, so picking a row up does not re-render every other row.
 const isDragging = useMarkput(s => () => s.rows.state.dragging() === props.node.id)
+// THE ROW SELECTION, and a SCALAR for the same reason: `rows.selected()` is one editor-level
+// signal, so reading the array here would re-render every row on every selection change. The paint
+// is the editor's because the platform's own highlight is not legible over a kind that draws its
+// own backgrounds — see `.RowSelected` in `styles.module.css`.
+const isSelected = useMarkput(s => () => s.rows.selected().includes(props.node.id))
 
 // Created ONCE in setup: `consign` and `children` mint a registration key per call, so calling
 // them inside the ref callback would file a fresh entry on every paint and never release the old
@@ -77,8 +84,10 @@ const rowStyle = computed(() => ({
 	...(resolved.value[1].style as CSSProperties | undefined),
 }))
 const rowProps = computed(() => {
-	const {style: _s, ...rest} = resolved.value[1]
-	return rest
+	const {style: _s, className, ...rest} = resolved.value[1]
+	// The selection class rides the same merge the drag opacity does — the resolver owns the
+	// consumer/`styles.Row` merge, and this appends the editor's own paint to its answer.
+	return {...rest, className: cx(className as string | undefined, isSelected.value && styles.RowSelected)}
 })
 </script>
 

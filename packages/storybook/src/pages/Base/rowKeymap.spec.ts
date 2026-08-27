@@ -2,7 +2,7 @@ import {describe, expect, it, vi} from 'vitest'
 import {userEvent} from 'vitest/browser'
 
 import {rowsOf} from '../../shared/lib/dom'
-import {focusAtStart} from '../../shared/lib/focus'
+import {focusAtStart, settle} from '../../shared/lib/focus'
 import {Mark} from '../../shared/lib/marks'
 import {composePage, mountComponent, mountEcho} from '../../shared/lib/page'
 import {rows} from './Base.fixtures'
@@ -164,5 +164,31 @@ describe('the row keymap', () => {
 		await userEvent.keyboard('{Tab}')
 
 		expect(document.activeElement).not.toBe(host)
+	})
+
+	/**
+	 * AND THE EDITOR PAINTS THE ROW SELECTION ITSELF. The platform's own highlight is all that used
+	 * to say a block was selected, and it paints UNDER whatever the kind draws — on the Notion
+	 * showcase a click on a board card selected ten lines and showed a faint tint on three column
+	 * headers, one Backspace away from taking them. Here on a bare page there is nothing to hide it,
+	 * which is exactly why this pin belongs in BOTH adapters: it reads the overlay rather than the
+	 * class, so a `Row` that stopped merging the class fails in the framework that dropped it.
+	 */
+	it('paints the row Esc selected, and only that row', async () => {
+		// PARAGRAPHS, not the kinds above: this page's row fixtures declare `inheritAttrs: false`
+		// and bind no class, so a kind row here would drop the editor's own class along with the
+		// consumer's. The paragraph fallback is core's own element and carries what core resolves.
+		const {host} = await mountComponent({defaultValue: 'a\nb', ...ROWS, Mark})
+		const [first, second] = rowsOf(host)
+
+		await focusAtStart(second)
+		await userEvent.keyboard('{Escape}')
+		await settle()
+
+		const overlay = window.getComputedStyle(second, '::after')
+		expect(overlay.content).toBe('""')
+		expect(overlay.backgroundColor).not.toBe('rgba(0, 0, 0, 0)')
+		expect(overlay.width).toBe(`${second.getBoundingClientRect().width}px`)
+		expect(window.getComputedStyle(first, '::after').content).toBe('none')
 	})
 })

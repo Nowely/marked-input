@@ -1150,3 +1150,11 @@ becomes a ticket here.
     height moves. NOT REACHED, flagged: a kind that paints furniture ahead of an empty body — the
     divider — keeps the platform's answer, because giving it the caret's line grows a shipped kind by
     a whole line without its consumer asking.
+  - **A BLOCK SELECTION IS PAINTED BY THE EDITOR** (`.RowSelected`, both adapters). Clicking one board
+    card selects all eleven lines by design and the only thing on screen that said so was a faint tint
+    on three column headers: the platform's highlight paints UNDER a kind's backgrounds and every card
+    has one, with Backspace one key away. DECIDED: legible first. An `::after` overlay on the selected
+    row says it for every kind, frozen or not, because it does not depend on what the kind paints — a
+    `background` would not, which is exactly how the board hid it. The subscription is a SCALAR per
+    row, the same shape `isDragging` already uses, so a selection change re-renders only the rows whose
+    own answer flipped.
