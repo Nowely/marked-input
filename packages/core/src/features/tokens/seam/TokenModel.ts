@@ -1401,30 +1401,21 @@ export class TokenModel {
 			if (at === undefined && node.kind === 'row') return
 			if (!this.#tx.applyAfter(node, text)) return
 			inserted = true
-			if (at !== undefined) this.#enterRow(at)
+			if (at === undefined) return
+			// THE CARET GOES TO THE ENTRY AND NOT TO AN OFFSET INTO IT, which is what a MARK entry
+			// needs: `rowSequence` falls back to the ROOTS in a document that parses no rows, and there
+			// the two readings name different POSITIONS — `entryAnchor` lands inside the mark's slot, an
+			// offset lands on the text before its opener. Pinned in `markNode.spec.ts` ('names a
+			// position INSIDE the mark an insert lands on'), which is what a green suite could not
+			// tell: both project to the same OFFSET on every insert case, and only the next character
+			// typed says which position the caret held.
+			//
+			// NOTHING COMES BACK IN CONTROLLED MODE — the tree has not moved, so the entry does not
+			// exist yet and {@link #applyCaret} would decline anyway.
+			const entered = untracked(() => rowSequence(this.#tree.roots()).at(at))
+			if (entered) this.#applyCaret(entryAnchor(entered))
 		})
 		return inserted
-	}
-
-	/**
-	 * Put the caret INTO {@link rowSequence}'s entry at `index` — {@link entryAnchor}'s one rule,
-	 * applied after the splice so the row exists to be named. A no-op when no such entry came
-	 * back, which is what controlled mode always looks like: the tree has not moved, so
-	 * {@link #applyCaret} would decline anyway.
-	 *
-	 * THE ENTRY AND NOT AN OFFSET INTO IT, which is what a MARK entry needs: `rowSequence` falls
-	 * back to the ROOTS in a document that parses no rows, and there the two readings name different
-	 * POSITIONS — `entryAnchor` lands inside the mark's slot, an offset lands on the text before its
-	 * opener. Pinned in `markNode.spec.ts` ('names a position INSIDE the mark an insert lands on'),
-	 * which is what a green suite could not tell: both project to the same OFFSET on every insert
-	 * case, and only the next character typed says which position the caret held.
-	 */
-	#enterRow(index: number): void {
-		// `.at` for `entryAnchor`'s reason; a negative index cannot arrive here — every
-		// caller derives it from a sequence index or a literal 0.
-		const row = untracked(() => rowSequence(this.#tree.roots()).at(index))
-		if (!row) return
-		this.#applyCaret(entryAnchor(row))
 	}
 
 	/**
@@ -1635,10 +1626,8 @@ export class TokenModel {
 		if (!row) return
 		if (this.#dom.rowPaint(row.id) !== 'painted') return
 		// A BLANK ROW OF NO KIND IS ALREADY A DOOR — the trailing convention (ADR-0009) leaves one at
-		// the end of any document ending in a separator — so it is answered before the DOM is asked
-		// at all. That also keeps a frame that has painted the row and not yet its text surface from
-		// reading as a trap and growing the value on every pulse.
-		if (untracked(() => row.descriptor() === undefined && row.slot() === '')) return
+		// the end of any document ending in a separator — and this is the line that answers it: such
+		// a row has no raw body and its own entry is reachable.
 		if (untracked(() => !hasRawBody(row)) && this.#dom.reachable(untracked(() => entryAnchor(row)))) return
 		this.#openRowAfter(row)
 	}

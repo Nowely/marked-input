@@ -227,8 +227,8 @@ export function rowSelectionSpan(
 	// their first line's entry to their last line's end. Every other offset the two edges could
 	// carry is structure, and structure belongs to no row.
 	const content = contentSpan(roots, anchors)
-	const own = contentLines([first]).at(0)
-	const upto = contentLines([last]).at(-1)
+	const own = contentLineRows([first]).at(0)?.range
+	const upto = contentLineRows([last]).at(-1)?.range
 	if (!content || !own || !upto) return undefined
 	if (content.start !== own.start || content.end !== upto.end) return undefined
 
@@ -280,7 +280,7 @@ export function contentSpan(roots: readonly TreeNode[], anchors: Anchors): {star
 	// A CARET names no content, and the collapsed case is every ordinary keystroke: resolving one
 	// would move the insertion point off the position the user is typing at.
 	if (held.start >= held.end) return undefined
-	const lines = contentLines(roots)
+	const lines = contentLineRows(roots).map(line => line.range)
 	const interior = (at: number) => lines.some(line => line.start < at && at < line.end)
 	// AN EDGE IN A STRUCTURAL RUN RESOLVES WHATEVER THE OTHER EDGE IS, and that is the amendment. The
 	// pair test below asks whether this is a text selection, and it answered YES for a pair with one
@@ -320,7 +320,8 @@ export function contentSpan(roots: readonly TreeNode[], anchors: Anchors): {star
 }
 
 /**
- * EVERY LINE OF THE DOCUMENT, as the CONTENT range it owns, in document order.
+ * EVERY LINE OF THE DOCUMENT, as the CONTENT range it owns AND THE ROW THAT OWNS IT, in document
+ * order.
  *
  * A row's own content is its `slotRange` — its inline body, which ends where its first child row
  * begins, so a parent contributes its own line and its children contribute theirs. A CARVED row
@@ -330,15 +331,9 @@ export function contentSpan(roots: readonly TreeNode[], anchors: Anchors): {star
  *
  * The ranges ascend and never overlap, which is what lets {@link contentSpan} read an edge by
  * scanning them.
- */
-function contentLines(nodes: readonly TreeNode[]): {start: number; end: number}[] {
-	return contentLineRows(nodes).map(line => line.range)
-}
-
-/**
- * {@link contentLines} WITH THE ROW THAT OWNS EACH LINE, which is the same walk read by a caller
- * that has to ask something ABOUT the row rather than about the range — whether the kind paints
- * its own text, which is a DOM question and lives at the seam.
+ *
+ * THE ROW COMES WITH THE RANGE because a caller at the seam has to ask something ABOUT the row
+ * rather than about the range — whether the kind paints its own text, which is a DOM question.
  */
 export function contentLineRows(nodes: readonly TreeNode[]): {row: RowNode; range: {start: number; end: number}}[] {
 	const out: {row: RowNode; range: {start: number; end: number}}[] = []
