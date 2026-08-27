@@ -900,6 +900,7 @@ describe('the keymap on the showcase kinds', () => {
 	 */
 	it('writes no bytes of a frozen row a text selection ends on', async () => {
 		const {host, value} = await mountControlled(Showcase, 'lead sentence\n@toc\nSection\n@end\nafter')
+		await focusAtStart(rowAt(host, 'lead sentence'))
 		const lead = rowAt(host, 'lead sentence').firstChild?.firstChild
 		const frozen = host.querySelector<HTMLElement>('[class*="tableOfContents"]')
 		if (!(lead instanceof Text) || !frozen) throw new Error('the page painted no paragraph text or no toc')
@@ -921,6 +922,7 @@ describe('the keymap on the showcase kinds', () => {
 	 */
 	it('leaves a collapsed toggle its hidden body when the selection is typed over', async () => {
 		const {host, value} = await mountControlled(Showcase, '▸ head\n\tbody\nafter')
+		await focusAtStart(toggleStarting(host, 'head'))
 		const head = textReading(toggleStarting(host, 'head'), 'head')
 		const next = rowAt(host, 'after').firstChild?.firstChild
 		if (!(next instanceof Text)) throw new Error('the page painted no row text')
@@ -945,6 +947,7 @@ describe('the keymap on the showcase kinds', () => {
 	 */
 	it('leaves a collapsed toggle its hidden body when a row cover is deleted', async () => {
 		const {host, value} = await mountControlled(Showcase, 'before\n▸ head\n\tbody\nafter')
+		await focusAtStart(rowAt(host, 'before'))
 		const first = rowAt(host, 'before').firstChild?.firstChild
 		const next = rowAt(host, 'after').firstChild?.firstChild
 		if (!(first instanceof Text) || !(next instanceof Text)) throw new Error('the page painted no row text')
@@ -964,6 +967,7 @@ describe('the keymap on the showcase kinds', () => {
 	 */
 	it('takes an OPEN toggle’s children under the same row cover', async () => {
 		const {host, value} = await mountControlled(Showcase, 'before\n▾ head\n\tbody\nafter')
+		await focusAtStart(rowAt(host, 'before'))
 		const first = rowAt(host, 'before').firstChild?.firstChild
 		const next = rowAt(host, 'after').firstChild?.firstChild
 		if (!(first instanceof Text) || !(next instanceof Text)) throw new Error('the page painted no row text')
@@ -1020,6 +1024,7 @@ describe('the keymap on the showcase kinds', () => {
 	 */
 	it('takes every visible row a cover spans across two collapsed toggles', async () => {
 		const {host, value} = await mountControlled(Showcase, 'before\n▸ one\n\tb1\n▸ two\n\tb2\nafter')
+		await focusAtStart(rowAt(host, 'before'))
 		const first = rowAt(host, 'before').firstChild?.firstChild
 		const next = rowAt(host, 'after').firstChild?.firstChild
 		if (!(first instanceof Text) || !(next instanceof Text)) throw new Error('the page painted no row text')
@@ -1070,6 +1075,7 @@ describe('the keymap on the showcase kinds', () => {
 		]
 		for (const [expected, gesture] of gestures) {
 			const {host, value} = await mountControlled(Showcase, '▸ head\n\tbody\nafter')
+			await focusAtStart(toggleStarting(host, 'head'))
 			const head = textReading(toggleStarting(host, 'head'), 'head')
 			const next = textReading(rowAt(host, 'after'), 'after')
 
