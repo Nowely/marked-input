@@ -24,10 +24,12 @@ title: "@markput/react"
 - [RowSpec](/api/interfaces/rowspec/)
 - [SlotProps](/api/interfaces/slotprops/)
 - [Slots](/api/interfaces/slots/)
+- [Store](/api/interfaces/store/)
 - [TextNode](/api/interfaces/textnode/)
 
 ## Type Aliases
 
+- [MarkInfo](/api/type-aliases/markinfo/)
 - [Markup](/api/type-aliases/markup/)
 - [NodeAnchor](/api/type-aliases/nodeanchor/)
 - [OverlayPick](/api/type-aliases/overlaypick/)

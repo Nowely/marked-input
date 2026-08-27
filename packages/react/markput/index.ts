@@ -22,6 +22,15 @@ export type {Option, MarkProps, RowProps, OverlayProps, Slots, SlotProps} from '
 
 // Re-export from core
 export {denote, annotate, MarkputHandle} from '@markput/core'
+// `useMarkput`'s selector PARAMETER — the one type every consumer of that hook receives on its
+// first line and could not name without adding `@markput/core` as a second dependency. TYPE only:
+// core exports the class because both adapters construct one, and building an editor by hand is
+// not a contract this package offers.
+//
+// `MarkInfo` rides with it for `MarkToken`'s reason: it is `useMarkInfo()`'s RETURN, so a consumer
+// declaring that value separately had the same second dependency. The generated page for the hook
+// already names both types and links neither.
+export type {MarkInfo, Store} from '@markput/core'
 // `changed` is an Event: the subscription verb is `watch`. Without this re-export the
 // §2.3 event is documented but unreachable from the published packages.
 export {watch} from '@markput/core'
