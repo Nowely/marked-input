@@ -480,4 +480,24 @@ describe('the caret goes where a person can follow it', () => {
 		// that parent's own padding, which every child inside the box starts at.
 		expect(left('nested line') - left('alpha')).toBeLessThan(step)
 	})
+
+	/**
+	 * AN EMPTY RAW BODY PAINTS A LINE FOR ITS CARET. A fence's body surface is an INLINE child of a
+	 * block whose height comes entirely from the language `<select>` beside it, so an empty one
+	 * measured `height: 0` inside a 38px box — a caret position that is reachable, that a typed
+	 * character lands in, and that nothing on screen locates. It is the state `/code` + Enter
+	 * leaves behind and the state one Backspace away from any one-line fence.
+	 *
+	 * THE OWNER IS THE THEME, decided by the measurement: an option-level `text:` seed makes the
+	 * fence non-empty at the moment the menu creates it and does nothing the first time the user
+	 * clears it. Ticket 41.
+	 */
+	it('gives an empty raw body a line box to draw a caret in', async () => {
+		const {host} = await mountControlled(Empty, 'before\n```bash\n\n```\nafter')
+		const fence = host.querySelector<HTMLElement>('[class*="codeBlock"]')
+		const surface = fence?.querySelector<HTMLElement>('span:empty')
+		if (!surface) throw new Error('the page painted no empty fence body')
+
+		expect(surface.getClientRects()[0]?.height).toBeGreaterThan(0)
+	})
 })

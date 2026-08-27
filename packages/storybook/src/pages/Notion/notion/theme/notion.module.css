@@ -754,6 +754,18 @@
 	line-height: var(--notion-line-height-body);
 }
 
+/* AN EMPTY RAW BODY IS A CARET POSITION WITH NO LINE BOX. The fence's body surface is an inline
+   child of a block whose height comes entirely from the `<select>` beside it, so an empty one
+   measures `height: 0` inside a 38px box and the browser draws a zero-height caret — nothing on
+   screen says where the next character goes. Generated content, so it is neither a caret target
+   nor a byte of the value. `:empty`, so a fence with code in it is untouched. */
+.codeBlock > span:empty::after {
+	display: inline-block;
+	width: 0;
+	height: 1lh;
+	content: '';
+}
+
 /* In flow above the code, not absolutely placed over it: an absolute label inside the
    editing host is a caret target sitting on top of the first line. */
 .codeLanguageLabel {
