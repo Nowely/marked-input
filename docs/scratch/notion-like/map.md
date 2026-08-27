@@ -1124,3 +1124,16 @@ becomes a ticket here.
     instead — a table header. It answers a COLLAPSED span now, at the boundary the LOW edge names, so
     the character is inserted at the end of the row the gesture began in and the resolution still only
     shrinks.
+  - **A SPAN MAY NOT CUT A BLOCK OPEN** (`TokenModel.#offBlockInterior`, renamed from `#offFrozen`).
+    `hasRawBody` is the shape: a body bounded by a CLOSING LITERAL, whose interior already holds
+    separators, so the row is several LINES of the value. An edge inside one whose partner is outside
+    the row does not merge two rows — it deletes the run between them, which is the block's OPENER.
+    MEASURED with a real Shift-click sweep into all seven frozen blocks of the showcase: the fence
+    lost ` ```bash ` (76 lines to 74, its two code lines and its closing literal left as free rows),
+    `@metrics` and `@views` lost their opener lines the same way, and Backspace over the identical
+    sweep did the same. The bookmark, the board and the properties panel clamped correctly the whole
+    time, which is what the brief noticed. A selection wholly INSIDE a raw body is untouched.
+  - **THE DELETE PATH IS THE SAME OWNER NOW** (`anchorsForDelete`). Its ranged arm reads
+    `TokenModel.rowSelectionText`, whose `undefined` is its ORDINARY-TEXT verdict — so a mid-row sweep
+    still merges, unchanged — and a collapsed answer falls through to the caret arms below, which is
+    what makes Backspace over the margin double-click take one character.

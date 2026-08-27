@@ -179,20 +179,34 @@ export function ownsPlatformUndo(container: HTMLElement, event: KeyboardEvent): 
  * `RowNode.mergeWith`. The two expansions cannot both answer: a row's children end with a text
  * token, so no mark boundary ever coincides with a separator's. See {@link boundarySpan} for
  * the direction rules, which are the row path's own and are not symmetric.
+ *
+ * A RANGED DELETE IS RESOLVED OFF STRUCTURE FIRST, by the same one owner a typed character goes
+ * through ({@link TokenModel.rowSelectionText}). It used to write the RAW pair, so every structural
+ * byte that owner exists to protect was still deletable through this door: a double-click in a row's
+ * blank right margin then Backspace merged the two rows and ate the next one's marker, and a sweep
+ * into a fence then Backspace took ` ```bash ` with it. `undefined` from that owner is its
+ * ORDINARY-TEXT verdict — a mid-row sweep, which still merges — so the raw pair stands there.
+ *
+ * AND A SELECTION THAT COVERS NO CONTENT COLLAPSES, which is what puts an emptied ranged delete
+ * back on the arms below: the margin double-click holds exactly one separator, so Backspace there
+ * is Backspace at the row's end and takes one character.
  */
 export function anchorsForDelete(store: KbCtx, inputType: string, anchors: Anchors): Anchors | undefined {
-	if (!anchorEquals(anchors.anchor, anchors.head)) return anchors
+	const held = anchorEquals(anchors.anchor, anchors.head)
+		? anchors
+		: (store.tokens.rowSelectionText(anchors) ?? anchors)
+	if (!anchorEquals(held.anchor, held.head)) return held
 
 	const direction = inputType.endsWith('Backward') ? -1 : 1
-	const mark = store.tokens.adjacentMark(anchors.anchor, direction)
+	const mark = store.tokens.adjacentMark(held.anchor, direction)
 	if (mark) return {anchor: {before: mark}, head: {after: mark}}
 
-	const boundary = store.tokens.boundarySpan(anchors.anchor, direction)
+	const boundary = store.tokens.boundarySpan(held.anchor, direction)
 	if (boundary) return boundary
 
-	const stepped = store.tokens.step(anchors.anchor, direction)
+	const stepped = store.tokens.step(held.anchor, direction)
 	if (!stepped) return undefined
-	return direction === -1 ? {anchor: stepped, head: anchors.head} : {anchor: anchors.anchor, head: stepped}
+	return direction === -1 ? {anchor: stepped, head: held.head} : {anchor: held.anchor, head: stepped}
 }
 
 /** Where the edit would land: the event's own target range, else the event target. */

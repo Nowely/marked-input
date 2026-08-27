@@ -479,9 +479,14 @@ export class TokenModel {
 	 * closing literal gone and the row below merged in. The same reading `#placeInRow` makes, and
 	 * the reason it is a DOM one: whether a kind paints its own text is the consumer's, not the
 	 * tree's.
+	 *
+	 * IT ANSWERS THE DELETE PATH TOO ({@link anchorsForDelete}), which used to write the RAW pair
+	 * for any ranged selection and so carried every structural byte this resolves off. Its own
+	 * refusal is vacuous there: `rowSelection` is non-empty exactly when the selection is an exact
+	 * row cover, which is exactly when {@link replaceRows} has already consumed the key upstream.
 	 */
 	rowSelectionText(anchors: Anchors): Anchors | undefined {
-		const span = untracked(() => contentSpan(this.#tree.roots(), this.#offFrozen(anchors)))
+		const span = untracked(() => contentSpan(this.#tree.roots(), this.#offBlockInterior(anchors)))
 		if (!span) return undefined
 		if (!this.rowSelection(anchors).every(row => this.#dom.reachable(untracked(() => entryAnchor(row)))))
 			return undefined
@@ -528,9 +533,12 @@ export class TokenModel {
 	}
 
 	/**
-	 * AN EDGE THE DOM CANNOT REACH NAMES A ROW, NOT A POSITION IN IT — the reading {@link contentSpan}
+	 * AN EDGE INSIDE A BLOCK NAMES THE BLOCK, NOT A POSITION IN IT — the reading {@link contentSpan}
 	 * cannot make for itself, because whether a kind paints its own text is the consumer's fact and
-	 * not the tree's.
+	 * not the tree's, and because a block's opener is a LINE of the value that no line of content
+	 * belongs to.
+	 *
+	 * TWO EDGES REACH IT, and they are the same sentence read from either side of the seam.
 	 *
 	 * A frozen row's body has NO surface, so an offset in it is a position no caret may occupy — but
 	 * in the VALUE it is an ordinary content offset, indistinguishable from the entry of an editable
@@ -543,6 +551,17 @@ export class TokenModel {
 	 * content offset, so both edges read as content, the raw span stood, and `@toc` and its first
 	 * entry went with the sentence: 76 lines to 74.
 	 *
+	 * AND AN EDGE THE DOM CAN REACH PERFECTLY WELL STILL NAMES ONE WHERE THE ROW'S BODY IS RAW.
+	 * {@link hasRawBody} is the shape: a body bounded by a CLOSING LITERAL rather than by the row's
+	 * separator, so its interior already holds separators and the row is several LINES of the value.
+	 * A span with one edge in such a body and the other outside the row does not merge two rows —
+	 * it deletes the run between them, which is that block's OPENER, and leaves its closing literal
+	 * standing as prose. MEASURED on the showcase: click the `Canary procedure` heading, Shift-click
+	 * the fence below it, type once — `'## Canary procedureZ'`, ` ```bash ` gone, the two code lines
+	 * and the closing ` ``` ` left as four free rows, 76 lines to 74. Backspace over the same sweep
+	 * did the same. A selection wholly INSIDE the body is untouched, which is what keeps the fence
+	 * editable.
+	 *
 	 * SO THE EDGE MOVES TO THE ROW'S OWN BOUNDARY, where the offset is structural and `contentSpan`
 	 * resolves it the way it resolves every other structural edge — the LOW edge to `{after}` and the
 	 * HIGH edge to `{before}`, so the answer can only ever SHRINK.
@@ -551,16 +570,22 @@ export class TokenModel {
 	 * round nine's refusal: a frozen row held WHOLE still answers `rowSelection`, `reachable` still
 	 * declines it, and the typed character is still consumed and refused rather than replacing the row.
 	 */
-	#offFrozen(anchors: Anchors): Anchors {
+	#offBlockInterior(anchors: Anchors): Anchors {
 		const roots = this.#tree.roots()
+		const ends = [offsetOfAnchor(roots, anchors.anchor), offsetOfAnchor(roots, anchors.head)]
+		const held = {start: Math.min(...ends), end: Math.max(...ends)}
 		const resolve = (anchor: NodeAnchor, low: boolean): NodeAnchor => {
-			if (this.#dom.reachable(anchor)) return anchor
 			const row = rowOf(roots, anchor)?.row
 			if (!row) return anchor
+			if (this.#dom.reachable(anchor) && !this.#cutsBlockOpen(row, held)) return anchor
 			return low ? {after: row} : {before: row}
 		}
-		const low = offsetOfAnchor(roots, anchors.anchor) <= offsetOfAnchor(roots, anchors.head)
-		return {anchor: resolve(anchors.anchor, low), head: resolve(anchors.head, !low)}
+		return {anchor: resolve(anchors.anchor, ends[0] <= ends[1]), head: resolve(anchors.head, ends[0] > ends[1])}
+	}
+
+	/** Does `held` reach into `row`'s raw body from outside the row — see {@link #offBlockInterior}. */
+	#cutsBlockOpen(row: RowNode, held: {start: number; end: number}): boolean {
+		return untracked(() => hasRawBody(row) && (held.start < row.position.start || held.end > row.position.end))
 	}
 
 	/**

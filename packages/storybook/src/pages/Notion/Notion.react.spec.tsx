@@ -956,6 +956,50 @@ describe('the keymap on the showcase kinds', () => {
 	})
 
 	/**
+	 * AND THE DELETE PATH IS THE SAME OWNER. It resolved no edge at all — a ranged delete wrote the
+	 * RAW pair — so Backspace over the same empty selection merged the two rows and ate the marker:
+	 * `'lead sentence here'` + `'- bullet row'` became `'lead sentence herebullet row'`. With the
+	 * span collapsed the key is Backspace at the row's own end, which takes one character.
+	 */
+	it('deletes one character when Backspace follows that double-click', async () => {
+		const {host, value} = await mountControlled(Showcase, 'lead sentence here\n- bullet row\nafter')
+
+		await marginDoubleClick(rowAt(host, 'lead sentence here'))
+		await userEvent.keyboard('{Backspace}')
+
+		await expect.poll(value).toBe('lead sentence her\n- bullet row\nafter')
+	})
+
+	/**
+	 * A SPAN MAY NOT CUT A BLOCK OPEN. A row whose body is RAW is several LINES of the value held
+	 * between an opening and a closing literal, so a selection with one edge inside it and the other
+	 * outside the row deletes that block's OPENER rather than merging two rows — and leaves the
+	 * closing literal standing as prose. MEASURED on the showcase: click the `Canary procedure`
+	 * heading, Shift-click the fence under it and type once — `'## Canary procedureZ'` with
+	 * ` ```bash ` gone, its two code lines and its closing ` ``` ` left as four free rows, 76 lines
+	 * to 74. Backspace over the same sweep did the same, and `@metrics` and `@views` lost their
+	 * openers to the identical gesture.
+	 *
+	 * BOTH KEYS, because they are two owners: the character goes through the row-selection write and
+	 * the delete through `anchorsForDelete`, which is why one fix had to reach both.
+	 */
+	it.each([
+		['Z', '## headZ'],
+		['{Backspace}', '## hea'],
+	])('leaves a fence its opener when a sweep ends inside its body (%s)', async (key, head) => {
+		const {host, value} = await mountControlled(Showcase, '## head\n```bash\nls -la\n```\ntail')
+		const fence = host.querySelector<HTMLElement>('[class*="codeBlock"]')
+		if (!fence) throw new Error('the page painted no fence')
+
+		await focusAtEnd(rowAt(host, 'head'))
+		await userEvent.click(fence, {modifiers: ['Shift']})
+		await settle()
+		await userEvent.keyboard(key)
+
+		await expect.poll(value).toBe(`${head}\n\`\`\`bash\nls -la\n\`\`\`\ntail`)
+	})
+
+	/**
 	 * CLOSING A FENCE LEAVES THE CARET AFTER IT, not three characters behind the literal that closed
 	 * it. `{after: row}` is where the edit's own post-edit anchor lands, and a row's DOM boundary
 	 * descends to its edge CHILD — for a closed body that is the last character of the CODE, so
