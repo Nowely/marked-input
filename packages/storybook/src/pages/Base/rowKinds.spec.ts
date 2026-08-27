@@ -135,6 +135,33 @@ describe('row kinds', () => {
 		}
 	})
 
+	/**
+	 * A NEWLINE INSIDE A ROW'S BODY IS VISIBLE, and the consumer sets nothing for it. Core's own
+	 * `.Container span { white-space: pre-wrap }` is what makes it so; the ticket that filed this
+	 * as a split contract grepped `packages/core/src` for `whiteSpace`, and the rule is in
+	 * `packages/core/styles.module.css`, which that grep could not reach.
+	 *
+	 * A RAW CLOSED body is the shape that holds one — its interior crosses separators by
+	 * construction — and the kind here is a plain `<div>` on purpose: `<pre>` carries the same
+	 * declaration from the UA stylesheet and would pass whatever core did.
+	 */
+	it('renders a newline inside a raw body as a line break, with no consumer CSS', async () => {
+		const {host} = await mountComponent({
+			value: '```\nfirst\nsecond\n```',
+			...ROWS,
+			options: [{markup: '```__meta__\n__value__\n```', row: {Component: defineMark({tag: 'div'})}}],
+		})
+
+		const surface = host.querySelector('div > span')
+		expect(surface?.textContent).toBe('first\nsecond')
+		expect(surface && getComputedStyle(surface).whiteSpace).toBe('pre-wrap')
+		// TWO PAINTED LINES, which is the claim. Counted by distinct rect TOPS rather than by rect
+		// count: both adapters report three boxes for these two lines, and a collapsed newline
+		// would put every one of them on one line.
+		const lines = new Set([...(surface?.getClientRects() ?? [])].map(rect => Math.round(rect.top)))
+		expect(lines.size).toBe(2)
+	})
+
 	it('repaints a row when only its kind changes', async () => {
 		const {rerender} = await mountComponent({
 			value: 'plain',
