@@ -127,7 +127,7 @@ start: number;
 addSibling(): boolean;
 ```
 
-Defined in: [core/src/features/tokens/tree/types.ts:246](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L246)
+Defined in: [core/src/features/tokens/tree/types.ts:251](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L251)
 
 Open a BLANK row after this row's whole subtree, at this row's own DEPTH — "add below", as a
 verb rather than as a separator a caller splices.
@@ -159,7 +159,7 @@ own to open one beside, so the bytes would land inside the line it is a piece of
 duplicate(): boolean;
 ```
 
-Defined in: [core/src/features/tokens/tree/types.ts:249](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L249)
+Defined in: [core/src/features/tokens/tree/types.ts:254](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L254)
 
 #### Returns
 
@@ -189,7 +189,7 @@ readonly [`TreeNode`](/api/type-aliases/treenode/)[]
 insertAfter(text): boolean;
 ```
 
-Defined in: [core/src/features/tokens/tree/types.ts:250](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L250)
+Defined in: [core/src/features/tokens/tree/types.ts:255](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L255)
 
 #### Parameters
 
@@ -238,7 +238,7 @@ start: number;
 mergeWith(next): boolean;
 ```
 
-Defined in: [core/src/features/tokens/tree/types.ts:251](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L251)
+Defined in: [core/src/features/tokens/tree/types.ts:256](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L256)
 
 #### Parameters
 
@@ -258,7 +258,7 @@ Defined in: [core/src/features/tokens/tree/types.ts:251](https://github.com/Nowe
 moveTo(placement): boolean;
 ```
 
-Defined in: [core/src/features/tokens/tree/types.ts:269](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L269)
+Defined in: [core/src/features/tokens/tree/types.ts:274](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L274)
 
 Move this row AND ITS SUBTREE to `placement`, keeping every row's identity — the moved
 subtree's, its old siblings' and its new siblings'. The subtree is re-indented to sit under
@@ -340,7 +340,7 @@ start: number;
 remove(): boolean;
 ```
 
-Defined in: [core/src/features/tokens/tree/types.ts:248](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L248)
+Defined in: [core/src/features/tokens/tree/types.ts:253](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L253)
 
 See NodeCommands.
 
@@ -452,7 +452,7 @@ start: number;
 splitAt(at): boolean;
 ```
 
-Defined in: [core/src/features/tokens/tree/types.ts:226](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L226)
+Defined in: [core/src/features/tokens/tree/types.ts:231](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L231)
 
 Split this row at `at`: the body before the anchor stays, the body after it becomes a new row
 at the same lead, whose kind is this one when the kind `continues` and a plain row otherwise.
@@ -526,7 +526,7 @@ empty parent; the surplus indent survives verbatim in each child's `lead`.
 writeRows(span, rows): boolean;
 ```
 
-Defined in: [core/src/features/tokens/tree/types.ts:209](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L209)
+Defined in: [core/src/features/tokens/tree/types.ts:214](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L214)
 
 Write `rows` into this row's body at `span`, opening one row per piece past the first: the
 body before the span keeps `rows[0]`, the body after it follows `rows.at(-1)` in the last row
@@ -546,6 +546,11 @@ follows the last piece — in a row carrying THAT row's kind at THIS row's lead.
 outside this row's own body, for one whose high end is in the structure between two lines,
 and — because the tail is written at this row's lead — for one closing in a row that has
 children of its own or before a row that would then land at a different depth.
+
+IT DOES NOT VALIDATE A CARVED ROW'S OWN DELIMITERS. A carved row takes this verb — that is how
+Enter splits a table line — but its cells are not lines of the document, so a span reaching the
+delimiter between two of them is refused one layer up, where the selection is resolved off the
+structural bytes it landed on. Handed such a span directly, this writes it.
 
 #### Parameters
 
