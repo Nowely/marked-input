@@ -231,14 +231,7 @@ export function handleRowSelection(store: KbCtx, event: KeyboardEvent): void {
 
 	if (event.key === KEYBOARD.ESC) {
 		if (store.overlay.match() || store.rows.state.menu()) return
-		// The widening rung FIRST, so a second Esc climbs rather than re-selecting the same row.
-		// The `'row'` rung is the ENTRY into a row selection and runs only while none stands: with
-		// whole rows already held and nothing above them to climb to, re-stating the ANCHOR's row
-		// alone SHRINKS a selection that spans several, which is the one thing Esc must not do.
-		const entering = store.tokens.rowSelection(anchors).length === 0
-		const span =
-			store.tokens.rowScope(anchors, 'out') ?? (entering ? store.tokens.rowScope(anchors, 'row') : undefined)
-		if (selectSpan(store, span)) event.preventDefault()
+		if (widenRowScope(store)) event.preventDefault()
 		return
 	}
 	if (!event.shiftKey || (event.key !== KEYBOARD.UP && event.key !== KEYBOARD.DOWN)) return
@@ -247,18 +240,29 @@ export function handleRowSelection(store: KbCtx, event: KeyboardEvent): void {
 }
 
 /**
- * MOD+A'S ROW RUNG, answering whether it consumed the widening — `false` leaves select-all to run,
- * which is what it has always done and still does everywhere no row selection stands.
+ * ONE LEVEL WIDER, for the two keys that ask for it — Esc's escalation and Mod+A's rung below
+ * select-all. Answers whether anything widened; `false` is Esc doing nothing and Mod+A reaching
+ * for the whole document.
  *
- * It is the same `'out'` scope Esc climbs, so the two keys cannot disagree about what one level
- * wider means. The difference is only where they stop: Esc has nothing above the outermost row,
- * while Mod+A's next rung is the whole document.
+ * IT IS ONE FUNCTION BECAUSE IT IS ONE QUESTION. The two keys used to spell it separately and the
+ * spellings had drifted: Esc entered a row selection from a plain caret and Mod+A did not, so the
+ * first Mod+A in a document took the whole value — one keystroke from wiping everything, and the
+ * gesture a user is most likely to make by reflex before typing. They differ only in where they
+ * STOP, which is at each caller: Esc has nothing above the outermost row, Mod+A's next rung is
+ * select-all.
+ *
+ * THE WIDENING RUNG COMES FIRST, so a second press climbs rather than re-selecting the same row.
+ * The `'row'` rung is the ENTRY into a row selection and runs only while none stands: with whole
+ * rows already held and nothing above them to climb to, re-stating the ANCHOR's row alone SHRINKS
+ * a selection that spans several, which is the one thing neither key may do.
  */
 export function widenRowScope(store: KbCtx): boolean {
 	if (store.tokens.rowConfig() === undefined) return false
 	const anchors = store.tokens.domAnchors() ?? store.tokens.selection.anchors()
 	if (!anchors) return false
-	return selectSpan(store, store.tokens.rowScope(anchors, 'out'))
+	const entering = store.tokens.rowSelection(anchors).length === 0
+	const span = store.tokens.rowScope(anchors, 'out') ?? (entering ? store.tokens.rowScope(anchors, 'row') : undefined)
+	return selectSpan(store, span)
 }
 
 /**

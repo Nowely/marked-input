@@ -74,10 +74,10 @@ export function enableInput(store: KbCtx, container: HTMLElement): void {
 		if (isConsumerKeyOrigin(store, container, e)) return
 
 		// Layout-independent on purpose: selecting the whole value is a model operation, and
-		// rows are values too. Where the document has rows it gains ONE rung below that: while a row
-		// selection stands inside a NESTED row, Mod+A widens to the row it is nested in before it
-		// reaches for the whole document. Everywhere else — every inline editor, and every caret
-		// that has not been escalated with Esc — the rung declines and this is select-all as it was.
+		// rows are values too. Where the document has rows it CLIMBS to it instead of jumping —
+		// the caret's own row, then the row that one is nested in, then the whole value — which is
+		// {@link widenRowScope}, the same ladder Esc walks. In an INLINE editor the rung declines
+		// on its own (there is no row to select) and this is select-all exactly as it was.
 		if ((e.ctrlKey || e.metaKey) && e.code === 'KeyA') {
 			e.preventDefault()
 			if (!widenRowScope(store)) store.tokens.selection.selectAll()

@@ -1683,6 +1683,9 @@ describe('the toggle', () => {
 		const {host, value} = await mountControlled(Showcase, 'intro\n▸ closed\n\tchild')
 
 		await focusAtStart(rowAt(host, 'intro'))
+		// TWICE: the first press takes the caret's own row, the second the whole value. `intro`
+		// is a root, so there is no rung between them.
+		await userEvent.keyboard('{Meta>}a{/Meta}')
 		await userEvent.keyboard('{Meta>}a{/Meta}')
 		dispatchInsertText(editingHost(host), 'replaced')
 

@@ -1324,17 +1324,22 @@ describe('Feature: drag row keyboard navigation', () => {
 			expect(value()).not.toContain('First block of plain text\n\n')
 		})
 
-		it('replaces the whole document when Ctrl+A in a row then typing', async () => {
-			// BREAKING (one-host migration): select-all is no longer clamped to the row it
-			// started in — rows are not editing hosts any more — so it selects the document
-			// and typing replaces all of it, exactly as in inline layout.
+		it('takes the ROW on the first Ctrl+A and the document on the second', async () => {
+			// Select-all is not clamped to the row it started in — rows are not editing hosts
+			// (one-host migration) — but it CLIMBS to the document instead of jumping there:
+			// the caret's row first, which is the rung Esc has always had, then everything.
+			// These rows are all roots, so there is nothing between the two.
 			const {host, value} = await echoPlainText()
 
 			await focusAtEnd(rowsOf(host)[1])
 			await userEvent.keyboard('{Control>}a{/Control}')
 			await userEvent.keyboard('X')
+			await expect.poll(value).toBe(PLAIN_TEXT_VALUE.replace('Second block of plain text', 'X'))
 
-			await expect.poll(value).toBe('X')
+			await userEvent.keyboard('{Control>}a{/Control}')
+			await userEvent.keyboard('{Control>}a{/Control}')
+			await userEvent.keyboard('Y')
+			await expect.poll(value).toBe('Y')
 		})
 
 		it('ignores beforeinput inside a drag control', async () => {

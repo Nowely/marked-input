@@ -328,9 +328,35 @@ describe('Mod+A widens before it reaches for the document', () => {
 		expect(store.tokens.selection.isAllSelected()).toBe(true)
 	})
 
-	it('selects everything from a plain caret, exactly as it always did', () => {
+	/**
+	 * DECLARED BEHAVIOUR CHANGE. The first press used to take the whole value from a plain caret —
+	 * one keystroke from wiping the document, by the gesture a user makes most often by reflex. It
+	 * takes the caret's ROW now, which is the rung Esc has always had, and reaches everything on the
+	 * way up rather than in one step.
+	 */
+	it('climbs from a plain caret: the row, then the row above it, then everything', () => {
 		const {store, container} = mount()
 		caretAt(store, 5)
+
+		press(store, container, 'a', {code: 'KeyA', metaKey: true})
+		expect(selectedSlots(store)).toEqual(['bb'])
+		expect(store.tokens.selection.isAllSelected()).toBe(false)
+
+		press(store, container, 'a', {code: 'KeyA', metaKey: true})
+		expect(selectedSlots(store)).toEqual(['aa'])
+		expect(store.tokens.selection.isAllSelected()).toBe(false)
+
+		press(store, container, 'a', {code: 'KeyA', metaKey: true})
+		expect(store.tokens.selection.isAllSelected()).toBe(true)
+	})
+
+	/** A ROOT row has nothing above it, so the second press is already the document. */
+	it('reaches everything on the second press from a caret in a root row', () => {
+		const {store, container} = mount()
+		caretAt(store, 12)
+
+		press(store, container, 'a', {code: 'KeyA', metaKey: true})
+		expect(selectedSlots(store)).toEqual(['dd'])
 
 		press(store, container, 'a', {code: 'KeyA', metaKey: true})
 		expect(store.tokens.selection.isAllSelected()).toBe(true)
