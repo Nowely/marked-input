@@ -301,8 +301,18 @@ function spanOf(created: Store, entry: Case) {
 	return {node: rows[entry.from], span: {anchor, head}}
 }
 
+/**
+ * BOTH PROPERTIES ARE GIVEN A TIMEOUT OF THEIR OWN, and that is a fact about the corpus rather than
+ * a workaround: 13136 cases, each one a fresh `Store` and a fresh parse, is 6 s alone and 13-17 s on
+ * a loaded machine — either side of the 15 s default, so under `pnpm test` the controlled half
+ * failed with `Test timed out in 15000ms` about half the time and passed the other half. A pin that
+ * answers differently depending on what else is running is not a pin, and the honest fix is to say
+ * what it costs rather than to shrink the corpus that catches the shapes nobody writes down.
+ */
+const BUDGET = {timeout: 120_000}
+
 describe('writeRows: a clip opens rows, or is refused whole', () => {
-	it('writes the lines the rules describe and names the caret, for every expressible span', () => {
+	it('writes the lines the rules describe and names the caret, for every expressible span', BUDGET, () => {
 		let accepted = 0
 		let crossed = 0
 		// COLLECTED and asserted once: every case is run, so one failure names itself rather than
@@ -342,11 +352,13 @@ describe('writeRows: a clip opens rows, or is refused whole', () => {
 		}
 
 		expect(broke.slice(0, 8)).toEqual([])
-		// The run's own floor, so a plan that refused everything could not satisfy the oracles above
-		// by writing nothing. 13136 cases, 7701 of them written, 6269 of those crossing a row
-		// boundary — the arm this widened, which answered `undefined` for every one of them before.
-		expect(accepted).toBeGreaterThan(7000)
-		expect(crossed).toBeGreaterThan(6000)
+		// The run's own count, EXACT rather than a floor, so a plan that refused everything could not
+		// satisfy the oracles above by writing nothing — and neither can one that quietly refuses a
+		// few hundred more. A floor of 7000 against an actual 7701 left ~700 crossing shapes of slack,
+		// and no oracle here says "a shape the rules DESCRIBE must be written", so that slack was the
+		// only thing holding the acceptance side at all. A number that moves is a behaviour change and
+		// belongs in a commit body.
+		expect({cases: CASES.length, accepted, crossed}).toEqual({cases: 13_136, accepted: 7701, crossed: 6269})
 	})
 
 	/**
@@ -354,7 +366,7 @@ describe('writeRows: a clip opens rows, or is refused whole', () => {
 	 * no derived caret there, so a plan that leaves it to right affinity puts it at the end of the
 	 * window instead of at the start of the tail.
 	 */
-	it('names the same caret when the value is controlled', () => {
+	it('names the same caret when the value is controlled', BUDGET, () => {
 		let checked = 0
 		const broke: string[] = []
 		for (const entry of CASES) {
@@ -372,7 +384,8 @@ describe('writeRows: a clip opens rows, or is refused whole', () => {
 			if (at?.start !== plan.caret || at.end !== plan.caret) broke.push(`${entry.label} → ${at?.start}`)
 		}
 		expect(broke.slice(0, 8)).toEqual([])
-		expect(checked).toBeGreaterThan(7000)
+		// EXACT, for the reason the acceptance count above is: nothing else here holds this side.
+		expect(checked).toBe(7691)
 	})
 })
 
@@ -394,6 +407,49 @@ describe('writeRows: the shapes the records measured', () => {
 		// It used to emit `'- alone⏎twota'` — a second line with neither the lead nor the opener of
 		// any row in the document.
 		expect(created.tokens.value()).toBe('- alone\n- twota')
+	})
+
+	/**
+	 * A CROSSING MARKUP CLIP, which the corpus above cannot generate: `CLIPS` is an array of LINE
+	 * arrays, so `typeof rows === 'string'` is false for all 13136 cases and the whole verbatim arm
+	 * — `joinsHead`, the opened lines written as they arrived, and the following-row depth guard over
+	 * them — is unexercised there.
+	 *
+	 * It is the guard this pins. A markup clip's lines carry their OWN leads, so the last one need
+	 * not land at the head's depth; read from the head alone, the ceiling was computed from the wrong
+	 * predecessor and the plan was accepted. `'⇥⇥d'` came back at depth 1 where it had been at depth
+	 * 2, re-parented onto `'y'` with not a byte of its own changed — which is the one thing this
+	 * refusal exists to prevent. The clamp is replayed over the written lines now, and the shape
+	 * fails closed.
+	 */
+	it('refuses a crossing MARKUP clip that would re-parent the row after the span', () => {
+		const created = store('r\n\ta\n\t\tb\n\t\tc\n\t\td')
+		const rows = preorder(rootRows(created))
+		const span = {
+			anchor: created.tokens.anchorAt(rows[2].slotRange().start + 1),
+			head: created.tokens.anchorAt(rows[3].slotRange().start + 1),
+		}
+
+		expect(rows[2].writeRows(span, 'x\ny')).toBe(false)
+
+		// It used to emit `'r⏎⇥a⏎⇥⇥b⏎x⏎y⏎⇥⇥d'`, with `d` a child of `y` rather than of `a`.
+		expect(created.tokens.value()).toBe('r\n\ta\n\t\tb\n\t\tc\n\t\td')
+		expect(linesOf(created).map(line => line.depth)).toEqual([0, 1, 2, 2, 2])
+	})
+
+	/** And the same span with an ARRAY clip still writes, at the depth the rows already had. */
+	it('writes a crossing ARRAY clip over the same span', () => {
+		const created = store('r\n\ta\n\t\tb\n\t\tc\n\t\td')
+		const rows = preorder(rootRows(created))
+		const span = {
+			anchor: created.tokens.anchorAt(rows[2].slotRange().start + 1),
+			head: created.tokens.anchorAt(rows[3].slotRange().start + 1),
+		}
+
+		expect(rows[2].writeRows(span, ['x', 'y'])).toBe(true)
+
+		expect(created.tokens.value()).toBe('r\n\ta\n\t\tbx\n\t\ty\n\t\td')
+		expect(linesOf(created).map(line => line.depth)).toEqual([0, 1, 2, 2, 2])
 	})
 
 	/**

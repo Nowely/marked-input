@@ -1127,9 +1127,20 @@ export function splitPlan(
 	// follows a shallower one and the clamp re-parents it without a byte of its own moving. Past
 	// that row every predecessor is untouched and so is every parse, which is {@link scanAgrees}'
 	// own reason for stopping at `high + 1`.
+	//
+	// THE CLAMP IS REPLAYED OVER THE LINES THIS PLAN WRITES, not read off the head. The head keeps
+	// its own predecessor and so keeps its depth; every line after it lands under the one above, and
+	// a MARKUP clip's lines carry their OWN leads — so the last of them need not land at the head's
+	// depth at all. Read from the head alone the ceiling came from the wrong predecessor and the
+	// guard accepted the very plan it exists to refuse: `'r⏎⇥a⏎⇥⇥b⏎⇥⇥c⏎⇥⇥d'` with a markup clip
+	// `'x⏎y'` written across `b` and `c` left `'⇥⇥d'` at depth 1 where it had been at depth 2, with
+	// not a byte of its own changed.
 	const following = crossing ? lines[closes + 1] : undefined
 	if (following) {
-		const above = {depth: lines[index].depth, childless: openedLines[openedLines.length - 1] === ''}
+		let above = {depth: lines[index].depth, childless: node.lead() + head === ''}
+		for (const line of openedLines) {
+			above = {depth: landsAt(above, leadUnits(line, config.indent)), childless: line === ''}
+		}
 		if (landsAt(above, leadDepth(following.row.lead(), config.indent)) !== following.depth) return undefined
 	}
 	const text = headKeepsChildren ? head + subtree + separator + written : head + separator + written + subtree
@@ -1298,6 +1309,19 @@ function scannedAs(row: RowNode, depth: number, lead: string = row.lead()): {dep
 /** The depth a LEAD asks for — `RowScanner`'s own division, over bytes not yet in the value. */
 function leadDepth(lead: string, indent: string): number {
 	return indent === '' ? 0 : lead.length / indent.length
+}
+
+/**
+ * The depth a whole LINE asks for, read off its own bytes: `RowScanner`'s maximal run of whole
+ * indent units at a row's start. {@link leadDepth} answers the same question for a lead already
+ * divided from its body; this one is for a line a plan has not parsed — a markup clip's, whose lead
+ * is its own rather than the row it is written under.
+ */
+function leadUnits(line: string, indent: string): number {
+	if (indent === '') return 0
+	let units = 0
+	while (line.startsWith(indent, units * indent.length)) units++
+	return units
 }
 
 /**
