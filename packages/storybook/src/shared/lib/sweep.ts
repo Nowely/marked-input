@@ -11,9 +11,13 @@ declare module 'vitest/internal/browser' {
 	}
 }
 
+/** A VIEWPORT coordinate — what every point this harness takes and passes on is. */
+export type Point = {x: number; y: number}
+
 /**
  * A TEXT SWEEP — the button held down and the pointer moved — driven at the browser's own input
- * layer, because nothing above it can express the gesture.
+ * layer, because nothing above it can express the gesture. Press at `from`, move to `to` in
+ * `steps` moves with the button down, release.
  *
  * `userEvent` has no press-move-release: `click` is a down and an up at one point, `hover` moves
  * with no button, and `dragAndDrop` is the HTML5 drag protocol, which is a different gesture the
@@ -27,12 +31,6 @@ declare module 'vitest/internal/browser' {
  * decides what the gesture selects exactly as it does for a person. Nothing here reads or writes a
  * `Selection`: a sweep this file performed with `setBaseAndExtent` would pin the write rather than
  * the gesture, which is precisely the blind spot it exists to close.
- */
-export type Point = {x: number; y: number}
-
-/**
- * Press at `from`, move to `to` in `steps` moves with the button down, release. Points are
- * VIEWPORT coordinates.
  *
  * SEVERAL MOVES, not one: the defect this harness was built for is in what each move does to the
  * selection's own base, so a sweep that arrives in a single jump measures a different gesture.
