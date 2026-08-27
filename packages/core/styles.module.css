@@ -229,6 +229,39 @@
 	cursor: grabbing;
 }
 
+/* THE REFUSAL CHANNEL'S ONE PAINT — a gesture the editor took and answered with nothing, said at
+   the row it was refused at. Every rule behind it is correct; what was missing is that a correct
+   refusal and a hung editor look identical from the user's chair.
+
+   ONE FADE, not a flash: the tint is at full strength on the first frame and goes out, so the row
+   is never made to blink at a reader who asked the platform for less motion. It is the same
+   `::after`-shaped overlay `.RowSelected` paints for the same reason — a row's own background
+   would sit under whatever the consumer's kind paints — except that here it IS the element, laid
+   out by the controls layer at a measured box, because the layer is what re-mounts it: a class
+   toggled on a row cannot restart an animation the row is already carrying, so a second refused
+   press would say less than the first.
+
+   The colour is a custom property like every other colour in this file, so an editor inside a dark
+   page themes it without touching a hashed class name. */
+.RowRefused {
+	position: absolute;
+	pointer-events: none;
+	border-radius: 3px;
+	background: var(--markput-row-refused, rgb(235 87 87 / 26%));
+	opacity: 0;
+	animation: markput-refused 420ms ease-out;
+}
+
+@keyframes markput-refused {
+	from {
+		opacity: 1;
+	}
+
+	to {
+		opacity: 0;
+	}
+}
+
 /* `left`/`width` come from the controls layer, which measured the row this marks the edge of;
    the deleted per-row indicator spanned its own row with `left: 0; right: 0`. */
 .DropIndicator {

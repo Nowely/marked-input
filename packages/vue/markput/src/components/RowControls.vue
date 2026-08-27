@@ -33,6 +33,7 @@ const menu = useMarkput(() => controller.state.menu)
 const menuActive = useMarkput(() => controller.state.menuActive)
 const menuPosition = useMarkput(() => controller.menuPosition)
 const geometry = useMarkput(() => controller.state.geometry)
+const refused = useMarkput(() => controller.state.refused)
 
 const controlRef = store.tokens.control()
 const setLayerRef = (el: unknown) => controlRef(unwrapEl(el))
@@ -84,6 +85,18 @@ watchEffect(
 )
 onScopeDispose(() => observer?.disconnect())
 
+// THE REFUSED ROW'S BOX, measured the same way and on the same clock as the grip's — a refusal
+// writes nothing, so the row is where it was, but the layer's own origin still moves under it.
+const refusedBox = ref<RowBox | null>(null)
+watchEffect(
+	() => {
+		void geometry.value
+		const at = refused.value
+		refusedBox.value = at === null ? null : (controller.boxOf(at.id) ?? null)
+	},
+	{flush: 'post'}
+)
+
 // `left` is the ROW's left edge; `.SidePanel`'s negative margin hangs the band off it. The
 // layer's own origin would put it on top of the text wherever core reserves no gutter
 // (`draggable: false`).
@@ -99,10 +112,20 @@ const dropStyle = computed(() => {
 	if (!line) return undefined
 	return {top: `${line.top - 1}px`, left: `${line.left}px`, width: `${line.width}px`}
 })
+const refusedStyle = computed(() => {
+	const box = refusedBox.value
+	if (!box) return undefined
+	return {top: `${box.top}px`, left: `${box.left}px`, width: `${box.width}px`, height: `${box.height}px`}
+})
 </script>
 
 <template>
 	<div :ref="setLayerRef" :class="styles.RowControls">
+		<!-- KEYED BY THE PRESS COUNT, which is what restarts the animation: Vue patches one element
+		     across two refusals of the same key on the same row, and an element already carrying an
+		     animation does not replay it. -->
+		<div v-if="refused && refusedStyle" :key="refused.at" :class="styles.RowRefused" :style="refusedStyle" />
+
 		<!-- Painted but INVISIBLE while its row is being dragged, as the per-row panel was: the
 		     grip stays mounted so its own `dragend` still fires (Chromium sends no mouseup for a
 		     drag), and the pointer is away with the drag image anyway. -->

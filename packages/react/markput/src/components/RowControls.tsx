@@ -39,6 +39,7 @@ export const RowControls = memo(() => {
 		menuActive,
 		menuPosition,
 		geometry,
+		refused,
 	} = useMarkput(s => ({
 		controller: s.rows,
 		tokens: s.tokens,
@@ -52,6 +53,7 @@ export const RowControls = memo(() => {
 		menuActive: s.rows.state.menuActive,
 		menuPosition: s.rows.menuPosition,
 		geometry: s.rows.state.geometry,
+		refused: s.rows.state.refused,
 	}))
 	const controlRef = useMemo(() => tokens.control(), [tokens])
 	// STABLE, and it is load-bearing now that something READS `menuElement`: React calls a
@@ -96,8 +98,22 @@ export const RowControls = memo(() => {
 		return () => observer.disconnect()
 	}, [controller, tokens, gripRow])
 
+	// THE REFUSED ROW'S BOX, measured the same way and on the same clock as the grip's — a refusal
+	// writes nothing, so the row is where it was, but the layer's own origin still moves under it.
+	const [refusedBox, setRefusedBox] = useState<RowBox | null>(null)
+	useLayoutEffect(() => {
+		setRefusedBox(refused === null ? null : (controller.boxOf(refused.id) ?? null))
+	}, [controller, refused, geometry])
+
 	return (
 		<div ref={controlRef} className={styles.RowControls}>
+			{/* KEYED BY THE PRESS COUNT, which is what restarts the animation: React keeps one
+			    element across two refusals of the same key on the same row, and an element already
+			    carrying an animation does not replay it. */}
+			{refused !== null && refusedBox !== null && (
+				<div key={refused.at} className={styles.RowRefused} style={refusedBox} />
+			)}
+
 			{!readOnly && gripRow !== null && gripBox !== null && (
 				<div
 					className={cx(

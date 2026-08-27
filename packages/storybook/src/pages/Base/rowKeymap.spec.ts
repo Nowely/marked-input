@@ -1,7 +1,7 @@
 import {describe, expect, it, vi} from 'vitest'
 import {userEvent} from 'vitest/browser'
 
-import {rowsOf} from '../../shared/lib/dom'
+import {ROW_REFUSED, rowsOf} from '../../shared/lib/dom'
 import {focusAtStart, settle} from '../../shared/lib/focus'
 import {Mark} from '../../shared/lib/marks'
 import {composePage, mountComponent, mountEcho} from '../../shared/lib/page'
@@ -190,5 +190,43 @@ describe('the row keymap', () => {
 		expect(overlay.backgroundColor).not.toBe('rgba(0, 0, 0, 0)')
 		expect(overlay.width).toBe(`${second.getBoundingClientRect().width}px`)
 		expect(window.getComputedStyle(first, '::after').content).toBe('none')
+	})
+
+	/**
+	 * AND A GESTURE THE EDITOR REFUSES IS SAID OUT LOUD, over the row it was refused at.
+	 *
+	 * `indents` gates the KEY and the verb decides the depth, so a root row in an editor that
+	 * indents consumes Shift+Tab and goes nowhere: correct, and until now indistinguishable from an
+	 * editor that had stopped responding. Both adapters paint it from one signal, so an adapter that
+	 * did not fails here rather than being a difference nobody diffs.
+	 */
+	it('paints a refusal over the row a Shift+Tab could not outdent, once per press', async () => {
+		const onChange = vi.fn<(value: string) => void>()
+		const {host} = await mountComponent({defaultValue: '- a', ...ROWS, options: [BULLET], onChange})
+		const flash = () => host.querySelector(ROW_REFUSED)
+
+		await focusAtStart(rowsOf(host)[0])
+		expect(flash()).toBeNull()
+
+		await userEvent.keyboard('{Shift>}{Tab}{/Shift}')
+		await settle()
+
+		const painted = flash()
+		expect(painted).not.toBeNull()
+		// Over the ROW, not over the layer's origin: the tint says WHICH row declined.
+		const row = rowsOf(host)[0].getBoundingClientRect()
+		const tint = painted!.getBoundingClientRect()
+		expect(Math.round(tint.top)).toBe(Math.round(row.top))
+		expect(Math.round(tint.width)).toBe(Math.round(row.width))
+		expect(window.getComputedStyle(painted!).backgroundColor).not.toBe('rgba(0, 0, 0, 0)')
+
+		// A SECOND PRESS SAYS IT AGAIN: the element is re-mounted, so the animation starts over
+		// instead of resting where the first run left it.
+		await userEvent.keyboard('{Shift>}{Tab}{/Shift}')
+		await settle()
+		expect(flash()).not.toBe(painted)
+
+		// And the document never moved, which is the rule the refusal belongs to.
+		expect(onChange).not.toHaveBeenCalled()
 	})
 })

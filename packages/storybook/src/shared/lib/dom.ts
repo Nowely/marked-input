@@ -24,6 +24,13 @@ export function childrenOf(element: Element): HTMLElement[] {
 export const ROW_CONTROLS = '[class*="RowControls"]'
 
 /**
+ * The refusal channel's one paint, inside {@link ROW_CONTROLS}. It has no role and no text — it is
+ * a tint over a row — so the CSS-module class is the only handle it has, matched the way
+ * {@link ROW_CONTROLS} is because the name is hashed at build time.
+ */
+export const ROW_REFUSED = '[class*="RowRefused"]'
+
+/**
  * The Rows of an editor. Under the single-host topology the editing host IS the row host, so its
  * element children are the rows — minus {@link ROW_CONTROLS}, which is a child of the same
  * parent and would otherwise count as a trailing row in every assertion.
