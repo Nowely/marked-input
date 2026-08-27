@@ -108,9 +108,14 @@ The paragraph above is otherwise unchanged and still describes what keeps a stru
 step. Two things it now has to say as well. A ONE-CHARACTER edit is what opens a run on either
 side, and on the delete side that gate is load-bearing rather than merely useful: a selection delete
 IS a pure removal of a span, so without it the Backspace after one would be swallowed into the entry
-that took the selection away. And a delete run and a typing run never join, because their
-composition is a replacement rather than a splice of one shape — unwinding a correction wants the
-deletion and the retyping as separate presses.
+that took the selection away. The gate reads the record's SHAPE, so it draws that line at the
+character and not at the gesture: a selection delete of exactly ONE character is byte-identical to a
+Backspace and does open a run, and a Backspace within 500ms of it comes off in the same press.
+Measured on `'hello world'` — select the space, delete it, Backspace: one undo restores
+`'hello world'`. Telling the two apart would need `EditController` to name the gesture on the
+record, which is a contract this stack does not have. And a delete run and a typing run never join,
+because their composition is a replacement rather than a splice of one shape — unwinding a
+correction wants the deletion and the retyping as separate presses.
 
 **(g) `canUndo`/`canRedo` answer `false` while `readOnly` is true.** `replay` has always refused
 there; the two reads now say so instead of offering an entry that cannot be replayed. The entries

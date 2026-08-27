@@ -229,6 +229,24 @@ describe('history: what is one step', () => {
 		expect(store.tokens.value()).toBe('hello world')
 	})
 
+	it('takes a ONE-CHARACTER selection delete into the run beside it', () => {
+		// The other side of the case above, and the line the gate actually draws. `#runGrewAt` reads
+		// the record's SHAPE, and a selection delete of exactly one character is byte-identical to a
+		// Backspace — same span, same width, nothing on the record saying which gesture made it. So
+		// the two come off in ONE press, and the docs say a whole-selection delete is its own entry
+		// only for selections wider than a character (ADR-0012 (f)). Naming the gesture would need
+		// `EditController` to write it on the record, which is a contract change and not this rule.
+		const store = mount('hello world')
+		caretAt(store, 6)
+		store.edit.replace(...anchorsAt(store, 5, 6), '')
+		caretAt(store, 5)
+		store.edit.replace(...anchorsAt(store, 4, 5), '')
+		expect(store.tokens.value()).toBe('hellworld')
+
+		expect(store.history.undo()).toBe(true)
+		expect(store.tokens.value()).toBe('hello world')
+	})
+
 	it('keeps a typing run and the delete run beside it apart', () => {
 		// Their composition is a REPLACEMENT rather than a splice of one shape, and unwinding a
 		// correction wants the deletion and the retyping as separate presses — which is what a
