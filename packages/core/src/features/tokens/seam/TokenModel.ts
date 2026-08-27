@@ -251,7 +251,7 @@ export class TokenModel {
 	 */
 	rowPainted(node: RowNode): void {
 		if (this.#tokenElements.latest(node.id) !== undefined) return
-		const markup = untracked(() => node.descriptor()?.markup)
+		const markup = node.descriptor()?.markup
 		reportBadProp(
 			`${markup === undefined ? 'The `slots.paragraph` component' : `The row kind "${markup}"`} rendered no ` +
 				'element the editor could bind: spread `ref` onto the one element the component renders. ' +
