@@ -119,6 +119,16 @@ export function adjacentMark(roots: readonly TreeNode[], anchor: NodeAnchor, dir
  * "Ending at the anchor" is the next row's CONTENT start, not its line start: for a typed row the
  * two differ by the opener, and the caret can only ever sit at the first of them — so matching on
  * the line start left a Backspace at a typed row's first position matching no boundary at all.
+ *
+ * AND A BOUNDARY WHOSE LOW EDGE IS NOT ANCHORABLE IS NO MERGE AT ALL. That edge is the previous
+ * row's content end, which for a RAW CLOSED body is the last byte of its closing literal — markup,
+ * so {@link anchorAt} answers the row's own end instead and the pair collapses onto the high edge.
+ * Handing that pair back names a span of nothing: `'```js⏎code⏎```⏎plain'` with the caret at the
+ * start of `plain` cancelled the key and wrote an empty replacement, which left the value, the kind
+ * and the caret exactly where they were — and TOOK AN UNDO STEP for it, so the next Mod+Z appeared
+ * to do nothing too. Refusing here is what `handleDeleteKey` already documents for the other
+ * direction — there is no merge to offer across such a boundary — and it is what lets that arm SAY
+ * so instead of writing nothing.
  */
 export function boundarySpan(
 	roots: readonly TreeNode[],
@@ -136,7 +146,9 @@ export function boundarySpan(
 		boundaries.find(candidate => candidate.end === offset) ??
 		(direction === 1 ? boundaries.find(candidate => candidate.start === offset) : undefined)
 	if (!boundary) return undefined
-	return {anchor: anchorAt(roots, boundary.start), head: anchorAt(roots, boundary.end)}
+	const low = anchorAt(roots, boundary.start)
+	if (offsetOfAnchor(roots, low) !== boundary.start) return undefined
+	return {anchor: low, head: anchorAt(roots, boundary.end)}
 }
 
 /**

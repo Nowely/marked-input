@@ -1033,6 +1033,28 @@ describe('rowKeys the row keymap', () => {
 			expect(store.tokens.value()).toBe('\n\t- b')
 			expect(store.tokens.nodes()).toHaveLength(2)
 		})
+
+		/**
+		 * DECLARED BEHAVIOUR CHANGE. Across a RAW CLOSED body the boundary's low edge is that body's
+		 * closing literal — markup, with no anchor on it — so the pair collapsed and the arm wrote a
+		 * replacement of nothing over a span of nothing. The value never moved, which is the right
+		 * answer, but the write TOOK AN UNDO STEP for it, so the Mod+Z that followed also appeared
+		 * to do nothing. The boundary is refused now and the key is simply consumed.
+		 */
+		it('writes NOTHING AT ALL at the entry of the row after a raw closed body', () => {
+			const {store, container} = keymap('```js\ncode\n```\nplain')
+			caretIn(store, 1, 2)
+			press(container, 'Backspace')
+			expect(store.tokens.value()).toBe('```js\ncode\n```\npain')
+
+			caretIn(store, 1, 0)
+			expect(press(container, 'Backspace').defaultPrevented).toBe(true)
+			expect(store.tokens.value()).toBe('```js\ncode\n```\npain')
+
+			// ONE undo takes the character back, where the empty write used to stand in front of it.
+			store.history.undo()
+			expect(store.tokens.value()).toBe('```js\ncode\n```\nplain')
+		})
 	})
 
 	describe('Tab', () => {
