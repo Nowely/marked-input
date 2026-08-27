@@ -30,13 +30,19 @@ import {describe, expect, it} from 'vitest'
  * took. `@markput/core` is still shut for both, which is the claim: neither adapter's showcase
  * reaches past its own published surface, and the vocabulary they share imports nothing at all.
  *
+ * `.vue` IS IN THE GLOB even though the Vue paint is written as `.vue.ts` modules today. It is the
+ * ordinary Vue spelling and the one the adapter itself uses, so a single-file component dropped in
+ * here would otherwise be invisible to every rule below: measured, a `Probe.vue` carrying a deep
+ * `@markput/core/src` import AND an `s.tokens` reach passed 6/6. Reading it needs no vue plugin —
+ * `query: '?raw'` hands back the file text whatever the extension is.
+ *
  * WHAT IS EXCLUDED AND WHY. `*.stories.*` and `*.spec.*` are the harness — Storybook's own
  * `Meta`/`StoryObj`, Vitest, the browser locators — none of which a consumer ships. Everything
  * else is in, and `Notion.fixtures.react.tsx` is IN ON PURPOSE: it is the file that builds the
  * `options` array the editor is handed, which makes it the exact place a workaround would live.
  * Excluding it would leave five green assertions looking like a fence.
  */
-const sources: Record<string, string> = import.meta.glob('./**/*.{ts,tsx}', {
+const sources: Record<string, string> = import.meta.glob('./**/*.{ts,tsx,vue}', {
 	query: '?raw',
 	import: 'default',
 	eager: true,
