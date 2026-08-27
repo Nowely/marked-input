@@ -1,7 +1,7 @@
 # A raw body that is empty paints no caret line, so a fence chosen from the menu cannot be typed in
 
 Type: task
-Status: needs-triage
+Status: needs-triage — measured 2026-08-27; HALF the premise is refuted and the owner is the theme
 Blocked by: —
 
 ## Problem
@@ -38,3 +38,43 @@ That makes it a paint question, and the two candidate owners are different layer
 
 Not the trailing-row rule (16, resolved), and not the atomic-row class: an atomic kind paints none
 of its text on purpose, while a fence paints all of it and happens to have none.
+
+
+## Measured, 2026-08-27 (T-E)
+
+Driven on the showcase, controlled, value `'intro⏎```bash⏎⏎```⏎tail'` — the empty fence the `/`
+menu produces, written out — with a click at the centre of the fence's own box, which is where a
+user aims:
+
+```
+the fence row's box            38px tall
+its body surface               1 client rect, height 0
+after the click                the caret is inside the row
+after typing one character     'intro⏎```bash⏎Z⏎```⏎tail'
+```
+
+**Half the ticket is refuted.** The body is not unreachable and the click is not dead: the caret
+lands in the row, the typed character goes into the fence's body, and the value is exactly right.
+Whatever else is wrong here, nothing is lost and no gesture fails.
+
+**The other half stands, and it is a paint.** The body surface has a client rect of ZERO HEIGHT, so
+the browser draws a zero-height caret — there is nothing on screen saying where the next character
+will go, inside a 38px box whose height comes entirely from the language `<select>` beside it. That
+is what "paints no caret line" is: not an unreachable position, an invisible one.
+
+## Which owner, decided by the measurement
+
+**The theme's**, and the option API's `text:` seed is not the answer. A seed makes the fence
+non-empty at the moment the menu creates it and does nothing the first time the user clears it,
+which is the same state one Backspace away. The zero height comes from the row's own box: the
+surface is an inline child beside a `<select>`, and an empty inline child of that layout takes no
+line height from it.
+
+So the fix is a rule in `packages/storybook/src/pages/Notion/notion/theme/` giving an empty raw
+body a line box of its own — `min-height: 1lh` on the surface, or `::after {content: ''}` — and this
+pass may not touch that directory. It is a two-line change with no core involvement, and the pin it
+wants is `getClientRects()[0].height > 0` on the body surface of an empty fence, which is the
+reading above with the assertion turned round.
+
+Worth checking when it is taken: whether any other kind in the showcase lays its body out beside a
+control the same way, since the rule is about the LAYOUT and not about `code`.

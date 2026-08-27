@@ -1,7 +1,7 @@
 # The painted selection is not the span a keystroke replaces
 
 Type: task
-Status: needs-triage
+Status: needs-triage — driven and measured 2026-08-27; the paint is recorded, the direction is still the maintainer's
 Blocked by: —
 
 > Split out of [29](29-refusal-is-silent.md) during the affordance group's review. 29 named it in
@@ -43,3 +43,44 @@ Two directions, and picking one is the triage:
 Neither is measured. Whoever takes it should first drive the gesture on the showcase and record
 what the browser actually paints across a fence, because the clamp's bounds were corrected once
 already (`0851786a`).
+
+
+## Driven, 2026-08-27 (T-E)
+
+The ticket's own first step — *"drive the gesture on the showcase and record what the browser
+actually paints across a fence"* — is done. React, Chromium, a hand-built range because the mouse
+sweep that produces it is a drag; `Selection.toString()` for what is highlighted and
+`Range.getClientRects().length` for how many boxes the user sees.
+
+| sweep | painted | boxes | typed once, value became |
+| --- | --- | --- | --- |
+| `head` `he\|ad` → `co\|de` inside a fence | `"ad⏎⏎co"` — 6 chars | 3 | `'heZ⏎```js⏎code⏎```⏎plain'` |
+| `▸ head` `he\|ad` → `af\|ter`, toggle CLOSED | `"ad⏎af"` — 5 chars | 4 | `'▸ heZ⏎⇥body⏎after'` |
+
+So the paint is not a near miss: the browser highlights across the fence's opener and closing
+literal, in three separate boxes, and the write takes the two characters in the first of them. The
+user sees six characters selected, types one, and four of them are still there — still highlighted,
+in fact, until the selection is re-placed.
+
+**THE SECOND ROW IS NEW, and it is this pass's doing.** Ticket 43's fix put the same visibility clip
+on an ordinary mid-row sweep, so a sweep across a CLOSED TOGGLE now writes a shorter span than the
+browser painted, exactly as a sweep into a fence already did. That is a strict improvement — it is
+what stops the hidden body being deleted — and it widens this ticket's reach from one shape to two.
+Declared at the commit rather than left to be found here.
+
+## What the two directions look like now, priced
+
+The ticket named them; the measurement prices them.
+
+1. **Paint the clamp** — re-seat the selection onto the span the write would take, once the sweep
+   settles. The span is already computed (`TokenModel.rowSelectionText`) and the editor already
+   owns a `selectionchange` listener, so the machinery exists. The cost is that a drag would fight
+   it: re-seating mid-drag moves the base the browser is extending from, which is exactly the defect
+   ticket 12 fixed by NOT writing back during a sweep. So it has to wait for the drag to end, and
+   "when a sweep settles" is the part that is not measured.
+2. **Clamp the sweep** — refuse to extend into a raw closed body or past a hidden row at all. Cheaper
+   to see and it needs no timing, but it changes what a drag CAN select, which is a bigger claim
+   than the write's: a user who wants the fence's text can no longer sweep into it from outside.
+
+Neither is taken here. The measurement above is what the ticket asked for first, and the choice
+between a paint change and a gesture change is the maintainer's.

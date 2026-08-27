@@ -67,11 +67,11 @@ measurement, which is the first one in this tracker to have been RUN rather than
 | [37](37-softbreak-stays-unbuilt.md) | `softBreak` stays unbuilt | wontfix | Standing deferral; re-open on a case the continuation row cannot carry |
 | [38](38-per-kind-drag-axis.md) | A per-kind drag axis | wontfix | Cross-axis hit-testing is a phase, refused on a measurement |
 | [39](39-notion-package.md) | A published `@markput/notion` package | needs-triage | A move, not a build — only 03's open half is left of its four blockers |
-| [40](40-copy-projects-what-the-write-excludes.md) | A copy projects content the matching write refuses to take | needs-triage | The asymmetry 13 declared, now filed: cut clipboards a collapsed toggle's body and leaves it |
-| [41](41-empty-raw-body-has-no-caret-line.md) | An empty raw body paints no caret line | needs-triage | Split out of 16, which judged it NOT dissolved and then went `resolved`; a paint question, not a tree one |
-| [42](42-no-insert-above-verb.md) | No insert-ABOVE verb, and `addSibling` names no caret | needs-triage | Split out of 16 for the same reason; `writeRows` now names a caret, so the primitive exists |
-| [43](43-cross-row-write-takes-hidden-rows.md) | A cross-row write takes the rows a collapsed toggle hides | needs-triage | 13's rule, unenforced on the third write path; pre-existing, measured identical at `da03807d~1` |
-| [44](44-painted-selection-outruns-the-write.md) | The painted selection is not the span a keystroke replaces | needs-triage | Split out of 29 in review; a correct clamp with an incomprehensible paint, so it is a paint problem and not a refusal |
+| [40](40-copy-projects-what-the-write-excludes.md) | A copy projects content the matching write refuses to take | needs-triage | Re-measured byte-identical; one DECISION blocks it — does a copy over a closed toggle take the line or the subtree — and the three clipboard entries are priced |
+| [41](41-empty-raw-body-has-no-caret-line.md) | An empty raw body paints no caret line | needs-triage | Half REFUTED: the body is reachable and a typed character lands. What stands is a surface of ZERO HEIGHT, and the owner is the showcase theme this pass may not touch |
+| [42](42-no-insert-above-verb.md) | No insert-ABOVE verb, and `addSibling` names no caret | needs-triage | Re-read against the code: the engine half is confirmed present, and the two publishable shapes are named so the decision is a choice |
+| [43](43-cross-row-write-takes-hidden-rows.md) | A cross-row write takes the rows a collapsed toggle hides | resolved | Wider than filed — FIVE gestures, not the crossing arm alone — so the clip went to the one owner of "the span a ranged edit writes over" and the paste path was made to ask it |
+| [44](44-painted-selection-outruns-the-write.md) | The painted selection is not the span a keystroke replaces | needs-triage | DRIVEN: 6 painted characters over 3 boxes against a 2-character write, and 43's fix widens it from the fence to the closed toggle. Both directions priced; the choice is the maintainer's |
 | [45](45-a-split-repaints-every-row-after-it.md) | A structural row edit re-renders every sibling after it | needs-triage | Filed out of 33's measurement: Enter at the top of 4000 rows costs 286 ms where core's own split costs 6 |
 
 ## The affordance group (T-D, 2026-08-27)
@@ -89,6 +89,39 @@ merely missing a rung (a collapsed span read as a widening), the delete door's a
 the plain document edge and came back out, the `/table` grid seed split the table across two depths
 on any nested row and came back out with it, and 29's third item — the clamped sweep — was neither
 answered nor recorded, and is now [44](44-painted-selection-outruns-the-write.md).
+
+## The leftovers group (T-E, 2026-08-27)
+
+The last pass before the Vue showcase, and it had two halves: the items the earlier passes filed
+while fixing something else, and the two tickets about the work itself that nobody had done because
+they are not features.
+
+**The measurement was the pass.** Three of the six leftovers had a premise that did not survive
+being driven, in both directions:
+
+- **43 was WIDER than filed.** It named `splitPlan`'s crossing arm as the one write path missing
+  13's rule. Driven, the same mid-row sweep across a closed toggle took the hidden body through
+  FIVE gestures — a typed character, Backspace, Delete, a one-line paste and a two-line paste — and
+  the crossing arm is the door only the last of them reaches. So the clip went to the one owner of
+  "the span a ranged edit writes over" rather than to the plan, and the paste path — which asked
+  nobody and wrote the event's raw pair — was made to ask it. That second half also fixed a
+  data-loss defect nobody had filed: a paste over a sweep into a fence emitted
+  `'heonede⏎```⏎plain'`, the opener gone and the closing literal left as prose, where typing over
+  the identical span was already safe.
+- **41 is HALF refuted.** An empty fence body is reachable, a click lands the caret in it and the
+  typed character goes where it should. What is real is a surface of ZERO HEIGHT, which is a paint
+  the showcase theme owns and this pass could not touch.
+- **33's own premise is refuted.** `rowOf` — "a full pre-order walk run on every Enter, Tab and
+  Backspace" — costs 0.067 ms at 4000 rows. What the measurement found instead is on the other side
+  of the seam and is now [45](45-a-split-repaints-every-row-after-it.md).
+
+**Three stayed open on purpose, each with what it needs written down**: 40 wants one decision about
+what a copy over a closed toggle projects; 42 is a published-surface addition with two shapes now
+named; 44 is a paint-or-gesture choice, driven and priced, and 43's fix widened it from one shape to
+two — declared at the commit rather than left to be discovered here.
+
+**28's last item was paid rather than re-argued.** ADR-0012 declared cost (f) and named the shape of
+its answer; the answer is written, and the ADR is struck through in place.
 
 ## What was checked and NOT filed
 

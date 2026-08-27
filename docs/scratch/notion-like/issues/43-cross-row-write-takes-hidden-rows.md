@@ -1,7 +1,7 @@
 # A cross-row write takes the rows a collapsed toggle hides
 
 Type: bug
-Status: needs-triage
+Status: resolved — the clip went to `rowSelectionText`, and the paste path was made to ask it
 Blocked by: —
 
 ## Problem
@@ -49,3 +49,57 @@ a COPY projects what the write excludes. Whoever takes one should read the other
 
 `writeRows.property.spec.ts` has no hidden-row oracle and cannot grow one as it stands: its stores
 never paint, so `rowPaint` is never `'boxless'`.
+
+
+## Resolved, 2026-08-27 (T-E)
+
+**The ticket was right about the defect and wrong about its extent, and the extent is what decided
+the shape.** Driven on the showcase before anything was changed, `'▸ head⏎⇥body⏎after'` with the
+toggle closed and a plain sweep from `he|ad` to `af|ter`:
+
+```
+type 'Z'         → '▸ heZter'          the hidden body gone
+Backspace        → '▸ heter'           gone
+Delete           → '▸ heter'           gone
+paste 'one'      → '▸ heoneter'        gone
+paste 'one⏎two'  → '▸ heone⏎twoter'    gone
+```
+
+Five gestures, and `splitPlan`'s crossing arm — the one place the ticket named — is the door only
+the LAST of them reaches. Refusing the plan there would have fixed one line of that table.
+
+**Why every gesture leaked.** 13's rule lives on two doors: `replaceRows` puts each hidden subtree
+back, and `rowSelectionText` clips a resolved span at the first one. Both answer a row COVER, which
+is the shape `contentSpan` resolves; a MID-ROW sweep is the shape it deliberately calls ordinary
+text and hands back untouched, so `rowSelectionText` answered `undefined` and the RAW pair went to
+the write. Typing and deleting reach that owner and got `undefined`; a paste, a drop and an
+autocorrect replacement never asked it at all.
+
+**So the fix is at the owner, not at the plan** — a clip on the raw span too, reported only when it
+actually shrinks, so `undefined` keeps meaning "ordinary text, the event's own bytes stand" — plus
+one line in `handleBeforeInput` making the paste arm ask the same question typing has asked since
+`488ab0a5`. Two commits, `3b551e78` and `861ecaf9`.
+
+**The paste half closed a data-loss defect nobody had filed.** A sweep from a paragraph into a
+fence's interior, pasted over: `'heonede⏎```⏎plain'` — the ` ```js ` opener gone and the closing
+literal left standing as prose — where typing over the identical span already emitted
+`'heZ⏎```js⏎code⏎```⏎plain'`. That is exactly the defect `#offBlockInterior` was written for,
+surviving on the one door that did not consult it.
+
+**Refusing was NOT the shape**, and the ticket's reason for preferring it does not apply here. It
+argued from 13's history — truncating a span was wrong twice — but both of those were `replaceRows`,
+where an anchor pair cannot say "all of this except the middle" and truncation leaves visible rows
+standing. On the anchor-pair path the clip IS the house answer and has been since `#visibleEnd`
+shipped; the fix makes one door agree with the two beside it rather than inventing a third rule. A
+refusal would also have had to be a CONSUMPTION at the keyboard layer, because a refused plan falls
+through to the ordinary splice, which does the identical damage.
+
+**What it costs, declared.** The write is now shorter than the paint on a mid-row sweep across a
+closed toggle: `'▸ heZ⏎⇥body⏎after'` keeps the `ter` of `after` that the browser had highlighted.
+That is [44](44-painted-selection-outruns-the-write.md), which used to need a fence to reproduce and
+now has a second shape — measured there, with the paint counted.
+
+Pinned in `Notion.react.spec.tsx` by two cases, and the mechanism was seen to redden: putting
+`if (!span) return undefined` back gave `expected '▸ heZter' to be '▸ heZ⏎⇥body⏎after'`, and handing
+`writeRowsFromInput` the raw pair again gave `expected 'heonede⏎```⏎plain' to be
+'heone⏎```js⏎code⏎```⏎plain'`.
