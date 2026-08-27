@@ -5,11 +5,12 @@ Two generations of tickets live here.
 - **01–11 are the PROBE's**, filed 2026-08-25 before any of the work started, against the editor as
   it then was. Seven are closed; `outcome.md:189-212` is the account of which decision closed each,
   and that four of the seven closures are ONE decision (the scan-first inversion, ADR-0010).
-- **12–40 came out of the BUILD**, filed 2026-08-27 from what the effort declared and did not
+- **12–43 came out of the BUILD**, filed 2026-08-27 from what the effort declared and did not
   build: `outcome.md`'s "What is declared but not built", `map.md`'s Fog, and `insights.md`'s
   ranked next steps and its "what I would not do yet". Nothing here is new analysis — every problem
   statement quotes a record and cites the file the record cites, re-verified against the code at
-  `52ef65ae`.
+  `52ef65ae`. 41–43 were split out during the contract group's review, from items an earlier record
+had judged open and then carried inside a `resolved` ticket.
 
 `Status:` uses the five roles in `docs/agents/triage-labels.md`; the older tickets also use
 `resolved — <what answered it>`, which is the wayfinder vocabulary in
@@ -40,8 +41,8 @@ Two generations of tickets live here.
 | [13](13-collapsed-body-lost-on-a-row-cover.md) | A selection covering a collapsed toggle whole deletes its hidden body | resolved | `#hiddenWithin` excludes each hidden subtree; the first answer clipped the span END and was wrong twice |
 | [14](14-arrowdown-skips-an-empty-row.md) | ArrowDown skips an empty row | resolved | Not the direction and not the width: the caret's own visit appended a zero-length `Text` |
 | [15](15-opener-prefix-is-unchecked.md) | Two kinds may share an opener PREFIX | resolved | `shadowedRowKinds` drops a closed kind whose opener extends another's; the recorded condition was wrong twice |
-| [16](16-trailing-paragraph.md) | An atomic row leaves the caret nowhere to go | resolved | The invariant moved off the CARET'S row onto the document's LAST; `#recoverCaret`'s own opening arm came out |
-| [17](17-cross-row-paste-is-spliced-raw.md) | A paste whose span crosses two rows is spliced raw | resolved | Widened with 19 as one piece; the deliverable is the property, 6269 crossing spans |
+| [16](16-trailing-paragraph.md) | An atomic row leaves the caret nowhere to go | resolved | The invariant moved off the CARET'S row onto the document's LAST; two items it judged NOT dissolved are now 41 and 42, and three bounds were corrected |
+| [17](17-cross-row-paste-is-spliced-raw.md) | A paste whose span crosses two rows is spliced raw | resolved | Widened with 19 as one piece; the property missed a MARKUP-clip depth defect, now fixed and pinned, and its corpus gaps are recorded |
 | [18](18-carved-piece-verbs-fail-open.md) | `duplicate` and `insertAfter` fail open on a carved piece | resolved | One test in `#insertAfter` answers all three verbs; `addSibling`'s own copy came out |
 | [19](19-mid-body-split-loses-the-caret.md) | A mid-body split on a row that keeps a subtree loses the caret | resolved | Its stated cost was refuted: `applyRange` has carried a caret since the seeded retype |
 | [20](20-rowspec-group.md) | `RowSpec.group` | needs-triage | THE ticket for it — three wants, a fourth as the threshold, and a FENCED alternative with its trade measured |
@@ -49,7 +50,7 @@ Two generations of tickets live here.
 | [22](22-continues-carries-no-depth.md) | No option can say "Enter opens a CHILD of this row" | needs-triage | Judged and left filed; two of its four costs shrank when `splitPlan` lost its `tail` index |
 | [23](23-row-component-contract-is-silent.md) | A row component can drop `ref`/`className`/`style` | resolved | Taken for `ref` alone; re-asked whenever a row's component changes, and the verdict waits a frame so a late element is not accused |
 | [24](24-ship-the-atomic-wrapper.md) | Every consumer writes `Atomic` themselves | resolved | Shipped from `@markput/react` and the showcase's copy came out; the Vue twin waits on 26 |
-| [25](25-published-type-corrections.md) | Two published types are wrong at the boundary | resolved | `useOverlay<T>()` and `SpanProps`; two repo workarounds and 14 doc casts came out |
+| [25](25-published-type-corrections.md) | Two published types are wrong at the boundary | resolved | `useOverlay<T>()` and `SpanProps`; `SpanProps` keeps `meta`/`children` on purpose, recorded as a trade |
 | [26](26-vue-showcase-p12.md) | The showcase's net is single-framework | ready-for-human | P12; every adapter-sensitive fix ships half-measured until it lands |
 | [27](27-four-missing-affordances.md) | Gutter `+`, "Turn into", `/` menu sections and icons, selection toolbar | needs-triage | Four affordances under one verdict; the 12/13/16 ordering it waited on is now clear |
 | [28](28-gestures-the-first-session-left-standing.md) | Cmd+A, Backspace after an atomic row, one-way nesting, undo granularity | needs-triage | What session one reported and no commit since names |
@@ -59,12 +60,15 @@ Two generations of tickets live here.
 | [32](32-no-per-row-view-state.md) | A cross-parent drop keeps the node and loses the component | needs-triage | No core-owned per-row view store; why 31 exists |
 | [33](33-nothing-is-measured-at-document-scale.md) | Row-verb runtime and caret ergonomics are unmeasured | needs-triage | One number exists: ~1.5 ms per `dragover` at 4000 rows |
 | [34](34-rot-guards-do-not-cover-prose.md) | The rot guards stop at fenced code | ready-for-agent | Prose backticks unchecked; `CONTEXT.md`'s avoid-list unenforced |
-| [35](35-unexercised-clamp-distinction.md) | `rowSelectionText`'s original-vs-clamped distinction | resolved | Exercisable after all, and the ORIGINAL read let a keystroke delete a frozen row |
+| [35](35-unexercised-clamp-distinction.md) | `rowSelectionText`'s original-vs-clamped distinction | resolved | Exercisable after all; neither pair is a witness alone, so the refusal is asked of both |
 | [36](36-published-surface-leftovers.md) | Grip `aria-label`, `Store`'s rename TODO, `RowProps.index` | resolved | "Row options" announced; `Store` keeps its name; `index` kept — as a sibling position, not the ordinal first published |
 | [37](37-softbreak-stays-unbuilt.md) | `softBreak` stays unbuilt | wontfix | Standing deferral; re-open on a case the continuation row cannot carry |
 | [38](38-per-kind-drag-axis.md) | A per-kind drag axis | wontfix | Cross-axis hit-testing is a phase, refused on a measurement |
 | [39](39-notion-package.md) | A published `@markput/notion` package | needs-triage | A move, not a build — only 03's open half is left of its four blockers |
 | [40](40-copy-projects-what-the-write-excludes.md) | A copy projects content the matching write refuses to take | needs-triage | The asymmetry 13 declared, now filed: cut clipboards a collapsed toggle's body and leaves it |
+| [41](41-empty-raw-body-has-no-caret-line.md) | An empty raw body paints no caret line | needs-triage | Split out of 16, which judged it NOT dissolved and then went `resolved`; a paint question, not a tree one |
+| [42](42-no-insert-above-verb.md) | No insert-ABOVE verb, and `addSibling` names no caret | needs-triage | Split out of 16 for the same reason; `writeRows` now names a caret, so the primitive exists |
+| [43](43-cross-row-write-takes-hidden-rows.md) | A cross-row write takes the rows a collapsed toggle hides | needs-triage | 13's rule, unenforced on the third write path; pre-existing, measured identical at `da03807d~1` |
 
 ## What was checked and NOT filed
 

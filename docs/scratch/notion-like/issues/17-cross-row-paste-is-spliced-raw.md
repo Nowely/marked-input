@@ -69,3 +69,41 @@ surplus leads; 7701 written, 6269 of those crossing a row boundary — every one
 
 **Behaviour change:** a paste whose selection crosses rows opens rows instead of splicing raw,
 except for the two shapes above, which fall back on the ordinary splice exactly as before.
+
+## Corrected 2026-08-27 — one defect the property could not see, and three gaps it still has
+
+**The following-row depth guard was unsound for a MARKUP clip** (`9794ecce`). It asserted that the
+row after a crossing span follows a line written at the HEAD's depth, which holds for a foreign clip
+— every opened line is built with `node.lead()` — and not for a markup clip, whose lines are written
+verbatim and carry their own leads. The ceiling then came from the wrong predecessor and the guard
+accepted the plan it exists to refuse: `'r⏎⇥a⏎⇥⇥b⏎⇥⇥c⏎⇥⇥d'` with `'x⏎y'` written across `b` and `c`
+returned `true` and left `'⇥⇥d'` at depth 1 where it had been at depth 2 — re-parented with not a
+byte of its own changed. The clamp is replayed line by line now, each line's lead read off its own
+bytes the way `RowScanner` reads one. Foreign clips are untouched and the property's counts prove
+it: 13136 / 7701 / 6269 before and after.
+
+**Also corrected: the claim that the childful-tail test refuses a carved row.** It does not and
+cannot — `preorderRows` names no cell, so a span from a table LINE into one of its own cells closes
+on the table row itself and is not crossing at all. What holds that rule is the SEAM, where
+`contentLineRows` does descend into cells. Refusing every carved head in the plan was tried and
+measured: **6 red**, because Enter splits a table line through this very plan. The claim is corrected
+in both places that carried it (`15b665a7`); the code is unchanged.
+
+**Three gaps the property still has**, none of them closed here:
+
+1. **No markup clip.** `CLIPS` is an array of LINE arrays, so `typeof rows === 'string'` is false for
+   all 13136 cases and the whole verbatim arm — `joinsHead`, the opened lines, the depth guard over
+   them — is unexercised. That is how the defect above survived the deliverable. Two named cases pin
+   the shape now; the corpus still cannot generate it, and doubling the corpus is not free (see 3).
+2. **No carved row, no raw body, no mark.** `OPTIONS` is `[HEADING, BULLET]`. A review probed the
+   missing shapes by hand against HEAD and found no wrong bytes, so this is a coverage gap rather
+   than a known defect.
+3. **No hidden-row oracle**, and it cannot grow one as it stands: the property's stores never paint,
+   so `rowPaint` is never `'boxless'`. See [43](43-cross-row-write-takes-hidden-rows.md), which is a
+   real cross-row write path with no such exclusion.
+
+**Two weaknesses of the property itself, closed** (`9794ecce`): its acceptance floors were loose —
+`accepted > 7000` against 7701, `crossed > 6000` against 6269, ~700 crossing shapes of slack with no
+oracle saying a describable shape must be WRITTEN — and both are exact counts now; and it flaked,
+13136 fresh stores being 6 s alone and 13-17 s under `pnpm test` either side of the 15 s default, so
+both properties carry an explicit budget with the cost stated rather than the corpus shrunk.

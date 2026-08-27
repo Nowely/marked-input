@@ -50,8 +50,12 @@ function mount(defaultValue: string, props: Parameters<Store['props']['set']>[0]
 			paint(node.rows(), host)
 		}
 	}
-	paint(store.tokens.nodes(), container)
-	return {store, container}
+	const repaint = () => {
+		container.textContent = ''
+		paint(store.tokens.nodes(), container)
+	}
+	repaint()
+	return {store, container, repaint}
 }
 
 /**
@@ -185,6 +189,69 @@ describe('the trailing row the caret invariant guarantees', () => {
 
 		// ONE press takes the keystroke AND the door.
 		expect(store.history.undo()).toBe(true)
+		expect(store.tokens.value()).toBe('alpha\n@card panel')
+		container.remove()
+	})
+
+	/**
+	 * AND WHEN NOTHING PROVOKED IT THERE IS NO STEP TO TAKE BACK, which is the honest other half of
+	 * the same rule and the case the widening made ordinary: `#settleTail` fires on a bare SELECTION,
+	 * so a click in a document ending in an atomic row grows the row with no edit anywhere on the
+	 * stack. `HistoryModel.#settle` can only fold a repair into an entry that already names the value
+	 * the repair starts from, so this one folds into nothing and `undo()` answers `false`.
+	 *
+	 * Recorded rather than repaired: seeding a step of its own would make the FIRST Mod+Z after a
+	 * click take away a door the user never asked for, which the invariant would then re-open on the
+	 * next pulse. See ticket 16.
+	 */
+	it('leaves no undo step when no edit provoked the row', async () => {
+		const {store, container} = mount('alpha\n@card panel', {history: true})
+		store.tokens.selection.select(store.tokens.anchorAt(0))
+
+		await settle()
+
+		expect(store.tokens.value()).toBe('alpha\n@card panel\n')
+		expect(store.history.canUndo()).toBe(false)
+		expect(store.history.undo()).toBe(false)
+		expect(store.tokens.value()).toBe('alpha\n@card panel\n')
+		container.remove()
+	})
+
+	/**
+	 * AND IN CONTROLLED MODE IT CONVERGES ONLY WHEN THE PARENT ECHOES. The rule terminates by
+	 * OBSERVING the row it opened, and in controlled mode the tree does not move until the echo
+	 * arrives — so a parent that transforms or rejects the value is told about the same change once
+	 * per paint pulse, forever. A conforming parent echoes, the tree moves, and the second pulse
+	 * finds a tail that needs no door.
+	 *
+	 * Recorded rather than repaired: standing down would need the value the last repair was computed
+	 * against kept as a field, which is the mirrored state this editor does not carry. See ticket 16.
+	 */
+	it('re-notifies a controlled parent that never echoes, once per pulse', async () => {
+		const seen: string[] = []
+		const {store, container, repaint} = mount('', {
+			value: 'alpha\n@card panel',
+			onChange: (next: string) => seen.push(next),
+		})
+		store.tokens.selection.select(store.tokens.anchorAt(0))
+
+		await settle()
+		repaint()
+		await settle()
+		repaint()
+		await settle()
+
+		expect(seen).toEqual(['alpha\n@card panel\n', 'alpha\n@card panel\n', 'alpha\n@card panel\n'])
+		container.remove()
+	})
+
+	/** A READ-ONLY document is never rewritten, so one ending in an atomic row still has no target. */
+	it('leaves a read-only document alone', async () => {
+		const {store, container} = mount('alpha\n@card panel', {readOnly: true})
+		store.tokens.selection.select(store.tokens.anchorAt(0))
+
+		await settle()
+
 		expect(store.tokens.value()).toBe('alpha\n@card panel')
 		container.remove()
 	})

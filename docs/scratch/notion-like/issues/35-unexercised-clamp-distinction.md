@@ -80,3 +80,37 @@ Pins in `rowKeys.spec.ts`, both seen red. Disabling `holdsFrozenRow` reddens the
 holds no editable position is consumed and refused, where a span that merely overlapped such a row
 used to write. The paint, the delete path and every gesture over an exact row cover are unchanged —
 measured on the same document, byte for byte.
+
+## Corrected 2026-08-27 — the resolved span alone is not a witness either
+
+Review measured the converse of everything above, and it holds: the resolution ACQUIRES rows the raw
+pair never held (which is what this answer is built on) and it also **LOSES rows the raw pair held**.
+Two shapes, both reaching the write:
+
+- **A frozen body that is EMPTY.** `rowSelectionText` resolves a click on such a row to a collapsed
+  POSITION inside it, and the overlap test is strict on both sides, so a zero-length span against a
+  zero-length line overlaps nothing. `'before⏎@card ⏎after'` row-selected and typed over emitted
+  `'before⏎@card a⏎after'` — the row not deleted but CORRUPTED, bytes in a body the kind cannot read
+  back. A **regression** from this ticket's own answer: the refusal it replaced read `rowSelection`
+  over the raw pair, which covers that row whole. Also the ordinary case, since most atomic kinds a
+  menu offers carry no `text:` and so are chosen with an empty body (`insights.md:68-78`).
+- **A plain cross-row sweep.** From mid-text to mid-text across a frozen row both edges are inside
+  content, so `contentSpan` calls it an ordinary text selection and answers `undefined`; the raw pair
+  reaches `store.edit.replace`, and `'aa⏎@card panel⏎bb'` swept 1→16 emitted `'aZb'`.
+  `holdsFrozenRow` answers `true` for that pair — nothing asked it. Pre-existing, but the sentence
+  above states the closed class as *"any part of a row that holds no editable position"*, which this
+  refutes.
+
+Both close with one rule and one line: **ask the refusal of EITHER pair** (`5e94e8c0`). Neither is a
+witness alone. Two pins added, both seen to redden with the raw read disabled.
+
+Two more readings, recorded because they were chased:
+
+- **Select-all is not this question.** `'aa⏎@card panel'` covered whole and typed over emits `'Z'`,
+  and a review read that as the resolved span being clipped off the frozen row. It is not: the write
+  never reaches this arm at all — `isAllSelected` replaces the whole value one layer up
+  (`input.ts`), which is what Mod+A and a keystroke mean everywhere. Not a defect.
+- **`'absent'` is a race, not a verdict.** `holdsFrozenRow` asked `reachable` alone, where every
+  sibling reading in the file gates on `rowPaint` first. It mattered less while only the resolved
+  span reached it; the raw pair names rows the resolution never touched, so the three-way read went
+  in with it (`15b665a7`).

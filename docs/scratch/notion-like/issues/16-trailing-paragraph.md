@@ -79,10 +79,54 @@ block that ends the document"*, *"opens a row after a raw-bodied block that ends
   gate and its reason. A SELECTION counts and not only a caret, which is what closes the one-row
   document: the only gesture such a document takes is a click, and a click on frozen presentation
   writes a row selection. Pinned by *"leaves a document nobody is standing in alone"*.
-- **Does the row survive an undo as one step?** It is not a step at all. Every write the invariant
-  makes carries `EditRecord.repair`, so the row folds into the edit that provoked it and ONE press
-  takes back both — the rule `HistoryModel.spec` already pins for the fence, now pinned for the
-  atomic row too (*"folds the row it opens into the edit that provoked it"*).
+- **Does the row survive an undo as one step?** *Corrected 2026-08-27, after review measured the
+  other half.* When an EDIT provoked it, yes: the write carries `EditRecord.repair`, so it folds
+  into that edit and ONE press takes back both (*"folds the row it opens into the edit that provoked
+  it"*). When a bare SELECTION provoked it — which is the case the widening made ordinary, since the
+  rule now fires on a click in any document ending in an atomic row — there is **nothing to fold
+  into and no step at all**: `HistoryModel.#settle` returns early unless the top of a stack already
+  names the value the repair starts from, so the value grows and `undo()` answers `false`. Measured
+  on `'alpha⏎@card panel'` with a caret at offset 0 and no edit anywhere. Pinned as the current
+  truth (*"leaves no undo step when no edit provoked the row"*).
+
+  **Left as it is, deliberately.** Seeding a step of its own would make the first Mod+Z after a
+  click take away a door the user never asked for — and the invariant would re-open it on the next
+  pulse, so the press would appear to do nothing. The honest answer is the bound, not a repair.
+
+### Four more bounds the review measured (2026-08-27)
+
+- **The caret goes through the door.** `94ecfd19` argued `#recoverCaret`'s opening arm was
+  redundant beside `#settleTail` because removing both reddens nothing. Measured, the two write
+  different things: the deleted arm moved the caret INTO the row it opened, `#openRowAfter` places
+  none, and the walk meant to find it later stops on `rowPaint === 'absent'` — which the row just
+  opened always is in that microtask. On `'alpha⏎```ts⏎q⏎```'` with a caret at `{after: <fence>}`
+  the caret came to rest at offset **13**, the end of the code, where at `94ecfd19~1` it came to
+  rest at **18**; and 13 is exactly the state `#settleCaret`'s raw-body arm exists to prevent, since
+  Enter there writes another line inside the fence. `#settleTail` names that caret itself now, for a
+  COLLAPSED caret at `{after: <the row>}` only (`daa8cd26`).
+- **A controlled parent that never echoes is re-notified once per pulse.** The rule converges by
+  OBSERVING the row it opened; in controlled mode the tree does not move until the echo arrives, so
+  a parent that transforms or rejects the value gets one `onChange` per paint pulse with the same
+  bytes, forever. Measured: three repaints, three identical `onChange` calls, `tokens.value()`
+  unmoved. A conforming parent echoes and the next pulse finds a tail that needs no door. Left as
+  it is: standing down would need the value the last repair was computed against kept as a field,
+  which is mirrored state this editor does not carry. Pinned.
+- **A read-only document is not rewritten** — so one ending in an atomic row still has no caret
+  target at all. That is the read-only contract rather than a hole in this rule, but it is the one
+  document where the ticket's own framing still holds. Pinned.
+- **"Not rewritten on mount" is narrower than "not rewritten for a value the editor did not
+  write".** A value handed to a LIVE editor — the controlled parent swaps `value` mid-session while
+  the user is in the document — IS rewritten, and the editor emits `onChange` for it. Measured
+  identical at `94ecfd19~1`, so pre-existing and not this rule's doing; recorded because the bound
+  above reads wider than it is.
+- **Cost, undeclared until now.** `#settleTail` opens with an unconditional
+  `preorderRows(roots).at(-1)`, which materialises one entry per row on every settle. Its
+  predecessor guarded the same walk behind `hasRawBody(row)` — *"O(1) ahead of everything else:
+  almost no document ends in a raw body"* — and `#parentHostingNothing`, twelve lines above,
+  documents its own benchmark for having replaced exactly this shape with a descent (0.110 ms
+  against 0.043 ms at 1000 rows). A review benchmarked the tail read at **0.0644 ms against 0.0032
+  ms** for a descent, 20×. Not verified independently and not acted on; filed here as the cost the
+  commit body should have carried.
 
 ### The three items that hang off this one
 
@@ -92,12 +136,15 @@ block that ends the document"*, *"opens a row after a raw-bodied block that ends
    reachable; what it lacks is a caret LINE when its body is empty, because an empty body paints a
    `<span></span>` the showcase's line-box selector cannot match. That is a paint question in the
    showcase's own theme, not a tree one, and this rule cannot see it: the row is painted and its
-   entry is reachable, so there is nothing for the invariant to repair.
+   entry is reachable, so there is nothing for the invariant to repair. **Filed as
+   [41](41-empty-raw-body-has-no-caret-line.md) (2026-08-27)** — it was left inside a `resolved`
+   record and so left the tracker entirely.
 3. **No verb names a caret** — NOT dissolved, and it is now smaller rather than gone. The trailing
    row removes the reason `choose` needed an insert-after contract, which is what the fork was
    about; what stays open is the option API's own gap — there is still no insert-ABOVE verb, and
    `addSibling` still names no caret. `RowNode.writeRows` now names one (see
    [19](19-mid-body-split-loses-the-caret.md)), so the primitive exists where a verb wants it.
+   **Filed as [42](42-no-insert-above-verb.md) (2026-08-27)**, for the same reason.
 
 **Behaviour change:** a document ending in an atomic row grows a blank row under it as soon as
 anyone is in the document; a one-row atomic document gains a caret target where it had none at all.

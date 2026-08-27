@@ -74,3 +74,17 @@ always been passed. The DTS moves: `OverlayHandler` and `useOverlay` gain a type
 `SpanProps` is a new published type. `StyledMarkProps` in the storybook narrows its own `ref` to the
 callback the editor actually hands over, because the wider `Ref` also admits `null`, which no
 generated mark can be given.
+
+## Decided 2026-08-27 — `SpanProps` keeps `meta` and `children`, and that is the trade
+
+Review pointed out that `SpanProps extends MarkProps` therefore publishes `meta?` and `children?`,
+and a Span is handed neither: `resolveNodeSlot` gives a text token's component exactly
+`{value: node.text()}` (`resolveSlot.ts:104-105`) plus the `ref` (`Token.tsx:78`). So a consumer can
+write `({meta}: SpanProps) => …` against the published type and read `undefined` forever.
+
+Correct, and NOT taken, deliberately. Narrowing to `{value?: string; ref?: RefCallback<HTMLElement>}`
+is a source break: a component typed `ComponentType<MarkProps>` would stop satisfying `Span?`, and
+source compatibility for exactly that component is what this ticket's widening was chosen for.
+Trading a real break for two fields that read `undefined` is the wrong side of it. Recorded here so
+the inheritance is a decision rather than an accident; if `SpanProps` is ever narrowed it belongs in
+the same change as whatever else breaks `Mark`/`Span` assignability.
