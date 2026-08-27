@@ -138,6 +138,11 @@ export interface Slots extends CoreSlots {
  *
  * Not the same key set as {@link Slots}, and the names say why: `slots.paragraph` is consulted only
  * for a row with NO kind, while `slotProps.row` reaches every row.
+ *
+ * THE CLASS KEY IS `className` HERE, in both adapters — this is core's bag, and it merges what it
+ * finds under that name with the editor's own. A key spelled `class` is REFUSED rather than merged:
+ * it type-checks, because the bag is open, and it reaches nothing. Vue's own `class` spelling is
+ * what a ROW KIND's component and a `slots.container` component receive, by fallthrough.
  */
 export interface SlotProps extends CoreSlotProps {
 	container?: CoreSlotProps['container'] & DataAttributes

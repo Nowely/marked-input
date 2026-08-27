@@ -5,7 +5,7 @@ import {editingHost, getElement, textSurfaces} from '../../shared/lib/dom'
 import {containerRef, eventProps, outerClass} from '../../shared/lib/framework'
 import {defineMark, Mark} from '../../shared/lib/marks'
 import {mountComponent} from '../../shared/lib/page'
-import {CustomContainer} from './Slots.fixtures'
+import {ClassyContainer, CustomContainer} from './Slots.fixtures'
 
 const VALUE = 'Hello world'
 
@@ -37,6 +37,23 @@ describe('Slots API', () => {
 			})
 
 			await expect.element(host).toHaveAttribute('data-custom', 'test-value')
+		})
+
+		/**
+		 * A container component's OWN class survives the editor's. Vue reached this by handing
+		 * core's `className` key over to a component, where it lands as a DOM PROPERTY write and
+		 * replaced the template's class outright; React's twin merges by hand. One assertion, both
+		 * adapters, because the outcome is the contract and the merge is the mechanism.
+		 */
+		it('keep a container component its own class beside the editor class', async () => {
+			const {host} = await mountComponent({
+				separator: null,
+				value: VALUE,
+				slots: {container: ClassyContainer},
+			})
+
+			await expect.element(host).toHaveClass('mine')
+			expect(host.className).toMatch(/Container/)
 		})
 
 		it('merge className from slotProps with default className', async () => {

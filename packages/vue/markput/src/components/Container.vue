@@ -31,8 +31,18 @@ type UserRef = ((el: HTMLElement | null) => void) | Ref<HTMLElement | null>
 const containerSlot = computed(() => containerProps.value as {ref?: UserRef} & Record<string, unknown>)
 const userRef = computed<UserRef | undefined>(() => containerSlot.value.ref)
 const boundProps = computed(() => {
-	const {ref: _ref, ...rest} = containerSlot.value
-	return rest
+	const {ref: _ref, className, ...rest} = containerSlot.value
+	// `class`, Vue's own spelling, for the same reason `Row.vue` translates it: handed over under
+	// core's key it reaches the element as a DOM PROPERTY write, so a `slots.container` component
+	// whose template carried any class of its own had it silently overwritten. As `class` it is a
+	// fallthrough attribute, which Vue MERGES.
+	//
+	// It is the LAST key on purpose. `slotProps.container` is a bag of consumer keys, and one
+	// spelled `class` used to ride through the spread and land after core's — measured, it left the
+	// host with that class ALONE. `styles.Container` is the controls layer's containing block and
+	// carries the `white-space: pre-wrap` rule for every span in the editor, so losing it is not
+	// cosmetic. `className` is the key in both adapters; `class` here is refused rather than merged.
+	return {...rest, class: className}
 })
 
 /** The roots as ROWS, which they all are when a separator is configured. */
