@@ -128,4 +128,13 @@ cannot see. All four of its rules were mutation-checked, each reddening its own 
   `Slots.spec.ts` pins the container case for both adapters.
 - **The 34 kind-name re-exports came out of both option files** (`export {kinds}`), the React leaves
   stopped forking four vocabulary types, and `Chip`/`Callout` stopped disagreeing about an unknown
-  tone.
+  tone. `initialsOf` and the avatar's name hash — byte-identical in the two `Avatar`s — moved to the
+  vocabulary as `initialsOf`/`avatarTone`.
+
+**A STATED COST rather than a taken one.** The sixteen leaf PAIRS still hold duplicated lines that
+are not types: each keeps its own `TONE_CLASS` map, `CommentThread` its `DEFAULT_ACTIONS`,
+`EffortBar` its clamp. Those cannot follow the two avatar readings into `vocabulary.ts`, because
+every one of them names a class from `theme/notion.module.css` and the vocabulary's whole property
+is that it imports NOTHING — the fence in `boundary.spec.ts` says so and reddens if it ever does. A
+`notion/ui/leafShared.ts`, which may import the CSS module, would take them; it is not taken here
+because the leaves are paint and the pass's claim is only that the DECLARATIONS are shared.
