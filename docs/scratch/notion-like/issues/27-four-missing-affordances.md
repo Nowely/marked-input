@@ -1,7 +1,7 @@
 # Four affordances behind one verdict: the gutter `+`, "Turn into", `/` menu sections and icons, a selection toolbar
 
 Type: task
-Status: needs-triage
+Status: needs-triage — the gutter `+` is built; the other three are judged below and not taken
 Blocked by: — (the record's own ordering named 12, 13 and 16; all three are now answered)
 
 > ONE ticket, because the record itself groups these four under one verdict and one reason to wait
@@ -51,3 +51,61 @@ own first test refuses today.
 
 Re-open when [12](12-upward-mouse-selection.md), [13](13-collapsed-body-lost-on-a-row-cover.md) and
 [16](16-trailing-paragraph.md) have landed — the gestures underneath these four.
+
+## Judged 2026-08-27 (T-D)
+
+The record's own ordering was waiting on 12, 13 and 16, and all three have landed. Each of the four
+is judged here on whether it earns the published surface it costs. **One was built. Three were not,
+and the reasons are below so nobody re-opens them blind.**
+
+**1. The gutter `+` — BUILT (`c2fca4ef`).** It is the affordance a person reaches for first and it
+was undeclared rather than declined. Both adapters paint a second button in the band, left of the
+grip, with the accessible name `Add a row below`; it runs the ROW MENU'S OWN first entry through the
+same node verb, on the row the pointer is on, so the two cannot come to mean different things. The
+menu's lookup and the button's collapsed into one method. It is not behind `draggable` — adding a
+row is a row feature and only the grip's drag is drag UI — and it is behind `readOnly` with the rest
+of the band.
+
+Its honest cost is a published LAYOUT change and it is stated as one: the gutter core reserves goes
+from one control wide to two, so the container's `padding-left` moves 24px → 48px while the rows
+drag, and `.SidePanel` hangs 48px left of its row. Those two numbers are ONE fact and must agree — a
+band wider than the reservation hangs outside the container over whatever the page has to its left.
+Four core cases and four browser cases carried the old number; two of them counted grip BUTTONS to
+mean "one band per editor" and count BANDS now, which is the claim they were making. Pinned in
+`Drag.spec`'s `the gutter add button`, in both adapters, and mutated: the verb made a no-op reddens
+two cases in each project, and the band narrowed back to 24px reddens the geometry case.
+
+**2. "Turn into" in the row menu — NOT TAKEN. The verb is not missing; the SURFACE is duplicated.**
+Measured: `OverlayController.#turnRowInto` already retypes the caret's row from any menu entry, and
+a row that has text KEEPS its body — so `/` on an existing row is turn-into today, and it is
+documented as such (`guides/rows.md`, "Add, duplicate and delete a row, and convert it to another
+kind"). A "Turn into" entry in the GRIP's menu is therefore a second list of the same entries,
+opened over a different row, with a second highlight and a nesting the list model does not have.
+That is doctrine A.4's shape — two implementations of one rule — bought for discoverability. Re-open
+it as a DISCOVERABILITY item if one turns up, not as a verb.
+
+**3. `/` menu sections and icons — NOT TAKEN HERE; it wants a maintainer's yes on two published
+fields.** The shape is settled and recorded (`MenuSpec.section?: string`, `icon?: Slot`), and the
+cost is not the painting: `icon?: Slot` puts a COMPONENT inside what is otherwise a plain data
+record, which is the reason `icon?: unknown` was dropped inside P7 in the first place, and `section`
+is an ordering vocabulary every consumer then has to agree with. Both are `MenuSpec` additions, and
+public API is decided from the outside on usage (doctrine A.9). Twenty-five entries in one
+unsectioned list is a real cost and it stays the first thing a painter would fix — but a painter is
+who should ask for it.
+
+**4. A selection toolbar — NOT TAKEN, and what it is blocked on is a published CONTRACT, not paint.**
+Bold, italic, link and colour are unreachable except by typing markup because the imperative write
+path was withdrawn on purpose: `MarkputHandle` is `container` and `focus()`, and `insertMark`,
+`replaceText`, `replaceRange`, `setValue` and `tx` came out in `6be66f5b` — *"the editor is driven
+by its props, so a write belongs in the `value` a parent already owns, not in a second imperative
+path that has to agree with it."* A toolbar button is exactly that second path. Building one means
+core owning and PUBLISHING a "wrap this span in this markup" verb, which is the surface that commit
+removed, in a narrower shape.
+
+The pieces exist internally — `annotate(markup, {value, meta})` plus `edit.replace(anchor, head, …)`
+is what `OverlayController.choose` already does over the trigger's own range — so this is not a
+missing primitive. It is a decision about what the published contract is, and it also needs an
+answer for every selection that is not plain text: crossing two rows, covering a row no caret may
+enter, spanning a carved cell's delimiter. Each of those is a refusal, and a toolbar has to say
+which button is greyed out and why — which is [29](29-refusal-is-silent.md)'s channel asked to
+carry a REASON, the one thing it deliberately does not.

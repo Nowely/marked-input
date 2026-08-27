@@ -1,7 +1,7 @@
 # A soft break is invisible unless the consumer styles the container
 
 Type: task
-Status: needs-triage
+Status: resolved — the visibility half is false, measured; the representation half is 37
 Blocked by: —
 
 ## Problem
@@ -49,3 +49,25 @@ Both halves are still live and they are now two different tickets' worth of work
   holding, HTML collapses a newline in it, and nothing in core sets `white-space`. A raw-bodied
   kind — a fence, the frontmatter, a table line — has newlines in its body today, so the probe page
   still has to set `pre-wrap` itself.
+
+## Answered 2026-08-27 (T-D)
+
+**The visibility half is FALSE, and the grep that filed it could not see the rule.** It ran over
+`packages/core/src` and `packages/react/markput/src`; the rule is `packages/core/styles.module.css`,
+a file at the package ROOT and outside both paths, carrying `.Container span { white-space:
+pre-wrap }` since `881cb824` — long before rows existed, and before this ticket was written.
+
+Measured rather than re-read (`7fa8f61f`): a raw closed body holding a newline, mounted with no
+consumer CSS at all, paints on TWO lines in both adapters. The kind under test is a plain `<div>` on
+purpose, since `<pre>` carries the same declaration from the UA stylesheet and would have passed
+whatever core did. Both halves of the assertion were mutated: with core's rule removed the surface's
+computed `white-space` is `normal` and the two painted lines collapse to one, in both projects.
+
+The probe page's own `pre-wrap` is therefore redundant rather than load-bearing — it is in
+`notion/theme/`, whose comment still claims *"`pre-wrap` is the consumer's job — core sets none"*,
+which is now a false claim in prose. Flagged here rather than fixed: that directory is owned
+elsewhere.
+
+**The representation half is not this ticket.** It is [37](37-softbreak-stays-unbuilt.md), which is
+`wontfix` on a standing deferral: a soft break is a CONTINUATION ROW today, and `softBreak` waits on
+a case the continuation cannot carry. Nothing in this ticket asks for one.

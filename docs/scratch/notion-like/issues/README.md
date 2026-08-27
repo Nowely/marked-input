@@ -24,11 +24,11 @@ had judged open and then carried inside a `resolved` ticket.
 | [01](01-row-start-anchoring.md) | A markup cannot be anchored to the start of a row | resolved (P1) |
 | [02](02-variadic-placeholders.md) | No repeatable placeholder, so no table structure | resolved (P9) |
 | [03](03-row-node-not-nameable.md) | A consumer cannot name a Row | resolved (P1 + T-C) |
-| [04](04-bare-mention.md) | A mention must be delimited; bare `@Name` is impossible | needs-triage — untouched, neither sketch taken |
+| [04](04-bare-mention.md) | A mention must be delimited; bare `@Name` is impossible | resolved (T-D) |
 | [05](05-per-item-rows.md) | One separator per editor, so a list item cannot be a row | resolved (P2) |
 | [06](06-repeats-nest-instead-of-continuing.md) | A row-level markup re-matches inside its own slot | resolved (P1) |
 | [07](07-closing-literal-newline.md) | A closing literal may not begin with a newline | resolved (P1) |
-| [08](08-soft-breaks-are-invisible.md) | A soft break is invisible | needs-triage — representation answered, visibility half rests on a corrected grep |
+| [08](08-soft-breaks-are-invisible.md) | A soft break is invisible | resolved (T-D) |
 | [09](09-frontmatter-only-at-offset-zero.md) | A `\n`-delimited fence matches only at offset 0 | resolved (P1) |
 | [10](10-controllers-are-not-selectable.md) | `useMarkput(s => s.rows)` does not compile | resolved (T-C) |
 | [11](11-overlay-inserts-one-markup.md) | An overlay can insert only its own markup | resolved (P7) |
@@ -46,15 +46,15 @@ had judged open and then carried inside a `resolved` ticket.
 | [18](18-carved-piece-verbs-fail-open.md) | `duplicate` and `insertAfter` fail open on a carved piece | resolved | One test in `#insertAfter` answers all three verbs; `addSibling`'s own copy came out |
 | [19](19-mid-body-split-loses-the-caret.md) | A mid-body split on a row that keeps a subtree loses the caret | resolved | Its stated cost was refuted: `applyRange` has carried a caret since the seeded retype |
 | [20](20-rowspec-group.md) | `RowSpec.group` | needs-triage | THE ticket for it — three wants, a fourth as the threshold, and a FENCED alternative with its trade measured |
-| [21](21-table-gestures.md) | The table's own gestures | needs-triage | Header-only seed, a dead Tab at the last cell, no escape for the delimiter |
+| [21](21-table-gestures.md) | The table's own gestures | needs-triage | The seed is a grid now and the dead Tab says it refused; the delimiter escape is untouched and still the named follow-up |
 | [22](22-continues-carries-no-depth.md) | No option can say "Enter opens a CHILD of this row" | needs-triage | Judged and left filed; two of its four costs shrank when `splitPlan` lost its `tail` index |
 | [23](23-row-component-contract-is-silent.md) | A row component can drop `ref`/`className`/`style` | resolved | Taken for `ref` alone; re-asked whenever a row's component changes, and the verdict waits a frame so a late element is not accused |
 | [24](24-ship-the-atomic-wrapper.md) | Every consumer writes `Atomic` themselves | resolved | Shipped from `@markput/react` and the showcase's copy came out; the Vue twin waits on 26 |
 | [25](25-published-type-corrections.md) | Two published types are wrong at the boundary | resolved | `useOverlay<T>()` and `SpanProps`; `SpanProps` keeps `meta`/`children` on purpose, recorded as a trade |
 | [26](26-vue-showcase-p12.md) | The showcase's net is single-framework | ready-for-human | P12; every adapter-sensitive fix ships half-measured until it lands |
-| [27](27-four-missing-affordances.md) | Gutter `+`, "Turn into", `/` menu sections and icons, selection toolbar | needs-triage | Four affordances under one verdict; the 12/13/16 ordering it waited on is now clear |
-| [28](28-gestures-the-first-session-left-standing.md) | Cmd+A, Backspace after an atomic row, one-way nesting, undo granularity | needs-triage | What session one reported and no commit since names |
-| [29](29-refusal-is-silent.md) | Refusal is silent, and a click's answer depends on invisible markup | needs-triage | Correct rules, invisible to the user; the editor has one visible refusal |
+| [27](27-four-missing-affordances.md) | Gutter `+`, "Turn into", `/` menu sections and icons, selection toolbar | needs-triage | The gutter `+` is built at the cost of a 24→48px gutter; the other three are judged and NOT taken, each with its reason on the ticket |
+| [28](28-gestures-the-first-session-left-standing.md) | Cmd+A, Backspace after an atomic row, one-way nesting, undo granularity | needs-triage | Re-driven: Mod+A climbs now, nesting refuses out loud, the atomic-row Backspace was REFUTED and a raw-body neighbour of it was a real no-op; only undo granularity is left |
+| [29](29-refusal-is-silent.md) | Refusal is silent, and a click's answer depends on invisible markup | resolved | One channel, five call sites, one paint; the click half is not a refusal the editor makes and stays open with 32 |
 | [30](30-foreign-value-disables-undo.md) | A value the editor did not write disables undo | needs-triage | Declared in P8; the collaborative-editing boundary |
 | [31](31-find-in-page-edits-the-document.md) | Find-in-page inside a closed toggle edits the document | needs-triage | `beforematch` opens the row, and opening it is a retype |
 | [32](32-no-per-row-view-state.md) | A cross-parent drop keeps the node and loses the component | needs-triage | No core-owned per-row view store; why 31 exists |
@@ -69,6 +69,16 @@ had judged open and then carried inside a `resolved` ticket.
 | [41](41-empty-raw-body-has-no-caret-line.md) | An empty raw body paints no caret line | needs-triage | Split out of 16, which judged it NOT dissolved and then went `resolved`; a paint question, not a tree one |
 | [42](42-no-insert-above-verb.md) | No insert-ABOVE verb, and `addSibling` names no caret | needs-triage | Split out of 16 for the same reason; `writeRows` now names a caret, so the primitive exists |
 | [43](43-cross-row-write-takes-hidden-rows.md) | A cross-row write takes the rows a collapsed toggle hides | needs-triage | 13's rule, unenforced on the third write path; pre-existing, measured identical at `da03807d~1` |
+
+## The affordance group (T-D, 2026-08-27)
+
+29, 28, 27, 21, 04 and 08 were driven as one pass, and the shape of it was ONE mechanism rather than
+six features: a refusal channel in core, painted once per adapter, which answers 29 whole and the
+dead-key halves of 28 and 21. Beside it, three items each of which came out of a MEASUREMENT rather
+than an argument — Mod+A's missing rung was two spellings of one question, a Backspace at a raw-body
+boundary was writing nothing and taking an undo step for it, and 08's premise was refuted by the one
+file its own grep could not reach. Three affordances were judged and NOT taken, each with its reason
+recorded on 27 so nobody re-opens it blind.
 
 ## What was checked and NOT filed
 

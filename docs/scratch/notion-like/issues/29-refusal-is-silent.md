@@ -1,7 +1,7 @@
 # The editor refuses silently, and what a click does depends on markup the user cannot see
 
 Type: task
-Status: needs-triage
+Status: resolved — one refusal channel, in core, painted by both adapters
 Blocked by: —
 
 > Two of the four rough edges `insights.md:148-167` records as *"nobody filed and everybody felt"*.
@@ -50,3 +50,51 @@ session meant by *"the document model is good and the editing experience is not"
 Not a repair: a decision about whether this editor has a refusal CHANNEL at all (the drop indicator
 is the only precedent), and what it costs a consumer who wants none. Anything here that turns out
 to be a defect rather than an invisible rule belongs in its own ticket.
+
+## Answered 2026-08-27 (T-D)
+
+**A CHANNEL, not five repairs.** `RowController.refuse(id)` writes one signal, `state.refused`,
+and both adapters' controls layers paint one thing from it: a tint that fades over the row the
+gesture was refused at (`a058794d`, `5761c743`). The shape is `reportBadProp`'s, which is the
+house answer at the props boundary — many call sites, one owner, one look — because a refusal
+spelled per key is a refusal the user has to learn per key.
+
+The five call sites are the ticket's own list plus the two the neighbouring tickets carry:
+
+| gesture | site |
+| --- | --- |
+| Shift+Enter inside a carved cell | `rowKeys.ts` `handleRowEnter`'s Shift arm |
+| Tab past a carved row's last cell | `rowKeys.ts` `handleRowIndent`'s cell walk — [21](21-table-gestures.md)'s item 2 |
+| a Tab the depth verb refuses | `rowKeys.ts` `handleRowIndent` — [28](28-gestures-the-first-session-left-standing.md)'s item 3, the dead key at depth 0 |
+| Backspace at a boundary with no merge to offer | `input.ts` `handleDeleteKey`'s `!target` arm |
+| a character typed over a row no caret may enter | `rowKeys.ts` `replaceRowSelection`, all three arms |
+
+**WHAT IT SAYS AND WHAT IT DOES NOT.** It names the ROW and never the reason. A reason has to be a
+string, and a string is either untranslatable or a published vocabulary of causes; what the user is
+missing is not the rule but the fact that a rule ran. `state.refused` is `{id, at}` where `at`
+counts PRESSES — two refusals of the same key on the same row are the same value, and a layer
+handed the same value repaints nothing, so the count is what re-mounts the element and restarts the
+animation. Nothing clears it: one run of the animation is the whole of its visible life.
+
+**THE COST TO A CONSUMER WHO WANTS NONE** is one CSS custom property: `--markput-row-refused`, set
+to `transparent`. There is no prop, and there is no channel to turn off — the signal is written
+whether or not anything reads it, at five sites that were already returning.
+
+**ROW-SCOPED, and that is a decision.** Every refusal the three sessions reported happens at a row,
+and the layer that paints it already addresses rows by id. A gesture refused where the document
+parses no rows — Backspace at an inline editor's first offset — reaches no call site and says
+nothing, which is what every plain text field does.
+
+**THE SECOND HALF OF THE TICKET IS NOT ANSWERED AND IS NOT THIS.** "Whether a click moves your
+caret, selects a block, or does nothing depends on whether the consumer called `useControlRef` on
+the thing under the pointer" is a fact about a consumer's own DOM, not a refusal the editor makes —
+nothing in core knows a click was declined, because nothing declined it. It stays open, and it
+belongs with [32](32-no-per-row-view-state.md)'s class of consumer-boundary questions rather than
+here.
+
+**Pins**, and every one of them was mutated and seen to redden:
+`rowKeys.spec`'s `a refused gesture is announced` (six keys, plus one that asserts silence when the
+same key is ACCEPTED) and `Base/rowKeymap.spec`'s browser case in both adapters. Mutants run:
+`refuse()` made a no-op → 6 of 6 red; the press count frozen → the second-press case red; the Tab
+site's report dropped → 2 red; the delete site's dropped → 1 red; React's element removed → the
+React project red with Vue green; Vue's `:key` removed → the second-press identity assertion red.
