@@ -1,7 +1,7 @@
 # Four gestures the first driving session reported that no commit since names
 
 Type: task
-Status: needs-triage — 1 and 3 answered, 2 refuted and its neighbour fixed, 4 re-driven and narrowed to deletions
+Status: resolved — 1 and 3 answered, 2 refuted and its neighbour fixed, 4 re-driven, narrowed to deletions and then paid
 Blocked by: —
 
 > `outcome.md:491-497` lists what the first session's "thirteen things felt wrong" left standing
@@ -113,3 +113,43 @@ is a POLICY question rather than a defect — the same session's 57 undos landed
 original and 57 redos byte-exact on the driver's version, which is the strongest single result in
 the record and is what any coalescing rule has to keep. `HistoryModel` is where a policy would
 live; the next step is to re-drive the count against the current stack, not to design one.
+
+
+## Item 4, closed 2026-08-27 (T-E)
+
+The residual — *"a DELETION does not coalesce"* — was ADR-0012's own cost (f), which named the shape
+of the answer and declined to build it: *"a deletion run is a rule of its own if someone wants it,
+not a bug in this one."* Somebody wanted it. `HistoryModel.deletedTogether` is that rule, written to
+the same shape as the typing one and recognised from the records the same way: two pure deletions,
+the second one character wide, adjoining the first's span in a document the first left behind.
+
+Both keys are ONE arithmetic rather than a direction flag. Backspace grows the span down from its
+low edge (`next.end === previous.start`); Delete holds the caret still and grows it up from its high
+edge, which is the same start offset every time (`next.start === previous.start`). Exactly one of
+the two can hold, since both would need a zero-width deletion.
+
+Two things the rule has to refuse, and both are pinned:
+
+- **a whole-span delete does not open a run.** A selection delete IS a pure removal of a span, which
+  is what a growing run looks like — the timestamp gate is what tells them apart, and it is the same
+  guard that keeps a keystroke out of the paste before it. Without it, one Backspace after deleting
+  a selection would take the selection back with it.
+- **a delete run and a typing run never join.** Their composition is a REPLACEMENT rather than a
+  splice of one shape, and a person fixing a word means two presses by "undo that": give me back the
+  letters I removed, and take away the ones I typed.
+
+The re-driven table at the top of this section now reads:
+
+```
+type 'hello'                                   → 1 undo
+type 'undoubtedly'  (eleven characters)        → 1 undo
+type 'hello', move the caret, type 'xy'        → 2 undos
+type 'hello', Backspace, Backspace, type 'p'   → 3 undos   (was 4)
+```
+
+The last line is the whole of what changed: the two Backspaces are one entry now. It does not go to
+2, and that is the second refusal above rather than an unfinished job.
+
+ADR-0012's cost (f) is struck through and answered in place. `HistoryModel.spec`'s
+'gives every Backspace its own step' pinned the OLD behaviour and is replaced by four cases; every
+one of them was seen to redden against a mutant of the clause it pins.

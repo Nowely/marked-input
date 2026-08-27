@@ -58,7 +58,7 @@ Controlled editors emit `onChange` first and update the accepted value after the
 
 The editor keeps its own stack, in both value modes. `Ctrl/Cmd+Z` undoes and `Shift+Ctrl/Cmd+Z` redoes; so do the `historyUndo` and `historyRedo` input types, which is how the Edit menu and trackpad gestures arrive. Native browser undo stays swallowed — every input path cancels its default, so the browser's own stack is empty by construction.
 
-An undo restores the value AND the caret the edit was made from, and it replays the edit's own splice, so a row keeps its identity across an undone move. Consecutive characters typed forward within 500ms are one entry; every row verb — a move, a duplicate, a turn-into — is its own entry, and so is a paste.
+An undo restores the value AND the caret the edit was made from, and it replays the edit's own splice, so a row keeps its identity across an undone move. Consecutive characters typed forward within 500ms are one entry, and so is a run of `Backspace` or `Delete` presses inside the same window — but typing and deleting never join, so undoing a correction gives back the letters you removed and the ones you typed in two presses. Every row verb — a move, a duplicate, a turn-into — is its own entry, and so is a paste and any delete of a whole selection.
 
 Wire your own controls to the same stack:
 

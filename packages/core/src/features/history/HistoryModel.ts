@@ -5,11 +5,11 @@ import type {EditRecord, TokenModel, Window} from '../tokens'
 import {gapWindow, invertWindow} from '../tokens'
 
 /**
- * How long a typing run stays open. Consecutive characters typed forward inside this window are
- * ONE entry; a pause longer than it starts a new one, which is what stops a paragraph's worth of
- * typing from being one undo.
+ * How long a run stays open. Consecutive one-character edits in the same direction inside this
+ * window are ONE entry; a pause longer than it starts a new one, which is what stops a paragraph's
+ * worth of typing from being one undo.
  */
-const TYPING_RUN_MS = 500
+const RUN_MS = 500
 
 /**
  * THE EDITOR'S OWN UNDO STACK (ADR-0012). Two lists of {@link EditRecord}s and nothing else: the
@@ -87,16 +87,21 @@ export class HistoryModel {
 	readonly #future: Signal<readonly EditRecord[]> = signal<readonly EditRecord[]>({default: []})
 
 	/**
-	 * When the OPEN TYPING RUN on top of {@link #past} last grew, or `0` when the top entry is not
-	 * one — the only state a coalescing rule cannot derive.
+	 * When the OPEN RUN on top of {@link #past} last grew, or `0` when the top entry is not one —
+	 * the only state a coalescing rule cannot derive.
 	 *
 	 * It has to say "is a run open" as well as "when", because after the first merge the entry no
-	 * longer LOOKS like a keystroke: its window carries `insertedLength: 2`, and a paste is a pure
-	 * insertion of many characters too. Reading openness off the window's shape is what made
+	 * longer LOOKS like a single keystroke: its window carries `insertedLength: 2`, and a paste is
+	 * a pure insertion of many characters too. Reading openness off the window's shape is what made
 	 * coalescing pairwise — an eleven-character run came off in six presses — and reading it off
 	 * `insertedLength >= 1` alone would swallow the keystroke after a paste into the paste's entry.
+	 *
+	 * IT IS THE SAME GUARD ON THE DELETE SIDE, and there it is load-bearing rather than merely
+	 * useful: a selection delete IS a pure removal of a span, which is exactly what a growing delete
+	 * run looks like, so without this the next Backspace would be swallowed into the entry that took
+	 * the selection away. Only a ONE-CHARACTER edit opens a run, on either side.
 	 */
-	#typedAt = 0
+	#runGrewAt = 0
 
 	/**
 	 * `readOnly` rides beside `history` here because {@link TokenModel.replay} refuses under it:
@@ -123,10 +128,12 @@ export class HistoryModel {
 		if (record.repair) return this.#settle(record)
 		const past = this.#past()
 		const previous = past.at(-1)
-		const run = previous && Date.now() - this.#typedAt < TYPING_RUN_MS ? typedTogether(previous, record) : undefined
+		const open = previous && Date.now() - this.#runGrewAt < RUN_MS
+		const run = open ? (typedTogether(previous, record) ?? deletedTogether(previous, record)) : undefined
 		// `0` is the sentinel and no clock reaches back to it, so the window test above reads it as
 		// "no run is open" without a second comparison.
-		this.#typedAt = run !== undefined || isKeystroke(record.window) ? Date.now() : 0
+		this.#runGrewAt =
+			run !== undefined || isKeystroke(record.window) || isOneCharDelete(record.window) ? Date.now() : 0
 		batch(() => {
 			this.#past(run ? [...past.slice(0, -1), run] : [...past, record])
 			this.#future([])
@@ -174,21 +181,23 @@ export class HistoryModel {
 			from(from().slice(0, -1))
 			to([...to(), entry])
 		})
-		// A replay ENDS the typing run: what the user types next continues the document in front
-		// of them, not the run that produced the entry underneath.
-		this.#typedAt = 0
+		// A replay ENDS the run: what the user does next continues the document in front of them,
+		// not the run that produced the entry underneath.
+		this.#runGrewAt = 0
 	}
 }
 
 /**
  * Two records as ONE entry, or `undefined` when they are not one gesture.
  *
- * A typing run is the only thing that coalesces, and it is recognised from the records rather
- * than declared by the caller: two pure one-character insertions, the second at exactly where the
- * first ended, in a document the first left behind. Every structural verb — a split, a retype, a
- * move, a duplicate — fails at least one of those tests, which is what makes it its own step
- * without a list of verbs to keep in sync. So does a paste, which is one gesture and one entry
- * however many characters it carries.
+ * A run is recognised from the records rather than declared by the caller: two pure one-character
+ * insertions, the second at exactly where the first ended, in a document the first left behind.
+ * Every structural verb — a split, a retype, a move, a duplicate — fails at least one of those
+ * tests, which is what makes it its own step without a list of verbs to keep in sync. So does a
+ * paste, which is one gesture and one entry however many characters it carries.
+ *
+ * {@link deletedTogether} is the same sentence read backwards; the two cannot both answer, because
+ * an insertion window is a point and a deletion window is a span.
  */
 function typedTogether(previous: EditRecord, next: EditRecord): EditRecord | undefined {
 	if (previous.next !== next.base) return undefined
@@ -210,7 +219,7 @@ function typedTogether(previous: EditRecord, next: EditRecord): EditRecord | und
 
 /**
  * A pure insertion at a POINT, of any length — the shape a growing typing run keeps. Whether such
- * a window is a run or a paste is not written on it; `HistoryModel.#typedAt` is what answers that.
+ * a window is a run or a paste is not written on it; `HistoryModel.#runGrewAt` is what answers that.
  */
 function isInsertionAtAPoint(window: Window): boolean {
 	return window.start === window.end && window.insertedLength >= 1
@@ -223,4 +232,55 @@ function isInsertionAtAPoint(window: Window): boolean {
  */
 function isKeystroke(window: Window): boolean {
 	return isInsertionAtAPoint(window) && window.insertedLength === 1
+}
+
+/**
+ * THE DELETE SIDE OF THE SAME RULE, which ADR-0012 cost (f) declared missing and named the shape
+ * of: *"a deletion run is a rule of its own if someone wants it"*. Held Backspace is one gesture
+ * and was costing one undo per character, so unwinding four presses took four — where the same four
+ * characters typed took one.
+ *
+ * IT IS THE ARITHMETIC AND NOT A DIRECTION FLAG. Both keys grow a span from a fixed side: Backspace
+ * takes the character before the run's low edge (`next.end === previous.start`), Delete the one
+ * after its high edge, which is the same offset every time (`next.start === previous.start`). One
+ * of the two holds or the pair is not a run; both cannot, since that would need a zero-width
+ * deletion.
+ *
+ * NOTHING CARRYING A {@link Window.pairing} REACHES IT, for the reason {@link isKeystroke} states
+ * from the other side plus one: `previous` can only be a one-character deletion or a run of them
+ * ({@link HistoryModel.#runGrewAt} is what says so), and the verbs that claim a pairing rewrite
+ * whole lines.
+ *
+ * A DELETE AND A KEYSTROKE NEVER JOIN, which is why this is a second function rather than a wider
+ * first one: their composition is a REPLACEMENT rather than a splice of one shape, and unwinding a
+ * correction wants the deletion and the retyping as separate presses.
+ */
+function deletedTogether(previous: EditRecord, next: EditRecord): EditRecord | undefined {
+	if (previous.next !== next.base) return undefined
+	if (!isDeletion(previous.window) || !isOneCharDelete(next.window)) return undefined
+	const backward = next.window.end === previous.window.start
+	const forward = next.window.start === previous.window.start
+	if (!backward && !forward) return undefined
+	return {
+		base: previous.base,
+		next: next.next,
+		// One deletion of both characters, in the FIRST record's coordinates — the space `base` is
+		// in. Backward the span grows down from the low edge; forward it grows up from the high one.
+		window: {
+			start: backward ? next.window.start : previous.window.start,
+			end: backward ? previous.window.end : previous.window.end + 1,
+			insertedLength: 0,
+		},
+		selectionBefore: previous.selectionBefore,
+	}
+}
+
+/** A pure removal of a SPAN, of any width — the shape a growing delete run keeps. */
+function isDeletion(window: Window): boolean {
+	return window.end > window.start && window.insertedLength === 0
+}
+
+/** A pure one-character removal: what one Backspace or one Delete produces, and nothing else. */
+function isOneCharDelete(window: Window): boolean {
+	return isDeletion(window) && window.end - window.start === 1
 }

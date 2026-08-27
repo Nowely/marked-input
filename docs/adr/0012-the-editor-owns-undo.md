@@ -88,12 +88,29 @@ one does not foreclose it.
 **(e) One `EditRecord` is allocated per commit, whether or not anything is listening.** A commit
 already parses and adopts the whole document; the record is four fields beside it.
 
-**(f) A delete run does not coalesce, where a typing run does.** The run test is an insertion test
+**(f) A delete run does not coalesce, where a typing run does.** ~~The run test is an insertion test
 — two one-character insertions, the second where the first ended — and nothing a delete produces
 satisfies it, so three characters typed are one undo and three taken back are three. Recognising
 runs from the records is what buys "every structural verb is its own step" without a list of verbs;
 this is the same rule read from the other side. A deletion run is a rule of its own if someone
-wants it, not a bug in this one.
+wants it, not a bug in this one.~~
+
+**PAID, 2026-08-27.** Somebody wanted it: the same held key cost three times as much to unwind in
+one direction as in the other, which is the residual of the undo-granularity complaint after
+"splitting mid-word" was refuted (`docs/scratch/notion-like/issues/28-*`). `deletedTogether` is that
+rule of its own, written to the same shape as the typing one and recognised from the records the
+same way — two pure deletions, the second one character wide, adjoining the first's span in a
+document the first left behind. Both keys are one arithmetic rather than a direction flag: Backspace
+grows the span down from its low edge, Delete grows it up from its high one, and one of the two
+tests holds or the pair is not a run.
+
+The paragraph above is otherwise unchanged and still describes what keeps a structural verb its own
+step. Two things it now has to say as well. A ONE-CHARACTER edit is what opens a run on either
+side, and on the delete side that gate is load-bearing rather than merely useful: a selection delete
+IS a pure removal of a span, so without it the Backspace after one would be swallowed into the entry
+that took the selection away. And a delete run and a typing run never join, because their
+composition is a replacement rather than a splice of one shape — unwinding a correction wants the
+deletion and the retyping as separate presses.
 
 **(g) `canUndo`/`canRedo` answer `false` while `readOnly` is true.** `replay` has always refused
 there; the two reads now say so instead of offering an entry that cannot be replayed. The entries

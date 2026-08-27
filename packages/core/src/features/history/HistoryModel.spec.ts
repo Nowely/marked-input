@@ -179,10 +179,10 @@ describe('history: what is one step', () => {
 		expect(store.tokens.value()).toBe('plain row')
 	})
 
-	it('gives every Backspace its own step, where a typing run gets one', () => {
-		// DECLARED rather than desired (ADR-0012 cost (f)): the run test is an INSERTION test, so
-		// nothing a delete produces can satisfy it. Three characters typed are one undo; three
-		// taken back are three.
+	it('coalesces a Backspace run into one entry, as a typing run is', () => {
+		// ADR-0012 cost (f), paid: three characters typed were one undo and three taken back were
+		// three, which is the same held key costing three times as much to unwind in one direction
+		// as in the other.
 		const store = mount('hello')
 		for (const at of [5, 4, 3]) {
 			caretAt(store, at)
@@ -191,9 +191,58 @@ describe('history: what is one step', () => {
 		expect(store.tokens.value()).toBe('he')
 
 		expect(store.history.undo()).toBe(true)
-		expect(store.tokens.value()).toBe('hel')
+		expect(store.tokens.value()).toBe('hello')
+		expect(store.history.canUndo()).toBe(false)
+	})
+
+	it('coalesces a Delete run too, which grows the span from the other side', () => {
+		// The forward key holds the caret still and eats what is in front of it, so every record
+		// names the SAME start — where Backspace's names a descending one. One arithmetic covers
+		// both, and reading it as "the low edge always moves" would leave this one uncoalesced.
+		const store = mount('hello')
+		for (let taken = 0; taken < 3; taken++) {
+			caretAt(store, 2)
+			store.edit.replace(...anchorsAt(store, 2, 3), '')
+		}
+		expect(store.tokens.value()).toBe('he')
+
+		expect(store.history.undo()).toBe(true)
+		expect(store.tokens.value()).toBe('hello')
+		expect(store.history.canUndo()).toBe(false)
+	})
+
+	it('keeps a whole-span delete out of the Backspace run that follows it', () => {
+		// The delete side's version of the paste case above, and it is the one that makes the
+		// timestamp load-bearing rather than merely useful: a selection delete IS a pure removal of
+		// a span, which is exactly what a growing run looks like. Swallowed into it, one Backspace
+		// after deleting a selection would take the selection back with it.
+		const store = mount('hello world')
+		caretAt(store, 11)
+		store.edit.replace(...anchorsAt(store, 5, 11), '')
+		caretAt(store, 5)
+		store.edit.replace(...anchorsAt(store, 4, 5), '')
+		expect(store.tokens.value()).toBe('hell')
+
+		expect(store.history.undo()).toBe(true)
+		expect(store.tokens.value()).toBe('hello')
+		expect(store.history.undo()).toBe(true)
+		expect(store.tokens.value()).toBe('hello world')
+	})
+
+	it('keeps a typing run and the delete run beside it apart', () => {
+		// Their composition is a REPLACEMENT rather than a splice of one shape, and unwinding a
+		// correction wants the deletion and the retyping as separate presses — which is what a
+		// person means by "undo what I just typed" after fixing a word.
+		const store = mount('hello')
+		caretAt(store, 5)
+		store.edit.replace(...anchorsAt(store, 4, 5), '')
+		type(store, 4, 'p')
+		expect(store.tokens.value()).toBe('hellp')
+
 		expect(store.history.undo()).toBe(true)
 		expect(store.tokens.value()).toBe('hell')
+		expect(store.history.undo()).toBe(true)
+		expect(store.tokens.value()).toBe('hello')
 	})
 
 	it('keeps a paste out of the typing run it lands in the middle of', () => {
