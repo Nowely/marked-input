@@ -103,3 +103,47 @@ Pinned in `Notion.react.spec.tsx` by two cases, and the mechanism was seen to re
 `if (!span) return undefined` back gave `expected '▸ heZter' to be '▸ heZ⏎⇥body⏎after'`, and handing
 `writeRowsFromInput` the raw pair again gave `expected 'heonede⏎```⏎plain' to be
 'heone⏎```js⏎code⏎```⏎plain'`.
+
+## Reopened for one shape, and closed on it, 2026-08-27
+
+Two of three reviewers drove the same sweep one character further and found the clip degenerating.
+Filed and fixed here rather than on 44, because it is the clip's own rule failing, not the paint
+outrunning it.
+
+**The shape.** `'▸ head⏎⇥body⏎after'`, toggle closed, swept from the **END** of `head` to `af|ter`.
+Everything of that span before the hidden body is the title's own line, and the pair starts after
+it — so the first visible stretch is EMPTY, and an empty stretch reported is a COLLAPSED pair.
+Three writers each read one as a caret:
+
+| gesture | before | what was wrong |
+| --- | --- | --- |
+| type `Z` | `'▸ headZ⏎⇥body⏎after'` | inserted at a POINT; the painted selection not replaced |
+| paste `one` | `'▸ headone⏎⇥body⏎after'` | the same |
+| `Delete` | `'▸ headbody⏎after'` | `anchorsForDelete` expanded the collapsed answer onto the separator that HIDES the body — the toggle destroyed and its hidden text promoted into a visible line, by the clip written to stop exactly that |
+
+**The fix is one qualifier: the first NON-EMPTY visible stretch** (`TokenModel.#visibleRun`,
+replacing `#visibleEnd`). It is still only ever a shrink of the pair, and for every span whose first
+stretch is non-empty — which is every case this rule already had — it is the same answer as before,
+measured: 30 driven gestures over six ordinary sweep shapes and the whole suite unchanged. The
+sweep above now writes over the `af` it holds in `after`: `Z` gives `'▸ head⏎⇥body⏎Zter'` and Delete
+`'▸ head⏎⇥body⏎ter'`.
+
+**Two answers were tried first and are recorded so they are not tried again.** Refusing the empty
+clip (`end <= held.start → undefined`) puts the RAW pair back on the write and is 43's original data
+loss. Teaching `anchorsForDelete` not to expand a pair the owner resolved reddens two shipped pins —
+`deletes one character when Backspace follows that double-click` and `leaves a fence its opener when
+a sweep ends inside its body ({Backspace})` — because that collapse-then-expand is the margin
+double-click's own behaviour. The distinction the delete path would need is "the owner clipped this
+to nothing" versus "the content span is empty at this position", which `Anchors | undefined` cannot
+carry; making the clip not produce an empty answer avoids needing it.
+
+Pinned by `writes the visible half of a sweep that starts at a collapsed toggle's title END`, and
+seen to redden: with `#visibleRun` reverted to the first-stretch rule, `expected '▸ headZ⏎⇥body⏎after'
+to be '▸ head⏎⇥body⏎Zter'`, and it is the only case in the file that fails.
+
+**Shape B was checked and is NOT a defect.** A sweep from a row ABOVE a closed toggle across it
+(`'top⏎▸ head⏎⇥body⏎after'`, `to|p`→`af|ter`) deletes the visible `▸ head` and leaves `⇥body`
+standing at depth 1 under `top`. That is the same answer `replaceRows` gives and has given since
+13 — `takes every visible row a cover spans across two collapsed toggles` pins exactly it,
+`'before⏎▸ one⏎⇥b1⏎▸ two⏎⇥b2⏎after'` → `'⇥b1⏎⇥b2⏎after'` — so the orphaning is the house rule
+applied consistently on a second path, not a new loss.

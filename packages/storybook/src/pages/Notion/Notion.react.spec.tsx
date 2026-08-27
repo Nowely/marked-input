@@ -1088,6 +1088,43 @@ describe('the keymap on the showcase kinds', () => {
 	})
 
 	/**
+	 * AND THE SAME SWEEP STARTED ONE CHARACTER LATER, at the title's very END, which is where the
+	 * clip degenerates: everything of the span before the hidden body is the title's own line, and
+	 * the pair starts AFTER it, so the first visible stretch is EMPTY. Reported, that empty stretch
+	 * is a COLLAPSED pair, and three writers each read one as a caret.
+	 *
+	 * MEASURED before this pin, on the identical document one offset over: a typed `Z` emitted
+	 * `'▸ headZ⏎⇥body⏎after'` and a paste `'▸ headone⏎⇥body⏎after'` — inserted at a POINT with the
+	 * painted selection untouched — and Delete emitted `'▸ headbody⏎after'`, because
+	 * `anchorsForDelete` expanded the collapsed answer onto the very separator that hides the body:
+	 * the toggle destroyed and its hidden text promoted into a visible line, by the clip that was
+	 * written to stop exactly that.
+	 *
+	 * The answer is the first NON-EMPTY visible stretch, which for this sweep is the `af` it holds
+	 * in `after` — so the write lands there and the toggle and its body are untouched.
+	 */
+	it('writes the visible half of a sweep that starts at a collapsed toggle’s title END', async () => {
+		const gestures: [string, (host: HTMLElement) => unknown][] = [
+			['▸ head\n\tbody\nZter', () => userEvent.keyboard('Z')],
+			['▸ head\n\tbody\nter', () => userEvent.keyboard('{Backspace}')],
+			['▸ head\n\tbody\nter', () => userEvent.keyboard('{Delete}')],
+			['▸ head\n\tbody\noneter', host => dispatchPaste(host, 'one')],
+		]
+		for (const [expected, gesture] of gestures) {
+			const {host, value} = await mountControlled(Showcase, '▸ head\n\tbody\nafter')
+			await focusAtStart(toggleStarting(host, 'head'))
+			const head = textReading(toggleStarting(host, 'head'), 'head')
+			const next = textReading(rowAt(host, 'after'), 'after')
+
+			window.getSelection()?.setBaseAndExtent(head, 4, next, 2)
+			await settle()
+			await gesture(host)
+
+			await expect.poll(value).toBe(expected)
+		}
+	})
+
+	/**
 	 * AND THE SAME OWNER PROTECTS THE STRUCTURE IT WAS WRITTEN FOR, on the door that never asked it.
 	 * A paste, a drop and an autocorrect replacement wrote the RAW pair — where a typed character
 	 * has resolved its edges off structural bytes since `488ab0a5` — so a sweep from a paragraph

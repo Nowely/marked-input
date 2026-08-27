@@ -551,24 +551,31 @@ export class TokenModel {
 	 * `'▸ heter'` — the hidden body gone with nothing on screen having shown it.
 	 *
 	 * ONLY AN ANSWER THAT SHRINKS IS REPORTED, so `undefined` still means what it meant: an ordinary
-	 * sweep over nothing hidden keeps exactly the bytes the event named, which is the behaviour this
-	 * function was written not to change.
+	 * sweep over nothing hidden keeps exactly the bytes the event named. What it shrinks TO is
+	 * {@link #visibleRun}: the first stretch of the span that is visible AND NON-EMPTY, because an
+	 * emptied stretch is a collapsed pair and three writers each read one as a caret.
 	 */
 	rowSelectionText(anchors: Anchors): Anchors | undefined {
 		const span = untracked(() => contentSpan(this.#tree.roots(), this.#offBlockInterior(anchors)))
 		// A CARET NAMES NO CONTENT, so there is nothing to clip — {@link contentSpan}'s own first
 		// rule, and it belongs here too because it is what keeps a document walk off the plain
-		// keystroke path: this function runs twice per `beforeinput`, and at 4000 rows the walk
-		// below costs 0.37 ms each time against a 6 ms keystroke (`rowVerbCost.bench.ts`'s W4).
+		// keystroke path: at 4000 rows the walk below costs 0.13 ms at a caret and 0.78 ms over a
+		// range against a 5.9 ms keystroke (`rowVerbCost.bench.ts`'s W4 and W5).
 		if (!span && anchorEquals(anchors.anchor, anchors.head)) return undefined
 		const held = span ?? untracked(() => this.#spanOf(anchors))
-		// `<`, not `<=`: an EMPTY content span is a POSITION rather than a refusal — see
-		// {@link contentSpan}'s no-content arm — and refusing one put the raw pair back on the
-		// write path, which is the whole defect that arm exists to close.
-		const end = this.#visibleEnd(held)
-		if (end < held.start) return undefined
-		if (!span && end === held.end) return undefined
-		return {anchor: this.anchorAt(held.start), head: this.anchorAt(end)}
+		const visible = this.#visibleRun(held)
+		// AN ANSWER THAT DID NOT SHRINK IS NOT AN ANSWER, so `undefined` still means what it meant.
+		// Only the `!span` arm asks, because a resolved content span is already this function's
+		// answer and not the raw pair.
+		//
+		// IT IS A COST GUARD, NOT A BEHAVIOUR ONE, and saying otherwise was a false claim in prose.
+		// MEASURED with the line deleted: the whole suite (2367) stays green, and 30 driven
+		// gestures over six sweep shapes with nothing hidden — plain rows, into a heading, across,
+		// from and ending at a mention, inside one row — emit byte-identical values. What it buys
+		// is that an ordinary sweep does NOT take `replaceRowSelection`'s `if (span)` arm, whose
+		// second `holdsFrozenRow` costs 0.39 ms per ranged keystroke at 4000 rows.
+		if (!span && visible.start === held.start && visible.end === held.end) return undefined
+		return {anchor: this.anchorAt(visible.start), head: this.anchorAt(visible.end)}
 	}
 
 	/**
@@ -633,8 +640,8 @@ export class TokenModel {
 	 *
 	 * TWO DOORS READ THIS, and the difference between them is the whole reason it answers a LIST
 	 * rather than a number. {@link rowSelectionText} can only shrink a span, so it takes the first
-	 * hidden subtree as the end ({@link #visibleEnd}) — an anchor pair has no way to say "all of
-	 * this except the middle". {@link replaceRows} writes offsets, so it puts every hidden subtree
+	 * visible stretch between the hidden ones ({@link #visibleRun}) — an anchor pair has no way to
+	 * say "all of this except the middle". {@link replaceRows} writes offsets, so it puts every hidden subtree
 	 * back and takes the rest: truncating there left every VISIBLE row beyond the first collapsed
 	 * toggle standing, and a sweep of twenty rows crossing one toggle deleted down to it and left
 	 * the other fifteen, with nothing on screen saying why.
@@ -652,12 +659,38 @@ export class TokenModel {
 		return hidden
 	}
 
-	/** Where the span stops being visible — the first hidden subtree's line; see {@link #hiddenWithin}. */
-	#visibleEnd(span: {start: number; end: number}): number {
+	/**
+	 * THE FIRST STRETCH OF THE SPAN THE USER CAN SEE — an anchor pair has no way to say "all of
+	 * this except the middle" ({@link #hiddenWithin} answers a list for the door that has), so a
+	 * span crossing a collapsed toggle can only be shrunk to one of its visible stretches, and the
+	 * FIRST is the one a sweep's own direction names.
+	 *
+	 * THE FIRST NON-EMPTY ONE, and that qualifier is the whole of this rule. A sweep that begins at
+	 * the END of a collapsed toggle's title has an EMPTY first stretch — everything before the
+	 * hidden body is the title's own line, which the pair starts after — and reporting that emptied
+	 * stretch handed a COLLAPSED pair to three writers that each then wrote outside the selection.
+	 * MEASURED on `'▸ head⏎⇥body⏎after'` with the toggle closed, swept from `head`'s end to
+	 * `af|ter`: a typed `Z` emitted `'▸ headZ⏎⇥body⏎after'` and a paste `'▸ headone⏎⇥body⏎after'`
+	 * — inserted at a POINT, the painted selection not replaced — and Delete emitted
+	 * `'▸ headbody⏎after'`, because `anchorsForDelete` reads a collapsed pair as a caret and
+	 * expanded it onto the very separator that hides the body: the toggle destroyed and its hidden
+	 * text promoted into a visible line, by the clip written to stop exactly that.
+	 *
+	 * Taking the next stretch instead answers `af`, which is the visible content that sweep holds;
+	 * Delete leaves `'▸ head⏎⇥body⏎ter'`. It is still only ever a SHRINK of the pair, and for every
+	 * span whose first stretch is non-empty — which is every pin this rule already had — it is the
+	 * same answer as before.
+	 */
+	#visibleRun(span: {start: number; end: number}): {start: number; end: number} {
 		const separator = untracked(() => this.#tree.config()?.separator)
-		const first = this.#hiddenWithin(span).at(0)
-		if (separator === undefined || first === undefined) return span.end
-		return first.start - separator.length
+		if (separator === undefined) return span
+		let start = span.start
+		for (const hidden of this.#hiddenWithin(span)) {
+			const end = hidden.start - separator.length
+			if (end > start) return {start, end}
+			start = hidden.end
+		}
+		return {start, end: Math.max(start, span.end)}
 	}
 
 	/** An anchor pair as the OFFSET RANGE it names, low end first — the tree's own coordinate space. */
