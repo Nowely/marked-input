@@ -1621,9 +1621,21 @@ export class TokenModel {
 	 *
 	 * IT TERMINATES BY CONSTRUCTION: the row it opens is blank and of no kind, which is a row the
 	 * caret enters and leaves, so the next pass finds a tail that needs no door.
+	 *
+	 * AND A CARET ALREADY PAST THE ROW GOES THROUGH THE DOOR, which is the one position this cannot
+	 * leave to {@link #recoverCaret}. `{after: row}` is the anchor a person holds after typing a
+	 * fence's closing literal, and it is the whole reason {@link #settleCaret}'s raw-body arm
+	 * exists — but the walk that arm calls stops on `'absent'`, and the row opened here has no
+	 * element in this microtask, so it finds nothing and places nothing. By the next pulse the
+	 * splice has remapped `{after}` into an offset at the END OF THE CODE, which reads as painted
+	 * and reachable and is never repaired again: MEASURED at caret offset 13 of
+	 * `'alpha⏎```ts⏎q⏎```⏎'` where the opened row begins at 18, and Enter there writes another line
+	 * INSIDE the fence. A caret INSIDE the row is left alone — it belongs there, and moving it would
+	 * take a user who just picked **Code** out of the fence they picked it for.
 	 */
 	#settleTail(): void {
-		if (!this.selection.anchors()) return
+		const anchors = this.selection.anchors()
+		if (!anchors) return
 		const row = untracked(() => preorderRows(this.#tree.roots()).at(-1)?.row)
 		if (!row) return
 		if (this.#dom.rowPaint(row.id) !== 'painted') return
@@ -1631,7 +1643,17 @@ export class TokenModel {
 		// the end of any document ending in a separator — and this is the line that answers it: such
 		// a row has no raw body and its own entry is reachable.
 		if (untracked(() => !hasRawBody(row)) && this.#dom.reachable(untracked(() => entryAnchor(row)))) return
+		// A COLLAPSED caret, so a row SELECTION — `{before: row}` to `{after: row}`, what a click on
+		// frozen presentation writes — keeps the row it selected.
+		const past =
+			anchorEquals(anchors.anchor, anchors.head) &&
+			typeof anchors.anchor !== 'string' &&
+			'after' in anchors.anchor &&
+			anchors.anchor.after === row
 		this.#openRowAfter(row)
+		if (!past) return
+		const opened = untracked(() => preorderRows(this.#tree.roots()).at(-1)?.row)
+		if (opened && opened !== row) this.#applyCaret(entryAnchor(opened))
 	}
 
 	/**

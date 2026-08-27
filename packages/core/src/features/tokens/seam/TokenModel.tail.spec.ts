@@ -2,6 +2,7 @@ import {describe, expect, it} from 'vitest'
 
 import type {CoreOption} from '../../../shared/types'
 import {Store} from '../../../store/Store'
+import {offsetOfAnchor} from '../tree/anchors'
 import type {TreeNode} from '../tree/types'
 
 /** A kind whose component is handed the row's text and paints none of it. */
@@ -11,6 +12,12 @@ const FENCE: CoreOption = {markup: '```__meta__\n__value__\n```', row: {Componen
 
 /** The invariant settles one microtask past the pulse — see `TokenModel.#afterFrame`. */
 const settle = () => Promise.resolve()
+
+/** Where the caret stands, as an offset into the value. */
+const offsetOf = (store: Store): number | undefined => {
+	const anchors = store.tokens.selection.anchors()
+	return anchors && offsetOfAnchor(store.tokens.nodes(), anchors.anchor)
+}
 
 /**
  * The adapters' paint, with the ATOMIC kind's own text left unpainted, which is what an atomic
@@ -127,6 +134,39 @@ describe('the trailing row the caret invariant guarantees', () => {
 		await settle()
 
 		expect(store.tokens.value()).toBe('alpha\n@card panel\n')
+		container.remove()
+	})
+
+	/**
+	 * AND THE CARET GOES THROUGH THE DOOR when it was already past the row — `{after: row}`, which is
+	 * what a person holds after typing a fence's closing literal, and the position the whole rule is
+	 * about. Left to `#recoverCaret`, nothing places it: that walk stops on `'absent'` and the row
+	 * opened here has no element yet, so the caret stayed at offset 13 — the end of the CODE — where
+	 * the next Enter writes another line inside the fence. Asserted on the CARET rather than on the
+	 * value, which is what a green suite could not tell.
+	 */
+	it('takes a caret already past the row through the door it opens', async () => {
+		const {store, container} = mount('alpha\n```ts\nq\n```')
+		const fence = store.tokens.nodes().at(-1)
+		if (!fence) throw new Error('expected a fence row')
+		store.tokens.selection.select({after: fence})
+
+		await settle()
+
+		expect(store.tokens.value()).toBe('alpha\n```ts\nq\n```\n')
+		expect(offsetOf(store)).toBe(18)
+		container.remove()
+	})
+
+	/** And a caret INSIDE the row stays there: a person who just picked **Code** keeps their fence. */
+	it('leaves a caret inside the row where it is', async () => {
+		const {store, container} = mount('alpha\n```ts\nq\n```')
+		store.tokens.selection.select(store.tokens.anchorAt(12))
+
+		await settle()
+
+		expect(store.tokens.value()).toBe('alpha\n```ts\nq\n```\n')
+		expect(offsetOf(store)).toBe(12)
 		container.remove()
 	})
 
