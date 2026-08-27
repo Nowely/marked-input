@@ -330,7 +330,7 @@ describe('TokenModel', () => {
 
 		/**
 		 * The ROW half of the same boundary. `RowKind.spec` pins `rowMarkupError` as a function;
-		 * these pin that `usableMarkups` CALLS it — without them the whole row arm can be deleted
+		 * these pin that `usableOptions` CALLS it — without them the whole row arm can be deleted
 		 * and the suite stays green, while a consumer's bad `row` option throws out of `props.set`
 		 * and so out of the adapter's own render hook (ADR-0008, doctrine rule 7).
 		 */

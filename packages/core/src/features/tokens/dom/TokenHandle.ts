@@ -124,8 +124,9 @@ export class TokenHandle {
 		const boundary = this.caretBoundary(offset)
 		const bindings = this.#bindings
 		if (!boundary || !bindings) return false
-		// The ELEMENT, not the boundary node: a text boundary's node is a `Text`, which carries
-		// no `closest`. `caretBoundary` already declined the parentless case, so the fallback
+		// The ELEMENT, not the boundary node: a boundary's node is whatever holds the offset —
+		// a `Text`, or the surface itself when it holds no text — and neither is the element to
+		// focus through. `caretBoundary` already declined the parentless case, so the fallback
 		// here is unreachable and only satisfies the type.
 		focusEditingHost(bindings.textElement ?? bindings.tokenElement.parentElement ?? bindings.tokenElement)
 		collapseTo(boundary)

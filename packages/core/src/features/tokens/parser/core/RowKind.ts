@@ -125,7 +125,7 @@ export function rowMarkupError(markup: Markup): string | undefined {
 }
 
 /** A gap that holds the row's own content, as opposed to its metadata. */
-function isBody(type: GapType): boolean {
+export function isBody(type: GapType): boolean {
 	return type === GAP_TYPE.Slot || type === GAP_TYPE.Value
 }
 
@@ -134,9 +134,15 @@ function isBody(type: GapType): boolean {
  * `'- '`, and only the longer opener distinguishes a todo from a bullet.
  *
  * The index tie-break settles nothing a document can see: two DISTINCT openers of equal length
- * never both match at one position, and two IDENTICAL ones cannot coexist — `usableMarkups` drops
+ * never both match at one position, and two IDENTICAL ones cannot coexist — `usableOptions` drops
  * the later option and reports it. Kept so the order does not rest on `toSorted`'s stability over
  * a list `MarkupRegistry` happens to push in index order; deleting it was measured green.
+ *
+ * A shared PREFIX is a different matter, and this order is what makes it safe: the longer opener
+ * is tried first, so the shorter kind never claims a row the longer one names. That holds only
+ * while the longer kind ends at its own row — one whose body closes at a literal rows below
+ * reaches past every kind sharing its prefix, and `usableOptions` drops it before this order can
+ * be relied on (`shadowedRowKinds`).
  */
 export function orderRowKinds(kinds: readonly MarkupDescriptor[]): MarkupDescriptor[] {
 	return kinds.toSorted((a, b) => openerLength(b) - openerLength(a) || a.index - b.index)
