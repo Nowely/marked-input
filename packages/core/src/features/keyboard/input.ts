@@ -261,13 +261,25 @@ function handleBeforeInput(store: KbCtx, container: HTMLElement, event: InputEve
 		event.preventDefault()
 		return
 	}
-	if (writeRowsFromInput(store, anchors, replacement)) {
+	// THE SPAN A RANGED EDIT WRITES OVER, asked of its one owner. A typed character has gone through
+	// `TokenModel.rowSelectionText` since the arm above learned to, and a delete through
+	// `anchorsForDelete`; a PASTE, a DROP and an autocorrect replacement asked nobody and wrote the
+	// raw pair, so every structural byte that owner exists to protect was still writable through
+	// this door. MEASURED on `'head⏎```js⏎code⏎```⏎plain'` swept `he|ad`→`co|de`: pasting `'one'`
+	// emitted `'heonede⏎```⏎plain'` — the fence's opener gone and its closing literal left standing
+	// as prose — where typing the same span emits `'heZ⏎```js⏎code⏎```⏎plain'`.
+	//
+	// AHEAD OF THE ROW ARM, because the plan reads the span to decide which rows it crosses: handed
+	// the raw pair it opened its rows across a collapsed toggle's hidden body and across a fence's
+	// interior. `undefined` is that owner's ORDINARY-TEXT verdict and leaves the event's own pair.
+	const written = store.tokens.rowSelectionText(anchors) ?? anchors
+	if (writeRowsFromInput(store, written, replacement)) {
 		event.preventDefault()
 		return
 	}
 
-	// Only a DELETE expands; every other type edits exactly the span the event named.
-	const target = event.inputType.startsWith('delete') ? anchorsForDelete(store, event.inputType, anchors) : anchors
+	// Only a DELETE expands; every other type edits exactly the span the owner above answered.
+	const target = event.inputType.startsWith('delete') ? anchorsForDelete(store, event.inputType, anchors) : written
 	if (!target) {
 		dropUnexpressedInput(container, event)
 		return

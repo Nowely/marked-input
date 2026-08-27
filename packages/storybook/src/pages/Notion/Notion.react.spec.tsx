@@ -1053,9 +1053,8 @@ describe('the keymap on the showcase kinds', () => {
 	 * COVER, which is the one shape `contentSpan` resolves; a MID-ROW sweep is the shape it calls
 	 * ordinary text and hands back untouched, and 13's rule reached none of it. MEASURED before this
 	 * pin on `'▸ head⏎⇥body⏎after'` swept `he|ad`→`af|ter`: a typed character emitted `'▸ heZter'`
-	 * and Backspace and Delete `'▸ heter'` — the hidden body gone, with nothing on screen having
-	 * shown it. The PASTE that measured the same way is the pin below it, which needed a second
-	 * door opened first.
+	 * and Backspace and Delete `'▸ heter'`, a one-line paste `'▸ heoneter'` and a two-line paste
+	 * `'▸ heone⏎twoter'` — five gestures, one hidden body, gone every time.
 	 *
 	 * THE SWEEP'S FAR END SURVIVES, which is the clip and not a second rule: the write stops before
 	 * the first row nobody can see, so `after` keeps the `ter` the user had highlighted. That the
@@ -1066,6 +1065,8 @@ describe('the keymap on the showcase kinds', () => {
 			['▸ heZ\n\tbody\nafter', () => userEvent.keyboard('Z')],
 			['▸ he\n\tbody\nafter', () => userEvent.keyboard('{Backspace}')],
 			['▸ he\n\tbody\nafter', () => userEvent.keyboard('{Delete}')],
+			['▸ heone\n\tbody\nafter', host => dispatchPaste(host, 'one')],
+			['▸ heone\n\tbody\ntwo\nafter', host => dispatchPaste(host, 'one\ntwo')],
 		]
 		for (const [expected, gesture] of gestures) {
 			const {host, value} = await mountControlled(Showcase, '▸ head\n\tbody\nafter')
@@ -1078,6 +1079,26 @@ describe('the keymap on the showcase kinds', () => {
 
 			await expect.poll(value).toBe(expected)
 		}
+	})
+
+	/**
+	 * AND THE SAME OWNER PROTECTS THE STRUCTURE IT WAS WRITTEN FOR, on the door that never asked it.
+	 * A paste, a drop and an autocorrect replacement wrote the RAW pair — where a typed character
+	 * has resolved its edges off structural bytes since `488ab0a5` — so a sweep from a paragraph
+	 * into a fence's interior destroyed the fence on paste while typing over the identical span left
+	 * it standing. MEASURED before this pin: pasting `'one'` emitted `'heonede⏎```⏎plain'`, the
+	 * ` ```js ` opener gone and the closing literal left as prose.
+	 */
+	it('leaves a fence standing when a sweep into its body is pasted over', async () => {
+		const {host, value} = await mountControlled(Showcase, 'head\n```js\ncode\n```\nplain')
+		const first = textReading(rowAt(host, 'head'), 'head')
+		const inside = textReading(host.querySelector<HTMLElement>('pre') ?? host, 'code')
+
+		window.getSelection()?.setBaseAndExtent(first, 2, inside, 2)
+		await settle()
+		dispatchPaste(host, 'one')
+
+		await expect.poll(value).toBe('heone\n```js\ncode\n```\nplain')
 	})
 
 	/**
