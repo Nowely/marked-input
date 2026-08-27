@@ -1,7 +1,7 @@
 # An upward mouse drag re-places the caret instead of extending the selection
 
 Type: task
-Status: ready-for-human
+Status: resolved — the write-back re-seated the drag's own base (2026-08-27)
 Blocked by: —
 
 > THE SHIPPING BLOCKER. The final driving session's verdict is that this editor cannot be
@@ -74,3 +74,48 @@ Verified at `52ef65ae`, so a reader starts from facts rather than from the sketc
 Order of work, per the record: build the sweep harness first (a real button-down move sequence in
 Vitest Browser Mode, reusable from `packages/storybook/src/shared/lib/`), reproduce the reduced
 two-paragraph case on `Notion/Empty`, and only then name an owner.
+
+## Answer
+
+The order held, and so did the warning that the harness is the real cost.
+
+**The harness.** `packages/storybook/src/shared/lib/sweep.ts` — press, several moves with the button
+down, release, through `Input.dispatchMouseEvent`, which is the entry point Playwright's own mouse
+uses. Nothing above it can express the gesture: `userEvent.click` is a down and an up at one point,
+`hover` moves with no button, and `dragAndDrop` is the HTML5 drag protocol, which the browser
+answers with a `dragstart` rather than with a growing selection. Several moves rather than one is
+load-bearing, because the defect is in what each move does to the selection's base.
+
+**Reproduced first, on `Notion/Empty` and the reduced two-paragraph case.** Driven with the harness:
+a downward sweep selected `'graph here⏎second paragraph here'`, an upward one over the same two
+rows selected `''`, an upward sweep over five rows selected `''`, and an upward sweep INSIDE one row
+selected normally. So it is the row boundary and not the direction alone.
+
+**The owner, proven by deletion rather than by reading.** With the ranged arm of
+`SelectionDriver.#applySelection` (`dom.selectRange`) removed, both upward sweeps select their text.
+The mechanism: every `mousemove` produces a `selectionchange`; the driver reads DOM truth into
+anchors — document-ordered, since a DOM `Range` carries no direction, which `domAnchors` says in as
+many words — and the anchors watch applies the pair again through
+`placeRangeAcrossBoundaries`, whose `removeAllRanges` + `addRange` can only make a FORWARD
+selection. That moves the selection's BASE to the low end, which during an upward drag is the point
+under the pointer; the next move then extends from the pointer and the extent never grows. A
+downward drag is document-ordered already, so the same write is invisible there. The record's
+hypothesis — the `pointerdown` latch or `RowController`'s container `mousemove` — was wrong, and its
+own honesty about that (*"hypothesis only, I did not drive it"*) is what kept the work cheap.
+
+**The fix**, one condition: `placeRangeAcrossBoundaries` leaves a pair the DOM already holds alone,
+in either direction. The extent is the model's and the direction is the browser's, and since the
+model's pair cannot express direction, the DOM's own is the only record of it there is. The stored
+`Anchors` stay document-ordered — making them directed is a contract change and was not needed.
+
+**Pins:** `packages/storybook/src/pages/Base/sweep.spec.ts`, framework-free, so both adapters drive
+them. Down, up, backwards inside one row, and the one that would have failed for the user — an
+upward sweep followed by Backspace, which took five rows to one. Removing the condition reddens the
+two upward cases in both adapters: `expected '' to contain 'two rows here'`, and `expected 5 to be
+1` for the delete. The downward and single-row cases stay green under the same mutation, which is
+what says the condition is specific rather than a blanket refusal to write.
+
+**Behaviour change:** a mouse sweep now selects backwards across rows, and a key that follows it
+acts on what it selected. More generally, a programmatic selection whose two boundaries the DOM
+already holds no longer re-writes it, so a backward selection made by any means keeps its direction
+through the editor's own re-apply.

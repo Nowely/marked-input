@@ -36,7 +36,7 @@ Two generations of tickets live here.
 
 | # | Ticket | Status | One line |
 | --- | --- | --- | --- |
-| [12](12-upward-mouse-selection.md) | An upward mouse drag re-places the caret instead of extending the selection | ready-for-human | **The shipping blocker.** No backward mouse selection, and no test in the suite can see it |
+| [12](12-upward-mouse-selection.md) | An upward mouse drag re-places the caret instead of extending the selection | resolved | The write-back's `addRange` re-seated the drag's base; a real sweep harness now exists |
 | [13](13-collapsed-body-lost-on-a-row-cover.md) | A selection covering a collapsed toggle whole deletes its hidden body | resolved | `replaceRows` asks `#visibleEnd` too; the cut's clipboard asymmetry is declared |
 | [14](14-arrowdown-skips-an-empty-row.md) | ArrowDown skips an empty row | resolved | Not the direction and not the width: the caret's own visit appended a zero-length `Text` |
 | [15](15-opener-prefix-is-unchecked.md) | Two kinds may share an opener PREFIX | resolved | `shadowedRowKinds` drops a closed kind whose opener extends another's; the recorded condition was wrong twice |

@@ -157,10 +157,19 @@ export function collapseTo(boundary: CaretBoundary): void {
  * The pair is normalized in DOM order first, because `setEnd` before the start COLLAPSES the
  * range rather than spanning backwards. `comparePoint` answers that without a coordinate:
  * both boundaries live under the one editing host, so they are always comparable.
+ *
+ * THE EXTENT IS OURS AND THE DIRECTION IS THE BROWSER'S, which is why a pair the DOM already
+ * holds is left alone. `addRange` can only produce a FORWARD selection, so re-applying a
+ * BACKWARD one moves its base to the low end — and a mouse drag extends from its base, so every
+ * `mousemove` re-seated the anchor under the pointer and an upward sweep across a row boundary
+ * collapsed to a caret instead of growing. The model's own pair is document-ordered
+ * ({@link SelectionDriver.domAnchors}) and cannot express the difference, so the DOM's own
+ * direction is the only record of it there is.
  */
 export function placeRangeAcrossBoundaries(a: CaretBoundary, b: CaretBoundary): void {
 	const selection = window.getSelection()
 	if (!selection) return
+	if (spans(selection, a, b)) return
 	const probe = document.createRange()
 	probe.setStart(a.node, a.offset)
 	probe.collapse(true)
@@ -170,6 +179,15 @@ export function placeRangeAcrossBoundaries(a: CaretBoundary, b: CaretBoundary): 
 	range.setEnd(hi.node, hi.offset)
 	selection.removeAllRanges()
 	selection.addRange(range)
+}
+
+/** Does the live selection already end on these two boundaries, in either direction? */
+function spans(selection: globalThis.Selection, a: CaretBoundary, b: CaretBoundary): boolean {
+	const at = (node: Node | null, offset: number, boundary: CaretBoundary) =>
+		node === boundary.node && offset === boundary.offset
+	const base = (boundary: CaretBoundary) => at(selection.anchorNode, selection.anchorOffset, boundary)
+	const extent = (boundary: CaretBoundary) => at(selection.focusNode, selection.focusOffset, boundary)
+	return (base(a) && extent(b)) || (base(b) && extent(a))
 }
 
 /**
