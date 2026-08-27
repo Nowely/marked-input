@@ -1,22 +1,12 @@
 import {useState} from 'react'
 
+import type {BoardCardData, BoardColumnData} from '../vocabulary'
 import {BoardCard} from './BoardCard'
 import {BoardColumn} from './BoardColumn'
-import type {ChipTone} from './Chip'
 
 import styles from '../theme/notion.module.css'
 
-export interface BoardCardData {
-	id: string
-	title: string
-	tag?: {label: string; tone: ChipTone}
-}
-
-export interface BoardColumnData {
-	id: string
-	title: string
-	cards: readonly BoardCardData[]
-}
+export type {BoardCardData, BoardColumnData}
 
 export interface BoardProps {
 	columns: readonly BoardColumnData[]

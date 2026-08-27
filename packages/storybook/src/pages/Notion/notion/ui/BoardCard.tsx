@@ -1,7 +1,7 @@
 import type {DragEvent} from 'react'
 import {useState} from 'react'
 
-import type {ChipTone} from './Chip'
+import type {ChipTone} from '../vocabulary'
 import {Chip} from './Chip'
 
 import styles from '../theme/notion.module.css'

@@ -350,6 +350,29 @@ export const CHIP_TONES: readonly ChipTone[] = ['grey', 'red', 'amber', 'green',
 /** A tone the document names wrongly is drawn grey rather than dropping what carries it. */
 export const chipTone = (name: string): ChipTone => CHIP_TONES.find(tone => tone === name) ?? 'grey'
 
+/** A PERSON'S initials, from the name the document spells — at most two, upper-cased. */
+export const initialsOf = (name: string): string =>
+	name
+		.split(/\s+/)
+		.filter(part => part.length > 0)
+		.slice(0, 2)
+		.map(part => part.charAt(0).toUpperCase())
+		.join('')
+
+/**
+ * The colour an avatar takes from its NAME: same name, same colour, on every page and in any
+ * order — a sum over the code units, not a counter, so a stack rendered twice does not recolour
+ * itself. It is a reading of the document's own text, so both paints share it rather than each
+ * hashing the same name their own way.
+ */
+export const avatarTone = (name: string): ChipTone => {
+	let hash = 0
+	for (let index = 0; index < name.length; index += 1) {
+		hash = (hash * 31 + name.charCodeAt(index)) % 1000003
+	}
+	return CHIP_TONES[hash % CHIP_TONES.length]
+}
+
 export type CalloutTone = 'neutral' | 'info' | 'success' | 'warning' | 'danger'
 
 export const CALLOUT_TONES: readonly CalloutTone[] = ['neutral', 'info', 'success', 'warning', 'danger']

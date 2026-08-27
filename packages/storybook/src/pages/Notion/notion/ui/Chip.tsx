@@ -1,12 +1,15 @@
 import type {ReactNode} from 'react'
 
+import type {ChipTone} from '../vocabulary'
+import {chipTone} from '../vocabulary'
+
 import styles from '../theme/notion.module.css'
 
-/** A palette slot, not a meaning: the caller maps its own statuses onto it. */
-export type ChipTone = 'grey' | 'red' | 'amber' | 'green' | 'blue' | 'purple'
+export type {ChipTone}
 
 export interface ChipProps {
-	tone?: ChipTone
+	/** A palette slot. A name outside it is drawn grey rather than dropping what carries it. */
+	tone?: string
 	children: ReactNode
 }
 
@@ -20,4 +23,6 @@ const TONE_CLASS: Record<ChipTone, string> = {
 }
 
 /** Notion's pill: a label on a tinted background. `span`, because it also sits mid-sentence. */
-export const Chip = ({tone = 'grey', children}: ChipProps) => <span className={TONE_CLASS[tone]}>{children}</span>
+export const Chip = ({tone = 'grey', children}: ChipProps) => (
+	<span className={TONE_CLASS[chipTone(tone)]}>{children}</span>
+)
