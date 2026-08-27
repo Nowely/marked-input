@@ -1688,6 +1688,31 @@ describe('the empty row', () => {
 
 		await expect.poll(() => window.getComputedStyle(rowsOf(host)[0], '::before').content).toBe('none')
 	})
+
+	/**
+	 * AND THE CARET LINE REACHES ONLY A ROW THAT PAINTS NOTHING ELSE. The rule that makes an empty
+	 * row arrow-reachable (`.Row > span:first-child:empty…` in core's stylesheet) gives the row's
+	 * own bare text surface an `inline-block` with a `min-height`; the same span shape occurs as a
+	 * kind's LEADING FURNITURE, and giving that a line box grows a row whose consumer never asked.
+	 *
+	 * ITS OWN RECORD SAYS "measured over the showcase's 75 rows, exactly one height moves" AND
+	 * NOTHING PINNED IT. Measured while auditing: `> span:first-child:empty:not([contenteditable])`
+	 * matches 21 elements on this page and the shipped selector matches ONE — the other twenty are
+	 * CARVED TABLE CELLS, whose empty lead sits ahead of a frozen decoration, and dropping the shape
+	 * clause left the whole suite green.
+	 *
+	 * READ AS `display`, not as a height, and deliberately: on this page the cell absorbs the extra
+	 * line (114x37 either way), so the damage is latent rather than visible and a geometry assertion
+	 * would be the decorative kind — green for a reason that has nothing to do with the rule.
+	 */
+	it('gives no caret line to a carved cell’s lead, which sits ahead of what the kind paints', async () => {
+		const {host} = await mount(Showcase)
+		const leads = [...host.querySelectorAll<HTMLElement>('[class*="Row"] > span:first-child:empty')]
+		const ahead = leads.filter(lead => lead.nextElementSibling?.matches('[contenteditable="false"]'))
+		expect(ahead.length).toBeGreaterThan(0)
+
+		expect(ahead.map(lead => window.getComputedStyle(lead).display)).toEqual(ahead.map(() => 'inline'))
+	})
 })
 
 /**
@@ -1770,6 +1795,31 @@ describe('the board', () => {
 		const {host, value} = await mountControlled(Showcase, BOARD_DOC)
 
 		await dragCard(cardTitled(host, 'Launch copy review'), columnTitled(host, 'Shipped'))
+
+		await expect.poll(value).toBe(MOVED)
+	})
+
+	/**
+	 * AND THE SAME GESTURE DRIVEN BY THE BROWSER, because the three fabricated ones above cannot see
+	 * half of what they claim. A hand-dispatched `drop` fires whether or not anything accepted the
+	 * `dragover`; a real one does not — the HTML5 protocol is a NEGOTIATION, and
+	 * `BoardColumn.handleDragOver`'s `preventDefault()` is the whole of this board's half of it.
+	 * MEASURED: delete that one line and the suite stays green at 2232, with three pins standing over
+	 * a board no pointer could drop on. This drives `userEvent.dragAndDrop`, which is Playwright's
+	 * own `Input.dispatchDragEvent` sequence, so the browser decides whether the drop happens at all
+	 * — the same reason `shared/lib/drag.ts` exists for the editor's own row drag.
+	 *
+	 * THE FABRICATED ONES STAY. They assert what the drop WRITES over a deterministic clock, which is
+	 * a different claim from whether the drop is reachable, and losing them would trade a flake-free
+	 * value assertion for nothing.
+	 */
+	it('accepts a real pointer drag between columns, dragover negotiation and all', async () => {
+		const {host, value} = await mountControlled(Showcase, BOARD_DOC)
+
+		await userEvent.dragAndDrop(
+			page.elementLocator(cardTitled(host, 'Launch copy review')),
+			page.elementLocator(columnTitled(host, 'Shipped'))
+		)
 
 		await expect.poll(value).toBe(MOVED)
 	})

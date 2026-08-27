@@ -1175,3 +1175,8 @@ becomes a ticket here.
     which after the retype is still the FOOTER. The editor did exactly what its landing rule says. The
     gap is the option API's and is already named in `options.tsx`: `addSibling` opens BELOW, there is
     no insert-above verb, and no published way to say "put the caret in the row I just made".
+  - **WHAT I COULD NOT MAKE REDDEN, stated plainly.** Round ten wrote "the row selection is read from
+    the ORIGINAL pair, which is what keeps round nine's refusal". Feeding it the CLAMPED pair instead
+    is green over the whole suite AND identical on the running page across six gestures (chip, board
+    card and toc entry x type/Backspace). The distinction the comment documents is real in the code and
+    unexercised by anything; the code is left as it is and the claim is flagged rather than trusted.
