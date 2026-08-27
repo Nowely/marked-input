@@ -51,9 +51,9 @@ measurement, which is the first one in this tracker to have been RUN rather than
 | [21](21-table-gestures.md) | The table's own gestures | needs-triage | The dead Tab says it refused; the grid seed was reverted in review (a body may not carry the separator) and the delimiter escape is untouched |
 | [22](22-continues-carries-no-depth.md) | No option can say "Enter opens a CHILD of this row" | needs-triage | Judged and left filed; two of its four costs shrank when `splitPlan` lost its `tail` index |
 | [23](23-row-component-contract-is-silent.md) | A row component can drop `ref`/`className`/`style` | resolved | Taken for `ref` alone; re-asked whenever a row's component changes, and the verdict waits a frame so a late element is not accused |
-| [24](24-ship-the-atomic-wrapper.md) | Every consumer writes `Atomic` themselves | resolved | Shipped from `@markput/react` and the showcase's copy came out; the Vue twin waits on 26 |
+| [24](24-ship-the-atomic-wrapper.md) | Every consumer writes `Atomic` themselves | resolved | Shipped from `@markput/react` and the showcase's copy came out; the Vue twin landed with 26 |
 | [25](25-published-type-corrections.md) | Two published types are wrong at the boundary | resolved | `useOverlay<T>()` and `SpanProps`; `SpanProps` keeps `meta`/`children` on purpose, recorded as a trade |
-| [26](26-vue-showcase-p12.md) | The showcase's net is single-framework | ready-for-human | P12; every adapter-sensitive fix ships half-measured until it lands |
+| [26](26-vue-showcase-p12.md) | The showcase's net is single-framework | resolved | Both projects run all 144 of it; the vocabulary is shared and only the paint is per-adapter, and the first Vue run found two adapter defects |
 | [27](27-four-missing-affordances.md) | Gutter `+`, "Turn into", `/` menu sections and icons, selection toolbar | needs-triage | The gutter `+` is built at the cost of a 24→48px gutter; the other three are judged and NOT taken, each with its reason on the ticket |
 | [28](28-gestures-the-first-session-left-standing.md) | Cmd+A, Backspace after an atomic row, one-way nesting, undo granularity | resolved | Re-driven: Mod+A climbs (and was DEAD in an empty row until review), nesting refuses out loud, the atomic-row Backspace was REFUTED; undo's "splitting mid-word" was refuted too, and the deletion run ADR-0012 cost (f) declined is now written |
 | [29](29-refusal-is-silent.md) | Refusal is silent, and a click's answer depends on invisible markup | resolved | One channel, five call sites, one paint; the click half is not a refusal the editor makes and stays open with 32 |
@@ -176,3 +176,24 @@ findings and the doctrine's own answer — delete it and measure — settles whi
 - **The 12px drop band** and three P11.6 review findings (`#enterRow`'s `into === 0` fork,
   `RowNode.writeRows`'s placement, `replaceRowSelection`'s docstring) — measured false or fixed as
   prose; `map.md:683-689` records them so they are not re-filed.
+
+## The Vue showcase (T-VUE, 2026-08-27)
+
+[26](26-vue-showcase-p12.md), the largest single item on either record's list, and the pass that
+closes the tracker's last `ready-for-human`.
+
+**The estimate was measured, not trusted, and it shrank.** "~800 lines of `options.tsx` plus sixteen
+presentational leaves" counted the whole file as a second implementation. `options.tsx` is 498 lines
+now and `marks.tsx` 49: the markups, the menu entries, the continuations, the splits and every
+reading a kind makes of its own body came out whole into `notion/vocabulary.ts`, which imports
+nothing. What is genuinely written twice is the paint — 654 Vue lines of leaves against 525 React
+ones, and 555 against 498 for the option file.
+
+**The net is the deliverable, and the port is what made it possible.** Three spec files and the
+story file are framework-free now; both projects run 144 assertions each where one project ran 144.
+
+**Two Vue-only defects on the first run**, which is the argument this ticket was filed on: a row
+kind could not keep its own class (the adapter passed React's `className` where the published type
+says `class`, and Vue overwrote), and a kind reading its own raw body never repainted (a core signal
+is not Vue-reactive, and `Atomic` is a child that bails when its parent repaints). Neither is
+reachable by reading; both were found by a spec that had only ever run in React.

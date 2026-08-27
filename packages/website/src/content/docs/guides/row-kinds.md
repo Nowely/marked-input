@@ -170,6 +170,30 @@ const Bullet = defineComponent({
 Declare the props you read. Vue puts every prop a component does not declare onto its root element,
 so `node` and `depth` would otherwise land there as attributes.
 
+**Read the node through `useMarkput`, not straight.** `meta`, `depth` and `index` are ordinary props
+and are reactive; everything you ask the `node` itself — `node.slot()`, `node.meta()` — is a signal
+of the editor's own, which Vue's reactivity does not see. Read in a template it is right on the first
+paint and stale after every edit, and wrapping it in a `computed` is worse: with no reactive
+dependency at all, the computed caches its first answer for ever. `useMarkput` bridges the two:
+
+```ts
+import {defineComponent} from 'vue'
+import {useMarkput} from '@markput/vue'
+
+const Fence = defineComponent({
+    props: {meta: String, node: {type: null}, depth: Number, index: Number},
+    setup(props) {
+        return {body: useMarkput(() => () => props.node.slot())}
+    },
+    template: '<pre>{{ body }}</pre>',
+})
+```
+
+This matters most for a kind whose body is RAW, because that text is the row's own rather than its
+children's, and for any kind that hands the reading to a CHILD component: a child whose props have
+not changed is skipped when its parent repaints, so a plain read passed down never updates at all.
+React has no equivalent rule — a re-render re-reads everything.
+
 ## Controls inside a row
 
 Everything a row's component paints sits inside the one `contenteditable` container. An element the

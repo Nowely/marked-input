@@ -1,7 +1,7 @@
 # The showcase's net is single-framework, so every adapter rule ships half-measured
 
 Type: task
-Status: ready-for-human
+Status: resolved — the page is framework-free and both projects run its net (2026-08-27)
 Blocked by: —
 
 ## Problem
@@ -43,3 +43,64 @@ The largest single item on either record's list, and a second implementation rat
 Vue's `useControlRef`. The mitigation already taken bounds the exposure and is not a substitute:
 the three core rules whose only pin was that file now have core unit pins, and rounds 8–11 put most
 new pins in specs both projects run.
+
+## Answer (T-VUE, 2026-08-27)
+
+**The net is DOUBLE-RUN.** `Notion.spec.ts` (92), `caret.spec.ts` (18) and `structure.spec.ts` (37)
+are framework-free and both vitest projects run them: 144 assertions per project where there were
+144 in one. `Notion.stories.ts` is shared too, so the `Showcase` and `Empty` story snapshots moved
+out of `stories.react.spec.tsx.snap` and into the file both projects compare against.
+
+**The port was not the deliverable and it was not a rename either.** What made it small was
+measuring the estimate rather than trusting it. `options.tsx` went **869 → 498 lines**: every
+markup, menu entry, continuation, indent flag, split, and every reading a kind makes of its own body
+left it for `notion/vocabulary.ts`, which imports nothing at all, and `marks.tsx` went 69 → 49 the
+same way. The shared module is 512 lines, of which about 60 are the assembler that wires a paint map
+onto the declarations. Each adapter's option file now supplies components and nothing else.
+
+(`2a566273`'s body says "322 lines", which was the pre-measurement estimate; the figure above is the
+count.)
+
+The sixteen leaves ARE a real second implementation — 654 lines of Vue against 525 of React, plus 555
+against 498 for the option file and 81 against 49 for the marks. The vocabulary is not.
+
+**Vue's `useControlRef` and `Atomic` shipped**, which is what [24](24-ship-the-atomic-wrapper.md)
+deferred here. The hook takes Vue's ref ARGUMENT rather than an element, through the same `unwrapEl`
+reading `Row.vue` makes, so a component whose root is not an element registers nothing instead of
+throwing.
+
+### What the shared net found on its first run
+
+Two defects, both Vue-only, both invisible to review:
+
+1. **A row kind could not keep its own class.** `RowProps` publishes `class` and documents the
+   fallthrough; the adapter passed `className`, which Vue resolves to a DOM property write applied
+   after the template's own class and overwriting it whole. Measured: a component reading
+   `<div class="mine">` painted `class="_Row_…"` and nothing else. Fixed in `Row.vue` (`268feab1`);
+   reverting it reddens **29** of this page's Vue tests with `title: +0`, `no toggle starting "Why"`
+   and `the page painted no fence`.
+2. **A kind that reads its own raw body never repainted.** `node.slot()` is a core signal and core's
+   signals are not Vue-reactive, so a plain read is right once and stale after; a `computed` over one
+   is worse, because with no reactive dependency it caches for ever; and reading it during render
+   does not help either, because `Atomic` — a child with unchanged props and a compiled stable slot
+   — is skipped when its parent repaints. Measured on the board: a card dragged between columns wrote
+   the document, the emitted value was right, undo took it back, and the columns on screen never
+   moved. Every raw-bodied kind reads through a `useMarkput` ref now, and the rule is in
+   `guides/row-kinds.md`.
+
+Three further differences were DOM-level and are recorded at the commit rather than here: a Vue
+`<select>` writes a bound `value` as an attribute (so the fence takes `v-model`), Vue emits
+`checked` before `type` unless the template says otherwise, and Vue condenses the newlines around
+mixed text into spaces. All three were found by the moved story snapshot, which was never
+regenerated — the bytes are React's and Vue was made to match them.
+
+### What stays React-only, and why
+
+`Ui.stories.react.tsx` — the UI-kit page, eleven stories over the presentational leaves. It drives
+no editor, so running it twice would pin React's own JSX rather than an adapter rule. Its snapshots
+stay in `stories.react.spec.tsx.snap`.
+
+`boundary.spec.ts` keeps its own node project and now scans both paints. Its store-hook rule is
+NARROWED rather than dropped: a `useMarkput` selector that takes no store is the Vue bridge above
+and is allowed; one that takes a parameter is not, which is exactly the destructure the member grep
+cannot see. All four of its rules were mutation-checked, each reddening its own case and no other.
