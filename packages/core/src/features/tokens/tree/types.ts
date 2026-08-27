@@ -205,6 +205,11 @@ export interface RowNode {
 	 * outside this row's own body, for one whose high end is in the structure between two lines,
 	 * and — because the tail is written at this row's lead — for one closing in a row that has
 	 * children of its own or before a row that would then land at a different depth.
+	 *
+	 * IT DOES NOT VALIDATE A CARVED ROW'S OWN DELIMITERS. A carved row takes this verb — that is how
+	 * Enter splits a table line — but its cells are not lines of the document, so a span reaching the
+	 * delimiter between two of them is refused one layer up, where the selection is resolved off the
+	 * structural bytes it landed on. Handed such a span directly, this writes it.
 	 */
 	writeRows(span: Anchors, rows: readonly string[] | string): boolean
 	/**

@@ -1060,8 +1060,17 @@ export function splitPlan(
 	const crossing = last !== node
 	// A ROW WITH CHILDREN CANNOT BE THE TAIL. The tail is written at the HEAD's lead, so `last`'s own
 	// children would be re-parented by the clamp rather than moved, and re-leading them is a depth
-	// plan rather than a splice. A CARVED row is refused by the same test — its cells are its child
-	// rows — which is what keeps a paste from cutting a table line in two.
+	// plan rather than a splice.
+	//
+	// IT SAYS NOTHING ABOUT A CARVED ROW, and the record that claimed it did was wrong: a carved
+	// row's cells are not lines, `preorderRows` names none of them, so a span from a table LINE into
+	// one of its own cells closes on the table row ITSELF and is not crossing at all. What keeps a
+	// paste from cutting a table line in two is the SEAM, where `contentLineRows` does descend into
+	// cells and a span reaching the delimiter between two of them resolves off it. Handed raw
+	// anchors that span a delimiter, this function still writes: `'|aaa | bbb⏎after'` across the two
+	// cells emits `'|one⏎|twobb⏎after'`. Refusing every carved head here was measured and is wrong —
+	// 6 red, because Enter splits the table LINE through exactly this plan and a two-line clip
+	// landing in a cell keeps the cells either side of the cut.
 	if (crossing && last.rows().length > 0) return undefined
 
 	const body = node.slot()

@@ -593,7 +593,12 @@ export class TokenModel {
 				.filter(line => line.range.start < span.end && span.start < line.range.end)
 				.map(line => ({row: line.row, entry: entryAnchor(line.row)}))
 		})
-		return lines.some(line => !this.#dom.reachable(line.entry))
+		// THE THREE-WAY READING, as everywhere else in this file: `'absent'` is a frame that has not
+		// painted the row yet — a race — and `reachable` cannot tell that from a body with no surface
+		// at all. It mattered less while only the RESOLVED span reached here, since resolving an edge
+		// already needs the structure painted; the raw pair reaches rows the resolution never touched,
+		// and reading a race as a verdict there swallows the keystroke with nothing said.
+		return lines.some(line => this.#dom.rowPaint(line.row.id) === 'painted' && !this.#dom.reachable(line.entry))
 	}
 
 	/**
