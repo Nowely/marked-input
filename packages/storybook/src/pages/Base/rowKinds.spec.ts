@@ -1,6 +1,6 @@
 import {describe, expect, it} from 'vitest'
 
-import {defineMark, Mark} from '../../shared/lib/marks'
+import {defineMark, Empty, Mark} from '../../shared/lib/marks'
 import {mountComponent} from '../../shared/lib/page'
 
 /**
@@ -52,6 +52,24 @@ describe('row kinds', () => {
 		})
 
 		expect(host.querySelector('blockquote mark')?.textContent).toBe('someone')
+	})
+
+	/**
+	 * A row kind whose component paints no element — one that returns `null`, or does so on some
+	 * condition. The row cannot bind and its caret positions are gone, which is the cost declared
+	 * on `RowProps.ref`; what must NOT happen is the editor coming apart around it.
+	 *
+	 * Vue threw here until the ref unwrap stopped trusting `$el`: a component that renders nothing
+	 * has a Comment there, and consigning it reached the mount-state write, which sets attributes.
+	 */
+	it('carries on when a row kind paints no element at all', async () => {
+		const {host} = await mountComponent({
+			value: '# Title\nplain',
+			...ROWS,
+			options: [{markup: '# __slot__', row: {Component: Empty}}],
+		})
+
+		expect(host.textContent).toBe('plain')
 	})
 
 	it('repaints a row when only its kind changes', async () => {

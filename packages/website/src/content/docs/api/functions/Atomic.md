@@ -9,7 +9,7 @@ title: "Atomic"
 function Atomic(__namedParameters): Element;
 ```
 
-Defined in: react/markput/src/components/Atomic.tsx:22
+Defined in: [react/markput/src/components/Atomic.tsx:22](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/components/Atomic.tsx#L22)
 
 A region of a row's component that is EDITOR UI rather than document content: a properties
 grid, a board, a card, a table of contents. Everything a row's component paints sits inside the
