@@ -91,6 +91,39 @@ precisely the wrapper cost (b) refuses, and folding the other way is impossible.
 does remove is the _reason_ they read as a fork: they are two shapes a caller picks between by
 asking for rows or not, and `rowConfig` answers that once for the whole editor.
 
+## Amendment, 2026-08-27: what each separator buys, measured
+
+The maintainer read the showcase fixture — 76 lines, one blank — and asked whether blank lines are
+still supported, since a document with no visual breaks is harder to read than the markdown it
+imitates. They are. The measurement, run on the parser at HEAD:
+
+`'a\n\nb'` at the default separator is **three** rows. The middle one is a real row: `content`
+is the newline, no descriptor, one empty text child. `joinNodes` returns `'a\n\nb'` byte for byte.
+A blank row costs what any row costs — the caret stops on it (since `6743b082` gave it a line box),
+it paints a blank line of one em, and it carries a grip and a row menu like its neighbours.
+
+**What a blank line cannot do is sit between a parent and its children**, and that is a pinned rule
+rather than an accident: an empty row adopts nothing (`parseRows.spec`, *"gives an empty row no
+children, so a blank line does not adopt the row below it"*). Measured on a fifteen-line excerpt of
+the showcase: rewritten loose, the sequence of kinds is identical and the DEPTHS are not — a toggle
+with three indented children becomes four top-level siblings. The fixture is dense because eight of
+its lines are indented; every other block in it could carry a blank line above it today.
+
+**The reverse, also measured at HEAD.** Set the separator back to `'\n\n'` and a tight list is ONE
+row holding the whole list as flat body text; a nested list is one row with no nesting at all; and
+`# Title` with a paragraph under it is one row whose body is `'Title\nbody text'`. Only a
+blank-line-separated pair splits.
+
+So the trade is stateable in one line, and it is the trade, not a defect on either side:
+**`'\n\n'` buys the blank line between blocks and costs every tight construct and all nesting;
+`'\n'` buys per-line typing and nesting and costs the blank line's freedom to stand between a
+parent and its children.**
+
+The third option nobody has built: let an empty row be TRANSPARENT to nesting — adopting nothing,
+as now, but not breaking the run either — which would make a markdown-readable loose document
+express the same tree as the tight one. That is a rule, not a mechanism, and it is the cheapest
+path to a fixture a person can read.
+
 ## What stays open
 
 Under `'\n'` a soft break inside a row has no representation. The follow-up is a `softBreak`

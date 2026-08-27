@@ -43,12 +43,44 @@ that margin is 1.3× at 1000–8000 rows and 1.1× at 250 — and it is CONDITIO
 figure above hid. It holds only where the markups are declared as row kinds; declare the same
 markups as inline marks and the new parser is at parity or marginally slower (2.87 ms against
 2.68 at 4000 rows). The win is a row kind leaving the inline alternation, not the scan being
-cheaper. Nothing here is an argument for the inversion; the argument is the four defects above. **It is not a code reduction.** Measured in
+cheaper. Nothing here is an argument for the inversion; the argument is the four defects above.
+**It is not a code reduction.** Measured in
 production lines only (`*.spec.*`, `__testing__`, `__snapshots__` and docs excluded): parser +136,
 tree +115, seam +50, slots +26, shared +20, storybook +31, React +21, Vue +14 — **net +418**. What
 shrinks is what has to be held in the head: one fixpoint, one mutual dependence and two functions
 are gone, and a row's kind is now a thing a consumer declares rather than a shape the parser
 infers.
+
+## Amendment, 2026-08-27: the before and after, measured construct by construct
+
+Re-run on the real parsers — the old one checked out of history into a worktree, the new one from
+the tree — so a future reader need not take the four defects above on trust. OLD is `3c4b54ad` at
+its own default of two newlines; NEW is HEAD at one.
+
+| input | OLD | NEW |
+| --- | --- | --- |
+| `load 5# peak` | text plus a heading MARK mid-line | one row of plain text |
+| `- a` / `- b` / `- c` | one row, a staircase of three nested marks | three sibling rows |
+| a fence that is not the first block | one row, the whole fence plain text | two rows; the fence keeps its meta and body |
+| frontmatter away from offset 0 | plain text | recognised |
+| `> one` / `> two` | one row, a quote nested inside a quote | two quote rows |
+| a three-line table | one row, a staircase six deep | three rows, cells carved |
+
+**One correction to the story this record used to tell.** The list staircase was the two-newline
+DEFAULT's fault, not the fixpoint's: the old parser at one newline already produced three sibling
+rows. What only the inversion fixes is the fence away from offset 0, the frontmatter away from
+offset 0, and the nesting inside a table line — the flip alone makes the first of those worse,
+shredding a fence into four rows of text.
+
+**What left, in deleted assertions.** The parser's own specs went 120 to 144 across this change:
+sixteen removed, of which two were renames and one a move, so thirteen real deletions. They
+asserted the machinery this record replaces — that a separator inside an opaque `__value__` or
+`__meta__` gap was not a boundary, that a closed slot survived a separator, that an open trailing
+gap closed across a row boundary, and the fixpoint's own reason to exist (*"recomputes boundaries
+when closure drops the match that hid one"*). Two of them came back with the SAME input and the
+opposite expectation: `'**a\n\nb**'` is now plain text. Stated as a capability rather than as a
+diff: **an inline mark may no longer span a row boundary, and a markup that means to must declare
+`row`.**
 
 Costs, accepted and declared. An inline mark can no longer span a row boundary — a markup that
 means to must declare `row`, and it then matches anywhere instead of at offset 0 alone. A typed
