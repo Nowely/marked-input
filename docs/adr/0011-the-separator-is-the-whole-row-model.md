@@ -103,8 +103,8 @@ A blank row costs what any row costs — the caret stops on it (since `6743b082`
 it paints a blank line of one em, and it carries a grip and a row menu like its neighbours.
 
 **What a blank line cannot do is sit between a parent and its children**, and that is a pinned rule
-rather than an accident: an empty row adopts nothing (`parseRows.spec`, *"gives an empty row no
-children, so a blank line does not adopt the row below it"*). Measured on a fifteen-line excerpt of
+rather than an accident: an empty row adopts nothing (`parseRows.spec`, _"gives an empty row no
+children, so a blank line does not adopt the row below it"_). Measured on a fifteen-line excerpt of
 the showcase: rewritten loose, the sequence of kinds is identical and the DEPTHS are not — a toggle
 with three indented children becomes four top-level siblings. The fixture is dense because eight of
 its lines are indented; every other block in it could carry a blank line above it today.

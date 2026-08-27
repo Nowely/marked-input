@@ -57,14 +57,14 @@ Re-run on the real parsers — the old one checked out of history into a worktre
 the tree — so a future reader need not take the four defects above on trust. OLD is `3c4b54ad` at
 its own default of two newlines; NEW is HEAD at one.
 
-| input | OLD | NEW |
-| --- | --- | --- |
-| `load 5# peak` | text plus a heading MARK mid-line | one row of plain text |
-| `- a` / `- b` / `- c` | one row, a staircase of three nested marks | three sibling rows |
-| a fence that is not the first block | one row, the whole fence plain text | two rows; the fence keeps its meta and body |
-| frontmatter away from offset 0 | plain text | recognised |
-| `> one` / `> two` | one row, a quote nested inside a quote | two quote rows |
-| a three-line table | one row, a staircase six deep | three rows, cells carved |
+| input                               | OLD                                        | NEW                                         |
+| ----------------------------------- | ------------------------------------------ | ------------------------------------------- |
+| `load 5# peak`                      | text plus a heading MARK mid-line          | one row of plain text                       |
+| `- a` / `- b` / `- c`               | one row, a staircase of three nested marks | three sibling rows                          |
+| a fence that is not the first block | one row, the whole fence plain text        | two rows; the fence keeps its meta and body |
+| frontmatter away from offset 0      | plain text                                 | recognised                                  |
+| `> one` / `> two`                   | one row, a quote nested inside a quote     | two quote rows                              |
+| a three-line table                  | one row, a staircase six deep              | three rows, cells carved                    |
 
 **One correction to the story this record used to tell.** The list staircase was the two-newline
 DEFAULT's fault, not the fixpoint's: the old parser at one newline already produced three sibling
@@ -76,8 +76,8 @@ shredding a fence into four rows of text.
 sixteen removed, of which two were renames and one a move, so thirteen real deletions. They
 asserted the machinery this record replaces — that a separator inside an opaque `__value__` or
 `__meta__` gap was not a boundary, that a closed slot survived a separator, that an open trailing
-gap closed across a row boundary, and the fixpoint's own reason to exist (*"recomputes boundaries
-when closure drops the match that hid one"*). Two of them came back with the SAME input and the
+gap closed across a row boundary, and the fixpoint's own reason to exist (_"recomputes boundaries
+when closure drops the match that hid one"_). Two of them came back with the SAME input and the
 opposite expectation: `'**a\n\nb**'` is now plain text. Stated as a capability rather than as a
 diff: **an inline mark may no longer span a row boundary, and a markup that means to must declare
 `row`.**
