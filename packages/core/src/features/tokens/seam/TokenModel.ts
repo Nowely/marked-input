@@ -318,7 +318,14 @@ export class TokenModel {
 				rows === null || typeof rows === 'string'
 					? (rows ?? '')
 					: untracked(() => rowSelectionRows(first, this.#continues(first), rows, separator))
-			const caret = this.#replaceWithin(span.start, span.end, text)
+			// A WRITE MAY NOT TAKE CONTENT THE USER CANNOT SEE, on this door as on the text one
+			// ({@link #visibleEnd}). The clip answers a CONTENT end and this path's own end is a
+			// BOUNDARY — a removal takes the separator after the last row it takes, a replacement
+			// leaves it to separate what arrives — so a clipped end is read back on the side the
+			// verb writes on.
+			const visible = this.#visibleEnd(span)
+			const end = visible === span.end ? span.end : visible + (rows === null ? separator.length : 0)
+			const caret = this.#replaceWithin(span.start, end, text)
 			if (!caret) return
 			written = true
 			this.#applyCaret(caret)
@@ -517,6 +524,12 @@ export class TokenModel {
 	 * IT ONLY EVER SHRINKS, like {@link contentSpan} itself, so the visible half of what the user
 	 * selected is still replaced: the toggle's own line goes, its hidden body stays, and one undo is
 	 * not needed to find out what happened.
+	 *
+	 * TWO DOORS REACH THE SAME RULE. {@link replaceRows} — the EXACT-ROW-COVER path, which Backspace,
+	 * Delete, cut, paste and a typed character over a row selection all reach — asks it too, and it
+	 * has to: a collapsed toggle's subtree is inside its own `position.end`, so a sweep that covers
+	 * the toggle's row whole covers a body nothing on the screen showed. What differs is only which
+	 * side of the separator each verb reads its own end on.
 	 */
 	#visibleEnd(span: {start: number; end: number}): number {
 		const separator = untracked(() => this.#tree.config()?.separator)

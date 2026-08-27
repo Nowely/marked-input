@@ -934,6 +934,48 @@ describe('the keymap on the showcase kinds', () => {
 	})
 
 	/**
+	 * THE SECOND DOOR OF THE SAME RULE. The clip above guarded the TEXT write and not the EXACT-ROW
+	 * COVER, which Backspace, Delete, cut, paste and a typed character over a row selection all
+	 * reach — and a collapsed toggle's subtree is inside its own `position.end`, so a sweep that
+	 * covers the toggle's row whole covered a body nothing on the screen had shown. MEASURED on the
+	 * showcase: two hidden lines under `'▸ Open questions'` died to one Backspace, silently.
+	 *
+	 * The rule only ever SHRINKS the write, so the visible half still goes: the toggle's own line is
+	 * taken with the paragraph above it and its hidden body is left standing.
+	 */
+	it('leaves a collapsed toggle its hidden body when a row cover is deleted', async () => {
+		const {host, value} = await mountControlled(Showcase, 'before\n▸ head\n\tbody\nafter')
+		const first = rowAt(host, 'before').firstChild?.firstChild
+		const next = rowAt(host, 'after').firstChild?.firstChild
+		if (!(first instanceof Text) || !(next instanceof Text)) throw new Error('the page painted no row text')
+
+		// An exact cover of the two rows the user can see: the paragraph, and the toggle's own line.
+		window.getSelection()?.setBaseAndExtent(first, 0, next, 0)
+		await settle()
+		await userEvent.keyboard('{Backspace}')
+
+		await expect.poll(value).toBe('\tbody\nafter')
+	})
+
+	/**
+	 * AND THE OPEN TOGGLE BESIDE IT STILL LOSES ITS CHILDREN to the identical gesture, which is what
+	 * tells the collapse apart from the selection: nothing here reads the row set or the span, only
+	 * whether the frame paints a box for each row inside it.
+	 */
+	it('takes an OPEN toggle’s children under the same row cover', async () => {
+		const {host, value} = await mountControlled(Showcase, 'before\n▾ head\n\tbody\nafter')
+		const first = rowAt(host, 'before').firstChild?.firstChild
+		const next = rowAt(host, 'after').firstChild?.firstChild
+		if (!(first instanceof Text) || !(next instanceof Text)) throw new Error('the page painted no row text')
+
+		window.getSelection()?.setBaseAndExtent(first, 0, next, 0)
+		await settle()
+		await userEvent.keyboard('{Backspace}')
+
+		await expect.poll(value).toBe('after')
+	})
+
+	/**
 	 * A SELECTION THAT COVERS NO CONTENT IS A POSITION, NOT A LICENCE TO WRITE THE STRUCTURE IT
 	 * SPANS. A double-click in a row's blank RIGHT MARGIN is the plainest way to one: Chromium's
 	 * word expansion past end-of-line answers a CROSS-ROW range whose own text is empty — measured
