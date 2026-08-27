@@ -175,15 +175,18 @@
 
 /* Painted by the controls layer, which supplies `top`/`height`/`left` from the row box it
    measured — `left` is the row's own left edge and the negative margin puts the band's right
-   edge on it, exactly where the deleted per-row panel's `left: -24px` sat. Anchoring to the
-   ROW and not to the layer's origin is what keeps the band off the text: core reserves the
-   24px gutter only for `draggable` rows, and without it a band at the layer's origin
-   covers the first 24px of every hovered row and swallows the click that should place a
-   caret. */
+   edge on it. Anchoring to the ROW and not to the layer's origin is what keeps the band off the
+   text: core reserves the gutter only for `draggable` rows, and without it a band at the layer's
+   origin covers the start of every hovered row and swallows the click that should place a caret.
+
+   TWO CONTROLS WIDE — the insert button and the grip, 24px each — and the width here is the same
+   fact `SlotsFeature`'s `ROW_GUTTER_WIDTH` reserves as the container's `padding-left`. The two
+   must agree: a band wider than the reservation hangs outside the container, over whatever the
+   page has to its left. */
 .SidePanel {
 	position: absolute;
-	margin-left: -24px;
-	width: 24px;
+	margin-left: -48px;
+	width: 48px;
 	display: flex;
 	align-items: center;
 	opacity: 0;
@@ -227,6 +230,14 @@
 
 .GripButtonDragging {
 	cursor: grabbing;
+}
+
+/* The gutter's other control: a fresh row under the one the pointer is on. A VARIANT of the grip
+   button rather than a second box — the adapters apply both classes, as they already do for
+   `.GripButtonDragging` — so the two share a band and differ only in the cursor, because this one
+   is a click and not a drag. */
+.GripButtonAdd {
+	cursor: pointer;
 }
 
 /* THE REFUSAL CHANNEL'S ONE PAINT — a gesture the editor took and answered with nothing, said at

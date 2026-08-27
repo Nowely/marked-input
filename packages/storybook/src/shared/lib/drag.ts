@@ -19,8 +19,11 @@ import {page, userEvent} from 'vitest/browser'
  * browser deciding whether the drop happens at all.
  */
 
-/** The grip's accessible name — the ONE row control, painted by the editor's own controls layer. */
+/** The grip's accessible name — one of the two gutter controls the editor's controls layer paints. */
 export const GRIP = {name: 'Drag to reorder or click for options'} as const
+
+/** The other one: the gutter's `+`, which runs the menu's first entry on the hovered row. */
+export const ADD_ROW = {name: 'Add a row below'} as const
 
 /**
  * The grip for `row`. It lives in the controls layer rather than inside the row, so it is found on

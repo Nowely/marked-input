@@ -3,7 +3,7 @@ import {describe, expect, it, vi} from 'vitest'
 import {page, userEvent} from 'vitest/browser'
 
 import {caretIsInside, firstChild, getElement, rowsOf} from '../../shared/lib/dom'
-import {dragRowTo, GRIP, gripOfRow} from '../../shared/lib/drag'
+import {ADD_ROW, dragRowTo, GRIP, gripOfRow} from '../../shared/lib/drag'
 import {focusAtEnd, focusAtStart, settle, verifyCaretPosition} from '../../shared/lib/focus'
 import {dispatchInsertText, dispatchPaste} from '../../shared/lib/inputEvents'
 import {defineMark, Mark} from '../../shared/lib/marks'
@@ -157,6 +157,56 @@ describe('Feature: drag rows', () => {
 				.querySelector<HTMLInputElement>('input[type="checkbox"]')!
 		expect(checkboxOf('Define color palette').checked).toBe(true)
 		expect(checkboxOf('Design Phase').checked).toBe(false)
+	})
+
+	/**
+	 * THE GUTTER'S `+`, in both adapters. It is the one affordance a person reaches for first and
+	 * the editor had none — the row menu's first entry was the only way to open a row with the
+	 * mouse, two gestures away behind a grip whose own label says it is for dragging.
+	 */
+	describe('the gutter add button', () => {
+		it('opens a row under the one the pointer is on', async () => {
+			const {host, value} = await mountEcho(PlainTextDrag, {value: 'alpha\n\nbeta'})
+			await userEvent.hover(rowsOf(host)[0])
+
+			await userEvent.click(await page.elementLocator(host).getByRole('button', ADD_ROW).findElement())
+
+			await expect.poll(value).toBe('alpha\n\n\n\nbeta')
+			await expect.poll(() => rowsOf(host)).toHaveLength(3)
+		})
+
+		/** It runs the menu's own first entry, so the two affordances write the same document. */
+		it("writes what the menu's Add below writes", async () => {
+			const {host: byButton, value: fromButton} = await mountEcho(PlainTextDrag, {value: 'alpha\n\nbeta'})
+			await userEvent.hover(rowsOf(byButton)[0])
+			await userEvent.click(await page.elementLocator(byButton).getByRole('button', ADD_ROW).findElement())
+			await expect.poll(fromButton).toBe('alpha\n\n\n\nbeta')
+
+			const {host: byMenu, value: fromMenu} = await mountEcho(PlainTextDrag, {value: 'alpha\n\nbeta'})
+			await openMenuForRow(byMenu, 0)
+			await userEvent.click(getElement(page.getByText('Add below')))
+
+			await expect.poll(fromMenu).toBe(fromButton())
+		})
+
+		it('is painted in the gutter core reserves, left of the grip', async () => {
+			const {host} = await mount(PlainTextDrag)
+			await userEvent.hover(rowsOf(host)[0])
+
+			const add = await page.elementLocator(host).getByRole('button', ADD_ROW).findElement()
+			const grip = await page.elementLocator(host).getByRole('button', GRIP).findElement()
+			const row = rowsOf(host)[0].getBoundingClientRect()
+
+			expect(add.getBoundingClientRect().right).toBeLessThanOrEqual(grip.getBoundingClientRect().left + 0.5)
+			expect(grip.getBoundingClientRect().right).toBeLessThanOrEqual(row.left + 0.5)
+			expect(add.getBoundingClientRect().left).toBeGreaterThanOrEqual(host.getBoundingClientRect().left - 0.5)
+		})
+
+		it('is not painted in a read-only editor', async () => {
+			const {host} = await mount(ReadOnlyDrag)
+			await userEvent.hover(rowsOf(host)[0])
+			await expect.element(page.getByRole('button', ADD_ROW)).not.toBeInTheDocument()
+		})
 	})
 
 	describe('menu', () => {
@@ -731,7 +781,8 @@ describe('Feature: drag rows', () => {
 				separator: '\n\n',
 				draggable: true,
 			})
-			expect(getComputedStyle(host).paddingLeft).toBe('24px')
+			// 48px: the band holds two controls, the `+` and the grip, at 24px each.
+			expect(getComputedStyle(host).paddingLeft).toBe('48px')
 
 			const row = rowsOf(host)[0]
 			await userEvent.hover(row)
@@ -740,7 +791,7 @@ describe('Feature: drag rows', () => {
 			const band = grip.parentElement!.getBoundingClientRect()
 			const rect = row.getBoundingClientRect()
 			const container = host.getBoundingClientRect()
-			expect(rect.left - container.left).toBeCloseTo(24, 0)
+			expect(rect.left - container.left).toBeCloseTo(48, 0)
 			expect(band.right).toBeCloseTo(rect.left, 0)
 			expect(band.left).toBeGreaterThanOrEqual(container.left - 0.5)
 		})
@@ -860,10 +911,13 @@ describe('Feature: drag rows', () => {
 
 			// Polled, not read: the box is measured after the paint that created the rows, so
 			// Vue's `flush: 'post'` watcher paints the resting grip one tick after mount.
-			await expect.poll(() => host.querySelectorAll('[class*="GripButton"]').length).toBe(1)
-			const grips = host.querySelectorAll('[class*="GripButton"]')
-			expect(grips[0].parentElement!.matches('[class*="SidePanelAlways"]')).toBe(true)
-			expect(Math.abs(centerY(grips[0]) - centerY(rowsOf(host)[0]))).toBeLessThan(2)
+			//
+			// BANDS, not buttons: the band holds the gutter's `+` beside the grip, and what one
+			// layer cannot paint is one band per ROW.
+			await expect.poll(() => host.querySelectorAll('[class*="SidePanel"]').length).toBe(1)
+			const bands = host.querySelectorAll('[class*="SidePanel"]')
+			expect(bands[0].matches('[class*="SidePanelAlways"]')).toBe(true)
+			expect(Math.abs(centerY(bands[0]) - centerY(rowsOf(host)[0]))).toBeLessThan(2)
 		})
 
 		/**
@@ -905,8 +959,8 @@ describe('Feature: drag rows', () => {
 				style: {marginLeft: '64px'},
 				slotProps: {container: {style: containerStyle}},
 			})
-			await expect.poll(() => host.querySelectorAll('[class*="GripButton"]').length).toBe(1)
-			const grip = host.querySelector('[class*="GripButton"]')!
+			await expect.poll(() => host.querySelectorAll('[class*="SidePanel"]').length).toBe(1)
+			const grip = host.querySelector('[class*="SidePanel"]')!
 			const row = rowsOf(host)[0]
 			expect(Math.abs(centerY(grip) - centerY(row))).toBeLessThan(2)
 

@@ -137,6 +137,21 @@ const refusedStyle = computed(() => {
 			]"
 			:style="gripStyle"
 		>
+			<!-- THE GUTTER'S `+`, left of the grip, where the reference page puts it. It runs the
+			     menu's own first entry on the row the pointer is on, so the two affordances cannot
+			     come to mean different things — what it saves is the click and the pick between
+			     them. Not behind `draggable`: adding a row is a row feature, and only the grip's
+			     drag is drag UI. -->
+			<button
+				type="button"
+				:class="[styles.GripButton, styles.GripButtonAdd]"
+				aria-label="Add a row below"
+				@mousedown="controller.pinHover()"
+				@click.prevent="controller.addRowBelow(gripRow!)"
+			>
+				<span :class="`${styles.Icon} ${styles.IconAdd}`" />
+			</button>
+
 			<!-- The grip is also the menu trigger, so it renders whether or not the rows drag;
 			     `draggable` gates only the drag affordance it carries. -->
 			<button

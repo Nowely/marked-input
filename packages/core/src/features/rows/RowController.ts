@@ -93,7 +93,7 @@ const ASSUMED_INDENT = 24
  * BEHAVIOUR THIS CHANGES, all declared rather than absorbed:
  * - the row controls are addressed by POSITION, not by row identity (ADR-0007's 2026-08-22
  *   amendment);
- * - hover is geometric Y rather than DOM containment, so the 24px gutter left of a row hovers
+ * - hover is geometric Y rather than DOM containment, so the gutter left of a row hovers
  *   that row, and a point in the gap BETWEEN rows snaps to the nearest one.
  *
  * The two earlier designs `git log` on this file spans, and the names they went by, are in this
@@ -325,7 +325,17 @@ export class RowController {
 
 	// The DEPTH the new row opens at is the row verb's, not a string this layer builds: the lead it
 	// needs and the side of the separator it goes on are both facts of the tree (ADR-0003).
-	addRow = (): void => this.#runMenuVerb(row => row.kind === 'row' && row.addSibling())
+	addRow = (): void => this.#runMenuVerb(insertBelow)
+
+	/**
+	 * THE GUTTER'S `+`: a fresh row under `id`, addressed by the row the POINTER is on rather than by
+	 * an open menu. It is the menu's own first entry and the same verb behind it, so the two
+	 * affordances cannot come to mean different things — what the button saves is the two gestures
+	 * between the pointer and that entry.
+	 */
+	addRowBelow(id: number): void {
+		this.#runRowVerb(id, insertBelow)
+	}
 	duplicateRow = (): void => this.#runMenuVerb(row => row.duplicate())
 	deleteRow = (): void => this.#runMenuVerb(row => row.remove())
 
@@ -413,7 +423,7 @@ export class RowController {
 	 *
 	 * THE OWN LINE, not the element's box, and the difference is the whole of nesting: a parent's
 	 * element ENCLOSES its children, so its box is the subtree's. The layer's one painting consumer
-	 * is the grip band, and a band the height of a subtree centres its 24px button on the SUBTREE's
+	 * is the gutter band, and a band the height of a subtree centres its 24px buttons on the SUBTREE's
 	 * midpoint — 14 of those pixels landed on the child's line, where aiming at the grip flipped
 	 * hover onto the child and the menu's Delete removed a row nobody pointed at. The own line is
 	 * what `rowAt` already resolves the pointer against ("the parent's own LINE is what is left over
@@ -723,14 +733,23 @@ export class RowController {
 	#runMenuVerb(verb: (row: TreeNode) => void): void {
 		const menu = this.state.menu()
 		this.closeMenu()
-		if (!menu || this.tokens.rowConfig() === undefined) return
-		const row = this.tokens.find(menu.id)
+		if (menu) this.#runRowVerb(menu.id, verb)
+	}
+
+	/**
+	 * The same run for a row named by the POINTER — the gutter's `+` — which is why the menu's own
+	 * resolution is the two lines above and not this: every control that writes a row goes through
+	 * one lookup and one focus rule.
+	 */
+	#runRowVerb(id: number, verb: (row: TreeNode) => void): void {
+		if (this.tokens.rowConfig() === undefined) return
+		const row = this.tokens.find(id)
 		if (row) verb(row)
 
-		// AND THE EDITOR TAKES ITS FOCUS BACK, because the grip is a `<button>` inside the container
-		// and a menu click leaves `document.activeElement` on it. The commit clock reclaims it for
-		// every verb that WRITES; this call is what covers a verb that REFUSES — a dead row id, a
-		// delete the tree declines — where no commit follows to settle anything. See
+		// AND THE EDITOR TAKES ITS FOCUS BACK, because these controls are `<button>`s inside the
+		// container and a click leaves `document.activeElement` on one of them. The commit clock
+		// reclaims it for every verb that WRITES; this call is what covers a verb that REFUSES — a
+		// dead row id, a delete the tree declines — where no commit follows to settle anything. See
 		// {@link SelectionDriver.reclaimFocus} for the one rule both go through.
 		//
 		// AFTER the verb, so the caret it named is already stored and the driver's own placement
@@ -911,12 +930,17 @@ export class RowController {
 	}
 }
 
+/** The `+`'s verb and the menu's first entry: one fresh row under this one. */
+const insertBelow = (row: TreeNode): void => {
+	if (row.kind === 'row') row.addSibling()
+}
+
 /**
  * A viewport rect in the layer's space. The layer is `position: absolute` inside the container,
  * so its containing block is the container's PADDING box: the border widths come off via
- * `clientTop`/`clientLeft`, and `left: 0` already sits at the outer edge of the 24px gutter.
- * `-24` would overshoot by exactly the gutter and be clipped away by an `overflow: auto`
- * consumer container.
+ * `clientTop`/`clientLeft`, and `left: 0` already sits at the outer edge of the reserved gutter.
+ * Offsetting by the gutter here would overshoot it exactly and be clipped away by an
+ * `overflow: auto` consumer container.
  */
 function toLocal(rect: DOMRect, container: HTMLElement): RowBox {
 	const base = container.getBoundingClientRect()

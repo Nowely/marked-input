@@ -24,6 +24,7 @@ import styles from '@markput/core/styles.module.css'
  * `isContentEditable === false` from it.
  */
 const iconGrip = `${styles.Icon} ${styles.IconGrip}`
+const iconAdd = `${styles.Icon} ${styles.IconAdd}`
 
 export const RowControls = memo(() => {
 	const {
@@ -129,6 +130,23 @@ export const RowControls = memo(() => {
 					// wherever core reserves no gutter — `draggable: false`.
 					style={{top: gripBox.top, left: gripBox.left, height: gripBox.height}}
 				>
+					{/* THE GUTTER'S `+`, left of the grip, where the reference page puts it. It runs the
+					    menu's own first entry on the row the pointer is on, so the two affordances cannot
+					    come to mean different things — what it saves is the click and the pick between
+					    them. Not behind `draggable`: adding a row is a row feature, and only the grip's
+					    drag is drag UI. */}
+					<button
+						type="button"
+						className={cx(styles.GripButton, styles.GripButtonAdd)}
+						aria-label="Add a row below"
+						onMouseDown={controller.pinHover}
+						onClick={e => {
+							e.preventDefault()
+							controller.addRowBelow(gripRow)
+						}}
+					>
+						<span className={iconAdd} />
+					</button>
 					<button
 						type="button"
 						// The grip is also the menu trigger, so it renders whether or not the rows drag;

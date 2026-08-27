@@ -17,7 +17,7 @@ Named slot computeds live on `store.slots` as separate `component` and `props` v
 // Named slots — component and fully-resolved props are separate computeds
 const Component = store.slots.containerComponent()
 const props = store.slots.containerProps()
-// props includes className, style (with the drag gutter `paddingLeft: '24px'` when drag is
+// props includes className, style (with the row gutter `paddingLeft: '48px'` when drag is
 // enabled — a CSS-ready string, because a bare number is only CSS under React's JSX
 // convention and Vue drops it), and data-* slotProps
 

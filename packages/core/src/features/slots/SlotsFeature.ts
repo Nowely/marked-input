@@ -13,7 +13,11 @@ import type {NodeSlot} from './types'
 import styles from '../../../styles.module.css'
 
 /**
- * The grip gutter, as a CSS-READY STRING rather than the bare `24` it was.
+ * The ROW GUTTER: the strip left of every row that the controls layer paints into, as a
+ * CSS-READY STRING rather than the bare number it was.
+ *
+ * TWO CONTROLS WIDE, and that is what it is measured against — the band holds an insert button and
+ * the grip, at 24px each. It was one grip wide while the grip was the only thing in it.
  *
  * `containerProps().style` is one bag handed to two frameworks that disagree about a number:
  * React's JSX appends `px` for a length property, Vue assigns the value to `element.style`
@@ -23,7 +27,7 @@ import styles from '../../../styles.module.css'
  * framework-agnostic, so the only value it may emit is one that needs no framework's
  * convention to become CSS.
  */
-const DRAG_HANDLE_WIDTH = '24px'
+const ROW_GUTTER_WIDTH = '48px'
 
 function buildContainerProps(
 	rowsDraggable: boolean,
@@ -34,7 +38,7 @@ function buildContainerProps(
 ): {className: string | undefined; style?: CSSProperties; [key: string]: unknown} {
 	const containerSlotProps = slotProps?.container
 	const baseStyle = merge(style, containerSlotProps?.style)
-	const mergedStyle = rowsDraggable && !readOnly ? {paddingLeft: DRAG_HANDLE_WIDTH, ...baseStyle} : baseStyle
+	const mergedStyle = rowsDraggable && !readOnly ? {paddingLeft: ROW_GUTTER_WIDTH, ...baseStyle} : baseStyle
 
 	const {className: _, style: __, ...otherSlotProps} = resolveSlotProps('container', slotProps) ?? {}
 

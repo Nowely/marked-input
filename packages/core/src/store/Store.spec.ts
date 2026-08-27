@@ -166,16 +166,16 @@ describe('Store', () => {
 
 		// The gutter is a CSS-ready STRING, not the bare `24` this used to assert: a number is
 		// only CSS under React's JSX convention, and Vue drops it.
-		it("add paddingLeft: '24px' to style when the document has rows and draggable is true", () => {
+		it("add paddingLeft: '48px' to style when the document has rows and draggable is true", () => {
 			const store = new Store()
 			store.props.set({separator: '\n\n', draggable: true, style: {color: 'red'}})
-			expect(store.slots.containerProps().style).toEqual({paddingLeft: '24px', color: 'red'})
+			expect(store.slots.containerProps().style).toEqual({paddingLeft: '48px', color: 'red'})
 		})
 
-		it("add paddingLeft: '24px' with no base style when the document has rows and draggable is true", () => {
+		it("add paddingLeft: '48px' with no base style when the document has rows and draggable is true", () => {
 			const store = new Store()
 			store.props.set({separator: '\n\n', draggable: true})
-			expect(store.slots.containerProps().style).toEqual({paddingLeft: '24px'})
+			expect(store.slots.containerProps().style).toEqual({paddingLeft: '48px'})
 		})
 
 		it('NOT add paddingLeft when draggable and rowed but readOnly is true', () => {
@@ -283,13 +283,13 @@ describe('Store', () => {
 		it('apply drag-handle padding when the document has rows and draggable is true', () => {
 			const store = new Store()
 			store.props.set({separator: '\n\n', draggable: true})
-			expect(store.slots.containerProps().style?.paddingLeft).toBe('24px')
+			expect(store.slots.containerProps().style?.paddingLeft).toBe('48px')
 		})
 
 		it('apply drag-handle padding when draggable is a DraggableConfig', () => {
 			const store = new Store()
 			store.props.set({separator: '\n\n', draggable: {alwaysShowHandle: true}})
-			expect(store.slots.containerProps().style?.paddingLeft).toBe('24px')
+			expect(store.slots.containerProps().style?.paddingLeft).toBe('48px')
 		})
 
 		it('skip drag-handle padding in read-only mode', () => {
