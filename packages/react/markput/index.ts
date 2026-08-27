@@ -2,6 +2,11 @@
 import './src/augment'
 
 export {MarkedInput} from './src/components/MarkedInput'
+// `useControlRef` on one wrapper, and the second of the two shapes a control takes: the hook marks
+// a single control, this marks a whole interior that is not document surface. Every consumer that
+// paints an atomic row kind wrote it by hand, and the failure it removes was measured — four of
+// the showcase's seven atomic kinds shipped with no control root at all.
+export {Atomic} from './src/components/Atomic'
 // THE shipped overlay list, and the DEFAULT one: core is framework-agnostic and ships no
 // components, so the paint lives here. It is exported for a consumer who wants it beside a
 // custom overlay on another option — wiring a row menu needs no component at all, since

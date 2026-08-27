@@ -45,6 +45,7 @@ declare global {
 	const useMarkput: typeof Markput.useMarkput
 	const useOverlay: typeof Markput.useOverlay
 	const useControlRef: typeof Markput.useControlRef
+	const Atomic: typeof Markput.Atomic
 	const annotate: typeof Markput.annotate
 	const denote: typeof Markput.denote
 	const watch: typeof Markput.watch

@@ -1,5 +1,5 @@
 import type {Option, RowProps} from '@markput/react'
-import {useControlRef} from '@markput/react'
+import {Atomic, useControlRef} from '@markput/react'
 import type {ReactNode} from 'react'
 import {useCallback, useState} from 'react'
 
@@ -48,14 +48,9 @@ const chipTone = (name: string): ChipTone => CHIP_TONES.find(tone => tone === na
  * A kind whose component paints no `{children}` is an ATOMIC row: its text round-trips and it
  * drags and selects as a row, but nothing it paints is document surface. Every card below is
  * one, because the leaves they render take strings rather than nodes, and Notion's own bookmark,
- * board and properties panel behave the same way.
- *
- * SAYING SO IS A CALL, NOT A CONVENTION. Everything a row's component paints sits inside the one
- * contenteditable container, so a panel the editor knows nothing about is content the caret
- * enters and the browser edits — a click or an ArrowDown parks a blinking caret in a properties
- * grid and every keystroke after it is swallowed. `useControlRef()` is what says otherwise and
- * `contenteditable="false"` is what it writes, so an atomic kind wraps its whole interior in
- * ONE {@link Atomic} rather than repeating the hook seven times.
+ * board and properties panel behave the same way. Such a kind wraps its whole interior in ONE
+ * {@link Atomic}, which the adapter ships — this page wrote the same six lines by hand until it
+ * did.
  *
  * AND IT MUST BE SEEDED. `/` turns THIS ROW into the chosen kind, so a menu entry with no
  * `menu.text` inserts an EMPTY body — which for an atomic kind is a block that can never be
@@ -68,14 +63,6 @@ const chipTone = (name: string): ChipTone => CHIP_TONES.find(tone => tone === na
  * asks for the empty paragraph Notion leaves below such a block. On a one-row document that
  * means the editor has no caret target at all until the user clicks elsewhere.
  */
-const Atomic = ({className, children}: {className?: string; children?: ReactNode}) => {
-	const controlRef = useControlRef()
-	return (
-		<div className={className} ref={controlRef}>
-			{children}
-		</div>
-	)
-}
 
 /* ── page furniture ─────────────────────────────────────────────────────── */
 

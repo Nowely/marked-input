@@ -186,6 +186,20 @@ const Bullet = ({children, rows, ref, className, style}: RowProps) => {
 Use it for anything that is chrome rather than text: a bullet glyph, a toggle arrow, a checkbox, a
 `<select>`, a tab bar.
 
+When the WHOLE interior is editor UI — a properties grid, a board, a card, a table of contents —
+wrap it once in `Atomic` instead of registering each leaf:
+
+```tsx fragment uses=Board,columns
+<Atomic className="board">
+    <Board columns={columns} />
+</Atomic>
+```
+
+`Atomic` is `useControlRef()` on one `<div>`, and it is shipped because forgetting it on one kind of
+several is the measured failure: when this site's own showcase first shipped its atomic kinds, four
+of the seven had no control root, and a click parked a blinking caret in a properties grid where
+every keystroke was swallowed.
+
 A control that is FOCUSABLE — a checkbox, a `<select>`, a `<button>` — takes DOM focus when it is
 clicked, which is the browser's own default, and it leaves the selection where it was. The editor
 takes its focus back, so the user can go on typing where the caret already is, and it does so at

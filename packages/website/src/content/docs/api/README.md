@@ -41,6 +41,7 @@ title: "@markput/react"
 ## Functions
 
 - [annotate](/api/functions/annotate/)
+- [Atomic](/api/functions/atomic/)
 - [denote](/api/functions/denote/)
 - [MarkedInput](/api/functions/markedinput/)
 - [OverlayList](/api/functions/overlaylist/)
