@@ -314,12 +314,7 @@ export class TokenModel {
 		// Lowered in the TREE's coordinate space: that is what `transactions.dispatch` splices,
 		// and the space the anchors themselves resolve in. NOT {@link value}, which is props-first
 		// and runs ahead of the tree while a controlled parent's arrival is still in flight.
-		const span = untracked(() => {
-			const roots = this.#tree.roots()
-			const a = offsetOfAnchor(roots, from)
-			const b = offsetOfAnchor(roots, to)
-			return {start: Math.min(a, b), end: Math.max(a, b)}
-		})
+		const span = untracked(() => this.#spanOf({anchor: from, head: to}))
 		return this.#replaceWithin(span.start, span.end, text)
 	}
 
@@ -587,8 +582,7 @@ export class TokenModel {
 	holdsFrozenRow(anchors: Anchors): boolean {
 		const lines = untracked(() => {
 			const roots = this.#tree.roots()
-			const ends = [offsetOfAnchor(roots, anchors.anchor), offsetOfAnchor(roots, anchors.head)]
-			const span = {start: Math.min(...ends), end: Math.max(...ends)}
+			const span = this.#spanOf(anchors)
 			return contentLineRows(roots)
 				.filter(line => line.range.start < span.end && span.start < line.range.end)
 				.map(line => ({row: line.row, entry: entryAnchor(line.row)}))
@@ -647,6 +641,13 @@ export class TokenModel {
 		const first = this.#hiddenWithin(span).at(0)
 		if (separator === undefined || first === undefined) return span.end
 		return first.start - separator.length
+	}
+
+	/** An anchor pair as the OFFSET RANGE it names, low end first — the tree's own coordinate space. */
+	#spanOf(anchors: Anchors): {start: number; end: number} {
+		const roots = this.#tree.roots()
+		const ends = [offsetOfAnchor(roots, anchors.anchor), offsetOfAnchor(roots, anchors.head)]
+		return {start: Math.min(...ends), end: Math.max(...ends)}
 	}
 
 	/**
