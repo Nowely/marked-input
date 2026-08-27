@@ -166,6 +166,58 @@ describe('a caret the page has scrolled past', () => {
 	})
 })
 
+/**
+ * AN EMPTY ROW MUST HOLD A CARET LINE. The rule this pins is the PLATFORM's rather than this
+ * editor's: measured with no editor in the page at all, Chromium's own vertical caret movement
+ * steps over a block that generates no LINE BOX, and an empty row's text surface generates none —
+ * so a blank line a user had just made with two Enters could be clicked into and never arrowed
+ * into. With rows `one`, ``, `three`, ``, `# head`, ``, `six`, `end`, ArrowUp visited 7, 6, 4, 2, 0.
+ *
+ * DRIVEN WITH REAL ARROW KEYS, and there is no other way to read it: the caret motion under test is
+ * the browser's own, so a placement this spec performs would pin nothing. `.Row`'s own `min-height`
+ * was already 1.2em and did not help, which is why the assertion is on where the CARET lands rather
+ * than on a box.
+ *
+ * Framework-free: the rule lives in core's stylesheet and both adapters paint the same row shape.
+ */
+describe('an empty row', () => {
+	const LADDER = 'one\n\nthree\n\n# head\n\nsix\nend'
+
+	it('is reached by the arrow key that walks past it', async () => {
+		const {host} = await mountEcho(Default, {value: LADDER, separator: '\n'})
+		const rows = rowsOf(host)
+
+		await focusAtEnd(rows.at(-1)!)
+		const visited: number[] = []
+		for (let step = 0; step < 7; step++) {
+			await userEvent.keyboard('{ArrowUp}')
+			await settle()
+			visited.push(rows.indexOf(rowOfCaret(host)))
+		}
+
+		expect(visited).toEqual([6, 5, 4, 3, 2, 1, 0])
+	})
+
+	it('takes the character typed into it once the arrow stops there', async () => {
+		const {host, value} = await mountEcho(Default, {value: LADDER, separator: '\n'})
+
+		await focusAtEnd(rowsOf(host)[0])
+		await userEvent.keyboard('{ArrowDown}')
+		await settle()
+		await userEvent.keyboard('X')
+
+		await expect.poll(value).toBe('one\nX\nthree\n\n# head\n\nsix\nend')
+	})
+})
+
+/** The row element the live caret sits in. */
+function rowOfCaret(host: HTMLElement): HTMLElement {
+	const node = window.getSelection()?.focusNode
+	const row = node && rowsOf(host).find(candidate => candidate.contains(node))
+	if (!row) throw new Error('the caret is in no row')
+	return row
+}
+
 /** Top of the live caret rect, in viewport coordinates. */
 function caretTop(): number {
 	const selection = window.getSelection()

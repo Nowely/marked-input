@@ -1137,3 +1137,16 @@ becomes a ticket here.
     `TokenModel.rowSelectionText`, whose `undefined` is its ORDINARY-TEXT verdict — so a mid-row sweep
     still merges, unchanged — and a collapsed answer falls through to the caret arms below, which is
     what makes Backspace over the margin double-click take one character.
+  - **AN EMPTY ROW IS UNREACHABLE BY KEYBOARD, AND THE RULE IS THE PLATFORM'S** (`styles.module.css`).
+    With rows `one`, ``, `three`, ``, `# head`, ``, `six`, `end`, ArrowUp visited 7, 6, 4, 2, 0.
+    MEASURED with NO editor in the page at all: Chromium steps over a block that generates no LINE
+    BOX, and an empty row's text surface generates none — `<br>` is the only DOM shape that fixes it,
+    and `min-height` on the row, a ZWSP, and three spellings of `::after` content all fail. An empty
+    inline-block WITH A HEIGHT is the same line box at no DOM cost. The selector is the whole care:
+    `> span:first-child:empty` alone turned the showcase divider's 668x1 hairline into a 0x17
+    inline-block and grew four bullets by 2px, because a consumer paints furniture FIRST;
+    `:not([contenteditable])` excludes it as an invariant rather than a coincidence (a text surface is
+    BARE by policy, frozen furniture is registered). Measured over the showcase's 75 rows, exactly one
+    height moves. NOT REACHED, flagged: a kind that paints furniture ahead of an empty body — the
+    divider — keeps the platform's answer, because giving it the caret's line grows a shipped kind by
+    a whole line without its consumer asking.

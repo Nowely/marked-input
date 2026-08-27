@@ -99,6 +99,41 @@
 	outline: none;
 }
 
+/* AN EMPTY ROW IS UNREACHABLE BY KEYBOARD WITHOUT THIS, and the rule it works around is the
+   PLATFORM's rather than this editor's: measured with no editor in the page at all, Chromium's own
+   vertical caret movement steps over a block that generates no LINE BOX, and an empty row's text
+   surface generates none. A blank line a user has just made with two Enters could be clicked into
+   but never arrowed into — with rows `one`, ``, `three`, ``, `# head`, ``, `six`, `end`, ArrowUp
+   visited 7, 6, 4, 2, 0.
+
+   A `<br>` is what a browser puts inside its OWN empty block, and it is the only DOM shape measured
+   to work; the same line box falls out of an empty inline-block WITH A HEIGHT, which costs no node
+   and no reading. `min-height` is load-bearing and measured: an empty inline-block at the line's own
+   height is still stepped over, and so are `::after` content, a ZWSP and `min-height` on the row.
+
+   THE SELECTOR IS "THIS ROW PAINTS NOTHING BUT ITS OWN EMPTY TEXT", and every looser spelling was
+   measured wrong on the showcase's 75 rows:
+
+   - `> span:first-child:empty` alone matched a DIVIDER's own rule span and four bullets' dot spans
+     — furniture a consumer paints BEFORE the body — and turned the divider's 668x1 hairline into a
+     0x17 inline-block, destroying the kind.
+   - `:not([contenteditable])` is what excludes them, and it is an invariant rather than a
+     coincidence: a text surface is BARE by policy (`bind.ts`'s editable state), and frozen
+     furniture is `contenteditable="false"` because a consumer registered it.
+   - the last clause is the row's own shape: the surface is the last child, or the one right before
+     the adapter's child-rows host, which is itself last and empty. A row with painted content of
+     its own already has a line box and matches neither.
+
+   WHAT IT STILL DOES NOT REACH, flagged rather than forced: a kind whose component paints furniture
+   AHEAD of an empty body — the showcase's divider — keeps the platform's answer and is arrowed over.
+   The divider already pays for the CLICK by hand (its own comment: "a row with no line box is a row
+   the caret cannot stand on"); giving it the caret's line here would grow a shipped kind by a whole
+   line without its consumer asking. */
+.Row > span:first-child:empty:not([contenteditable]):is(:last-child, :has(+ span:last-child:empty)) {
+	display: inline-block;
+	min-height: 1em;
+}
+
 /* ONE row-controls layer per editor, inside the container: it paints the grip, the drop
    indicator and the row menu at row boxes it measures. It is therefore a container child that
    is NOT a row.
