@@ -464,9 +464,18 @@ TAKING NO CARET IS A CALL AND NOT A CONSEQUENCE, and the difference is what a us
 atomic row is a panel a click or an ArrowDown parks a blinking caret inside, where every keystroke
 is silently swallowed. An atomic kind wraps its whole interior in one element carrying
 `useControlRef()`. It also OWES ITS OWN CONTENT A SEED — `menu.text` on its `/` entry — because an
-empty atomic body can never be filled through the editor, and after such an insert the caret has
-nowhere to go at all: `choose` turns THIS ROW into the kind, so nothing a consumer writes asks for
-the empty row underneath.
+empty atomic body can never be filled through the editor.
+
+THE ROW UNDERNEATH IS THE EDITOR'S, not the consumer's. A document may not END in a row the caret
+cannot enter or leave, and there are two such rows: an atomic one, which holds no position at all,
+and a raw closed body, whose interior already holds separators so every Enter in it is a line. The
+caret invariant grows a blank row under either one (`TokenModel.#settleTail`), because nothing a
+consumer writes could ask for it — `choose` turns THIS ROW into the kind, and no verb opens a row
+above or names a caret in the row it made. It is asked of the document's LAST row rather than of
+the caret's own, since an atomic row is one the caret can never be inside; it fires ONLY while
+someone is in the document, so a value merely handed to the editor is never rewritten on mount; and
+it is a REPAIR, folded into the edit that provoked it, so one undo takes back both. That is the one
+place the editor writes bytes no gesture asked for, and it is bounded to exactly this.
 
 A ROW MAY CARVE ITS OWN BODY instead of nesting under it. A kind declaring `split: {at, as}` has
 its body taken apart at the literal, and each piece is an ordinary Row of the option `as` names —

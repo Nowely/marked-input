@@ -1470,7 +1470,7 @@ export class TokenModel {
 	 * ONE reading for what were three defects, because they are one — an atomic row holds no caret
 	 * position at all, a row inside a collapsed subtree holds one with no box, and a `contenteditable
 	 * ="false"` control root holds one the browser will not edit. See {@link DomModel.reachable}
-	 * for the refusals it rests on, and {@link #keepTailEnterable} for the invariant's other half.
+	 * for the refusals it rests on, and {@link #settleTail} for the invariant's other half.
 	 *
 	 * ON THE DOM CLOCK, and it has to be: the model clock pulses while the tree already holds a row
 	 * the framework has not painted yet, so every reachability read there answers about the previous
@@ -1499,13 +1499,17 @@ export class TokenModel {
 		queueMicrotask(() => {
 			this.#settling = false
 			// EVERY WRITE THE INVARIANT MAKES IS A REPAIR (see {@link EditRecord.repair}), and this
-			// is the one place that can say so: both arms below open a row through the ordinary row
+			// is the one place that can say so: every arm below opens a row through the ordinary row
 			// verbs, which a user drives too, so the fact is about the CALLER and not about the verb.
 			// The flag is read synchronously inside `CommitSink.commit`, which the write reaches
 			// before this call returns in either value mode.
 			this.#repairing = true
 			try {
 				this.#settleRows()
+				// AHEAD OF THE CARET HALF, so a caret with nowhere to go finds the door already open
+				// rather than opening a second one: {@link #recoverCaret}'s forward walk is what puts
+				// the caret in the row this grows.
+				this.#settleTail()
 				this.#settleCaret()
 			} finally {
 				this.#repairing = false
@@ -1544,7 +1548,7 @@ export class TokenModel {
 	 * and it stands, and the rows that can no longer live under it move to the depth that paints
 	 * them — the same verb, and the same step, a Shift+Tab would have made.
 	 *
-	 * ONLY WHILE SOMEONE IS IN THE DOCUMENT, for {@link #keepTailEnterable}'s reason: a value
+	 * ONLY WHILE SOMEONE IS IN THE DOCUMENT, for {@link #settleTail}'s reason: a value
 	 * merely AUTHORED with a child under such a kind is the consumer's own bytes, and an editor
 	 * that rewrote them on mount would emit an edit nobody made.
 	 */
@@ -1618,28 +1622,50 @@ export class TokenModel {
 		// the parse leaves after it — while a row whose ENTRY cannot be reached is an atomic block,
 		// which is a fact about the row and stays true. MEASURED: the anchor reading grew a trailing
 		// row every time a mention was completed at the end of a document.
-		if (paint === 'painted' && this.#dom.reachable(entryAnchor(row))) {
-			this.#keepTailEnterable(row)
-			return
-		}
+		if (paint === 'painted' && this.#dom.reachable(entryAnchor(row))) return
 		this.#recoverCaret(row)
 	}
 
 	/**
-	 * THE INVARIANT'S OTHER HALF, and a TREE question rather than a DOM one: a document must end in
-	 * a row the caret can LEAVE. A raw closed body — a fence, frontmatter — is the one row Enter
-	 * cannot, because its interior already holds separators, so every Enter in it is a line; at the
-	 * document's end that made the block a room with no door, where ArrowDown, Enter and a click
-	 * below all failed to open a row after it.
+	 * THE INVARIANT'S OTHER HALF: A DOCUMENT MAY NOT END IN A ROW THE CARET CANNOT ENTER OR LEAVE.
+	 * Where {@link #settleCaret} answers "where may this caret be", this answers "is there anywhere
+	 * left to go", and it is asked of the document's LAST ROW rather than of the caret's own.
 	 *
-	 * ONLY WITH THE CARET IN IT, so a document merely AUTHORED ending in a fence is left alone until
-	 * someone actually stands in the trap. And once, by construction: the row this opens is the last
-	 * row afterwards.
+	 * TWO KINDS OF ROW HAVE NO EXIT, and the rule is one because the trap is one. A RAW CLOSED BODY
+	 * — a fence, frontmatter — holds positions and no way out: its interior already holds
+	 * separators, so every Enter in it is a line, and at the document's end that made the block a
+	 * room with no door. A row that holds NO EDITABLE POSITION AT ALL — an atomic kind, whose
+	 * component is handed the row's text and paints none of it — is the same trap read one step
+	 * earlier: there is no caret in it to be stuck, and a pointer landing on one selects the row
+	 * ({@link #claimRow}), so a document ending in one had no caret target at all and no gesture
+	 * that could ask for one. Asked of the CARET's row, the second kind was unreachable by
+	 * construction — the caret can never be in it — which is why this moved off the caret.
+	 *
+	 * ONLY WHILE SOMEONE IS IN THE DOCUMENT, which is {@link #settleRows}' gate and its reason: a
+	 * value merely AUTHORED ending in such a row is the consumer's own bytes, and an editor that
+	 * rewrote them on mount would emit an edit nobody made. A SELECTION counts, not just a caret,
+	 * and that is what closes the one-row document: the only gesture such a document takes is a
+	 * click, and a click on frozen presentation writes a row selection.
+	 *
+	 * AND ONLY WHERE THE ROW IS ON SCREEN. `'absent'` is a frame that has not painted this row yet
+	 * and stands down; `'boxless'` is a collapsed room, where the door this opens is one nobody can
+	 * see and the value would grow on every pass — the same two readings {@link #recoverCaret}
+	 * makes for the same reasons.
+	 *
+	 * IT TERMINATES BY CONSTRUCTION: the row it opens is blank and of no kind, which is a row the
+	 * caret enters and leaves, so the next pass finds a tail that needs no door.
 	 */
-	#keepTailEnterable(row: RowNode): void {
-		// O(1) ahead of everything else: almost no document ends in a raw body.
-		if (!untracked(() => hasRawBody(row))) return
-		if (untracked(() => preorderRows(this.#tree.roots()).at(-1)?.row) !== row) return
+	#settleTail(): void {
+		if (!this.selection.anchors()) return
+		const row = untracked(() => preorderRows(this.#tree.roots()).at(-1)?.row)
+		if (!row) return
+		if (this.#dom.rowPaint(row.id) !== 'painted') return
+		// A BLANK ROW OF NO KIND IS ALREADY A DOOR — the trailing convention (ADR-0009) leaves one at
+		// the end of any document ending in a separator — so it is answered before the DOM is asked
+		// at all. That also keeps a frame that has painted the row and not yet its text surface from
+		// reading as a trap and growing the value on every pulse.
+		if (untracked(() => row.descriptor() === undefined && row.slot() === '')) return
+		if (untracked(() => !hasRawBody(row)) && this.#dom.reachable(untracked(() => entryAnchor(row)))) return
 		this.#openRowAfter(row)
 	}
 
@@ -1780,15 +1806,6 @@ export class TokenModel {
 			if (this.#dom.rowPaint(rows[index].id) === 'absent') return
 			if (this.#placeInRow(rows[index])) return
 		}
-		// A blank row of no kind is already a row the caret can enter — the trailing convention
-		// (ADR-0009) leaves one at the end of any document ending in a separator — so the invariant
-		// is met and opening a second one would grow the value on every pass.
-		const blank = untracked(() => from.descriptor() === undefined && from.slot() === '')
-		// AND NOT INSIDE A COLLAPSED ROOM: a sibling of a boxless row is boxless too, so opening one
-		// there is a door nobody can see and a value that grows on every pass. The row the caret
-		// leaves is found by the backward walk instead.
-		const collapsed = this.#dom.rowPaint(from.id) === 'boxless'
-		if (at === rows.length - 1 && !blank && !collapsed && this.#commands.addSibling(from)) return
 		for (let index = at - 1; index >= 0; index--) {
 			if (this.#placeInRow(rows[index])) return
 		}
