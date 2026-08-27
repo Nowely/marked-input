@@ -45,12 +45,17 @@ character is typed.
 optional meta: string;
 ```
 
-Defined in: [core/src/shared/types.ts:112](https://github.com/Nowely/marked-input/blob/next/packages/core/src/shared/types.ts#L112)
+Defined in: [core/src/shared/types.ts:117](https://github.com/Nowely/marked-input/blob/next/packages/core/src/shared/types.ts#L117)
 
 SEEDS for the row this entry writes, and both are DATA rather than a callback: the entry
 says what the row starts as, and `choose` is the only thing that writes it. They apply only
 where there is nothing to keep — a row that already has text keeps its own body, since a
 turn-into must not discard what the user typed.
+
+ONE ROW, so `text` may not carry the document separator. It becomes the row's BODY, and the
+projection re-parses it: an extra line lands at the depth ITS OWN lead says, which for a seed
+is none — so a two-line seed on a NESTED row writes its second line at the document root and
+splits the construct across two depths.
 
 ***
 
@@ -60,4 +65,4 @@ turn-into must not discard what the user typed.
 optional text: string;
 ```
 
-Defined in: [core/src/shared/types.ts:113](https://github.com/Nowely/marked-input/blob/next/packages/core/src/shared/types.ts#L113)
+Defined in: [core/src/shared/types.ts:118](https://github.com/Nowely/marked-input/blob/next/packages/core/src/shared/types.ts#L118)

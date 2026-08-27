@@ -9,7 +9,7 @@ title: "OverlayRow"
 type OverlayRow = object;
 ```
 
-Defined in: [core/src/shared/types.ts:126](https://github.com/Nowely/marked-input/blob/next/packages/core/src/shared/types.ts#L126)
+Defined in: [core/src/shared/types.ts:131](https://github.com/Nowely/marked-input/blob/next/packages/core/src/shared/types.ts#L131)
 
 ONE ROW of the list an open overlay offers: what to paint, and the pick that choosing it
 commits. It is the SAME shape for a suggestion and for a row-menu entry, which is what let the
@@ -28,7 +28,7 @@ copy of it.
 label: string;
 ```
 
-Defined in: [core/src/shared/types.ts:126](https://github.com/Nowely/marked-input/blob/next/packages/core/src/shared/types.ts#L126)
+Defined in: [core/src/shared/types.ts:131](https://github.com/Nowely/marked-input/blob/next/packages/core/src/shared/types.ts#L131)
 
 ***
 
@@ -38,4 +38,4 @@ Defined in: [core/src/shared/types.ts:126](https://github.com/Nowely/marked-inpu
 pick: OverlayPick;
 ```
 
-Defined in: [core/src/shared/types.ts:126](https://github.com/Nowely/marked-input/blob/next/packages/core/src/shared/types.ts#L126)
+Defined in: [core/src/shared/types.ts:131](https://github.com/Nowely/marked-input/blob/next/packages/core/src/shared/types.ts#L131)

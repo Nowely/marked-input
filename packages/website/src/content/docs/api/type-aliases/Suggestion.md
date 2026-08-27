@@ -15,7 +15,7 @@ type Suggestion =
 };
 ```
 
-Defined in: [core/src/shared/types.ts:148](https://github.com/Nowely/marked-input/blob/next/packages/core/src/shared/types.ts#L148)
+Defined in: [core/src/shared/types.ts:153](https://github.com/Nowely/marked-input/blob/next/packages/core/src/shared/types.ts#L153)
 
 A row of the built-in Suggestions overlay. A bare string is label and value at once, which is
 every list whose text IS what the document stores; the object form separates them, so a row can

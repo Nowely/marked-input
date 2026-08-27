@@ -5,7 +5,7 @@ prev: false
 title: "RowSpec"
 ---
 
-Defined in: [core/src/shared/types.ts:151](https://github.com/Nowely/marked-input/blob/next/packages/core/src/shared/types.ts#L151)
+Defined in: [core/src/shared/types.ts:156](https://github.com/Nowely/marked-input/blob/next/packages/core/src/shared/types.ts#L156)
 
 A row KIND's declaration: what an option adds to make its markup a row rather than a mark.
 
@@ -17,7 +17,7 @@ A row KIND's declaration: what an option adds to make its markup a row rather th
 Component: ElementType;
 ```
 
-Defined in: [core/src/shared/types.ts:156](https://github.com/Nowely/marked-input/blob/next/packages/core/src/shared/types.ts#L156)
+Defined in: [core/src/shared/types.ts:161](https://github.com/Nowely/marked-input/blob/next/packages/core/src/shared/types.ts#L161)
 
 REQUIRED. Every row kind renders through its own component; `slots.paragraph` is the row
 with no kind, and the only fallback left.
@@ -30,7 +30,7 @@ with no kind, and the only fallback left.
 optional continues: boolean | CoreOption;
 ```
 
-Defined in: [core/src/shared/types.ts:178](https://github.com/Nowely/marked-input/blob/next/packages/core/src/shared/types.ts#L178)
+Defined in: [core/src/shared/types.ts:183](https://github.com/Nowely/marked-input/blob/next/packages/core/src/shared/types.ts#L183)
 
 WHAT THE ROW A SPLIT PRODUCES IS. `true` is this kind again — a list item continues. `false`
 or absent is a plain row, which is what a heading wants.
@@ -60,7 +60,7 @@ positions.
 optional indents: boolean;
 ```
 
-Defined in: [core/src/shared/types.ts:192](https://github.com/Nowely/marked-input/blob/next/packages/core/src/shared/types.ts#L192)
+Defined in: [core/src/shared/types.ts:197](https://github.com/Nowely/marked-input/blob/next/packages/core/src/shared/types.ts#L197)
 
 DOES TAB BELONG TO THIS EDITOR. Default false, so an editor no option declares it on leaves
 Tab to the browser and the field stays escapable by keyboard alone — ADR-0002's accepted
@@ -82,7 +82,7 @@ indents is worse than either.
 optional split: object;
 ```
 
-Defined in: [core/src/shared/types.ts:207](https://github.com/Nowely/marked-input/blob/next/packages/core/src/shared/types.ts#L207)
+Defined in: [core/src/shared/types.ts:212](https://github.com/Nowely/marked-input/blob/next/packages/core/src/shared/types.ts#L212)
 
 This kind carves its OWN body at a literal, and each piece becomes an ordinary Row of the
 option `as` names — a table line into cells. A cell is not a node kind of its own: it is a Row
