@@ -387,11 +387,11 @@ describe('the slash menu', () => {
 		await focusAtStart(rowsOf(host)[0])
 		dispatchInsertText(editingHost(host), '/')
 		await choose('Table')
-		await expect.poll(value).toBe('|= Task | Status | Owner | Due | Effort')
+		await expect.poll(value).toBe('|= Task | Status | Owner | Due | Effort\n|  |  |  |  | ')
 
 		await userEvent.keyboard('Z')
 
-		await expect.poll(value).toBe('|= ZTask | Status | Owner | Due | Effort')
+		await expect.poll(value).toBe('|= ZTask | Status | Owner | Due | Effort\n|  |  |  |  | ')
 	})
 
 	/**
@@ -1480,10 +1480,13 @@ describe('the inline database', () => {
 	})
 
 	/**
-	 * THE FIRST DATA ROW, written the obvious way: `/table` seeds the header, Enter at the end of it
-	 * opens a LINE, and the pipes typed there are carved into cells. The header declared no
-	 * continuation, so Enter opened a paragraph and the row a user typed sat in the document as
-	 * literal `'Auth | Done | Kara'` — the table's own vocabulary as prose.
+	 * A SECOND DATA ROW, written the obvious way: Enter at the end of the header opens a LINE, and
+	 * the pipes typed there are carved into cells. The header declared no continuation once, so
+	 * Enter opened a paragraph and the row a user typed sat in the document as literal
+	 * `'Auth | Done | Kara'` — the table's own vocabulary as prose.
+	 *
+	 * The entry seeds an empty line of its own now, so this is the row ABOVE it; the seeded line's
+	 * five empty cells are what the assertion's trailing `'|  |  |  |  | '` is.
 	 *
 	 * The CELLS are the oracle beside the value: a paragraph holding pipes and a carved line emit
 	 * different strings, but only the carve puts boxes on the page.
@@ -1501,14 +1504,14 @@ describe('the inline database', () => {
 		await focusAtStart(rowsOf(host)[0])
 		dispatchInsertText(editingHost(host), '/')
 		await choose('Table')
-		await expect.poll(value).toBe('|= Task | Status | Owner | Due | Effort')
+		await expect.poll(value).toBe('|= Task | Status | Owner | Due | Effort\n|  |  |  |  | ')
 
 		await focusAtEnd([...host.querySelectorAll<HTMLElement>('[class*="tableHeadCell"]')].at(-1)!)
 		await userEvent.keyboard('{Enter}')
 		dispatchInsertText(editingHost(host), 'Auth | Done | Kara')
 
-		await expect.poll(value).toBe('|= Task | Status | Owner | Due | Effort\n| Auth | Done | Kara')
-		expect(cellsOf(host).map(cell => cell.textContent)).toEqual(['Auth', 'Done', 'Kara'])
+		await expect.poll(value).toBe('|= Task | Status | Owner | Due | Effort\n| Auth | Done | Kara\n|  |  |  |  | ')
+		expect(cellsOf(host).map(cell => cell.textContent)).toEqual(['Auth', 'Done', 'Kara', '', '', '', '', ''])
 	})
 
 	/**
@@ -1530,11 +1533,11 @@ describe('the inline database', () => {
 		await focusAtStart(rowsOf(host)[0])
 		dispatchInsertText(editingHost(host), '/')
 		await choose('Table')
-		await expect.poll(value).toBe('|= Task | Status | Owner | Due | Effort')
+		await expect.poll(value).toBe('|= Task | Status | Owner | Due | Effort\n|  |  |  |  | ')
 
 		await userEvent.keyboard('{Enter}')
 
-		await expect.poll(value).toBe('| \n|= Task | Status | Owner | Due | Effort')
+		await expect.poll(value).toBe('| \n|= Task | Status | Owner | Due | Effort\n|  |  |  |  | ')
 		expect(host.querySelectorAll('[class*="tableHeadCell"]').length).toBe(5)
 	})
 

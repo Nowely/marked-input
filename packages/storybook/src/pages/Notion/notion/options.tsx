@@ -580,7 +580,19 @@ export const tableHeader: Option = {
 			</div>
 		),
 	},
-	menu: {label: 'Table', keywords: ['database', 'grid', 'table'], text: 'Task | Status | Owner | Due | Effort'},
+	/**
+	 * THE SEED IS A GRID, not a header. `menu.text` is the row's own body, and a body may carry a
+	 * separator — the footer's own `turnInto` already writes one — so the entry seeds the header
+	 * line and one empty data line under it, with a cell for each column. Seeding the header alone
+	 * gave `/table` a single line on a construct whose whole point is a grid, and left the user to
+	 * know that Enter opens the next one.
+	 */
+	menu: {
+		label: 'Table',
+		keywords: ['database', 'grid', 'table'],
+		// `'| '` then four delimiters: five empty cells, one per column of the header above it.
+		text: `Task | Status | Owner | Due | Effort\n| ${' | '.repeat(4)}`,
+	},
 }
 
 /**
