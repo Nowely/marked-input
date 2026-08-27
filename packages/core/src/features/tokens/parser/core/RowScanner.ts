@@ -1,7 +1,6 @@
-import type {GapType} from '../constants'
-import {GAP_TYPE} from '../constants'
 import type {RowConfig, RowToken} from '../types'
 import type {MarkupDescriptor} from './MarkupDescriptor'
+import {isBody} from './RowKind'
 
 /**
  * The row skeleton, carved BEFORE any inline matching (ADR-0010). Two linear passes over the
@@ -262,8 +261,4 @@ function tryKind(
 	if (!body) return undefined
 	if (cursor !== value.length && !value.startsWith(separator, cursor)) return undefined
 	return {descriptor, end: cursor, slot: body, meta}
-}
-
-function isBody(type: GapType): boolean {
-	return type === GAP_TYPE.Slot || type === GAP_TYPE.Value
 }
