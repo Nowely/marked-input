@@ -657,5 +657,33 @@ describe('SelectionDriver', () => {
 			expect(anchors && offsetOfAnchor(store.tokens.nodes(), anchors.anchor)).toBe(8)
 			container.remove()
 		})
+
+		/**
+		 * A DOCUMENT WITH NO SELECTION AT ALL IS THE DOM LOSING WHAT THE MODEL HOLDS. MEASURED on the
+		 * showcase: click a chip, a table-of-contents entry or a metric card and click the SAME target
+		 * again, and Chromium empties the selection on the second mouse UP — proven by patching
+		 * `Selection.removeAllRanges`, whose only caller was our own paint of the first click. The model
+		 * still held the row, nothing on screen said so, and the next keystroke was answered with the
+		 * caret Chromium INVENTS at the host's start: `'@title YApollo — Q2 launch plan'`.
+		 */
+		it('puts the stored selection back when the browser empties the document', async () => {
+			const {store, container, surfaces} = mountDecoratedRows()
+			await new Promise(resolve => setTimeout(resolve, 0))
+			const text = surfaces[1].firstChild
+			if (!text) throw new Error('the row surface rendered no text node')
+			container.focus()
+			window.getSelection()?.collapse(text, 2)
+			document.dispatchEvent(new Event('selectionchange'))
+			const held = store.tokens.selection.anchors()
+
+			// What the second click on frozen presentation leaves behind, with no call of ours involved.
+			window.getSelection()?.removeAllRanges()
+			document.dispatchEvent(new Event('selectionchange'))
+
+			expect(window.getSelection()?.rangeCount).toBe(1)
+			expect(store.tokens.domAnchors()).toBeDefined()
+			expect(store.tokens.selection.anchors()).toBe(held)
+			container.remove()
+		})
 	})
 })

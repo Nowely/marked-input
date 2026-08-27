@@ -452,9 +452,29 @@ export class SelectionDriver {
 			})
 		})
 
+		// A DOCUMENT WITH NO SELECTION AT ALL IS THE DOM LOSING WHAT THE MODEL HOLDS, not a reading
+		// with nothing in it — so the stored pair goes back in rather than being left to rot. MEASURED
+		// on the showcase: click the `In progress` chip (or a table-of-contents entry, or a metric
+		// card) and click the SAME target again, and Chromium empties the selection on the second
+		// mouse UP with no call of ours involved — `Selection.removeAllRanges` was patched to prove it,
+		// and the only hit is our own paint of the first click. The model still held the row, the
+		// screen no longer said so, and the next keystroke was answered with the caret Chromium
+		// INVENTS at the host's start: `'@title YApollo — Q2 launch plan'`, from two clicks on a chip.
+		//
+		// ONLY WHILE THE FOCUS IS STILL OURS. Focus leaving the container empties the selection too,
+		// and re-applying there would call `focusEditingHost` and take the focus back off whatever the
+		// user just clicked. The `focusout` rule below owns that case and clears the pair instead.
+		//
+		// AND ONLY THE RE-APPLY, never {@link restoreCaret}'s second arm: a model holding NO anchors has
+		// nothing to lose here, and releasing would BLUR the host on a plain `container.focus()` — which
+		// is how a caller focuses an editor nobody has typed in yet. Measured: it took the board's
+		// `Mod+Z` pin from green to red, because the key reached no listener of ours.
 		listen(document, 'selectionchange', () => {
 			const focusNode = this.deps.dom.selection()?.focusNode
-			if (!focusNode) return
+			if (!focusNode) {
+				if (container.contains(document.activeElement)) this.#applySelection()
+				return
+			}
 			syncIfInEditor(focusNode)
 		})
 	}
