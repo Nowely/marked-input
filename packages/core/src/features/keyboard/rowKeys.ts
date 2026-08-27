@@ -372,13 +372,17 @@ export function replaceRowSelection(
 	}
 	const span = store.tokens.rowSelectionText(anchors)
 	if (span) {
+		// AND A ROW THAT HOLDS NO EDITABLE POSITION IS CONSUMED AND LEFT ALONE. A frozen row's body
+		// is the kind's own markup rather than prose, so the character has nothing in that row to
+		// replace and the key does nothing. Asked of the SPAN this line is about to write, which is
+		// the one pair that answers about the rows the character would actually take — see
+		// {@link TokenModel.holdsFrozenRow} for the sweep the raw pair let through.
+		if (store.tokens.holdsFrozenRow(span)) return true
 		store.edit.replace(span.anchor, span.head, replacement.text)
 		return true
 	}
-	// AND A ROW THAT HOLDS NO EDITABLE POSITION IS CONSUMED AND LEFT ALONE. A frozen row's body is
-	// the kind's own markup rather than prose — `TokenModel.rowSelectionText` refuses it — so the
-	// character has nothing in that row to replace and the key does nothing. `rowSelection` is
-	// empty wherever no whole row is held, so an ordinary text edit still falls through here.
+	// AND SO IS A ROW SELECTION THE SPAN COULD NOT BE FORMED FOR. `rowSelection` is empty wherever
+	// no whole row is held, so an ordinary text edit still falls through here.
 	//
 	// IT USED TO REPLACE THE ROW WHOLE, and that made ONE CLICK PLUS ONE KEYSTROKE a page-scale
 	// delete. A block selection is what a pointer landing on frozen presentation produces

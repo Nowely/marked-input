@@ -1421,13 +1421,20 @@ describe('rowKeys the row keymap', () => {
 		}
 
 		/**
-		 * {@link mountNestedRowDoc}'s paint with ONE difference: a row that has a KIND gets no surface
-		 * for its own body, which is exactly what an atomic component does and what
+		 * {@link mountNestedRowDoc}'s paint with ONE difference: a row of the ATOMIC kind gets no
+		 * surface for its own body, which is exactly what such a component does and what
 		 * {@link DomModel.reachable} reads — a token the adapter never painted has no element to reach.
+		 * Every OTHER kind paints its own text, which is what a fence in `extra` is here to be.
 		 */
-		function frozen(defaultValue: string) {
+		function frozen(defaultValue: string, extra: CoreOption[] = []) {
 			const store = new Store()
-			store.props.set({defaultValue, separator: '\n', indent: '\t', options: [CARD], Mark: () => null})
+			store.props.set({
+				defaultValue,
+				separator: '\n',
+				indent: '\t',
+				options: [CARD, ...extra],
+				Mark: () => null,
+			})
 			const container = document.createElement('div')
 			document.body.append(container)
 			store.host.container(container)
@@ -1436,7 +1443,7 @@ describe('rowKeys the row keymap', () => {
 				container.append(element)
 				store.tokens.consign(node.id)(element)
 				store.tokens.children(node.id)(element)
-				if (node.kind !== 'row' || node.descriptor() !== undefined) return
+				if (node.kind !== 'row' || node.option() === 0) return
 				for (const child of node.inline()) {
 					const surface = document.createElement('span')
 					element.append(surface)
@@ -1470,6 +1477,48 @@ describe('rowKeys the row keymap', () => {
 			press(container, 'Backspace')
 
 			expect(store.tokens.value()).toBe('before\nafter')
+			container.remove()
+		})
+
+		/**
+		 * AND THE ROWS THE WRITE ACQUIRES ON THE WAY, which is the shape the refusal missed while it
+		 * was asked of the pair the EVENT named. A sweep from a plain row into a fence's interior
+		 * holds no row whole by that pair — it is an ordinary text selection, `rows.selected` empty —
+		 * but `TokenModel.#offBlockInterior` pulls the far edge back to the fence's own boundary,
+		 * because an edge inside a raw body from outside the row names the ROW, and the span left
+		 * over covers every row between, the frozen one included.
+		 *
+		 * Measured before the refusal moved onto that span: one `'Z'` emitted `'Z⏎```js⏎code⏎```'` —
+		 * the frozen row deleted by a typed character, which is the whole of what this describe
+		 * refuses.
+		 */
+		const FENCE: CoreOption = {markup: '```__meta__\n__value__\n```', row: {Component: 'pre'}}
+		const SWEPT = 'aa\n@card panel\n```js\ncode\n```'
+
+		/** From `aa`'s start into the middle of `code`, which is the fence's own body. */
+		const sweepIntoFence = (store: Store): void => {
+			store.tokens.selection.select(store.tokens.anchorAt(0), store.tokens.anchorAt(23))
+		}
+
+		it('refuses a sweep whose RESOLVED span acquires a frozen row the raw pair never held', () => {
+			const {store, container} = frozen(SWEPT, [FENCE])
+			sweepIntoFence(store)
+			expect(store.rows.selected()).toHaveLength(0)
+
+			expect(typeInto(container, 'Z').defaultPrevented).toBe(true)
+
+			expect(store.tokens.value()).toBe(SWEPT)
+			container.remove()
+		})
+
+		/** And Backspace over that same sweep still takes those rows, with the fence left whole. */
+		it('still lets Backspace take the swept rows and leaves the fence standing', () => {
+			const {store, container} = frozen(SWEPT, [FENCE])
+			sweepIntoFence(store)
+
+			press(container, 'Backspace')
+
+			expect(store.tokens.value()).toBe('\n```js\ncode\n```')
 			container.remove()
 		})
 

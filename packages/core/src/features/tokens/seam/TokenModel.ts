@@ -36,6 +36,7 @@ import {createSelection} from '../tree/selection'
 import type {Selection} from '../tree/selection'
 import type {Continuation} from '../tree/siblings'
 import {
+	contentLineRows,
 	contentSpan,
 	depthPlan,
 	dropPlacements,
@@ -537,31 +538,60 @@ export class TokenModel {
 	 * the NEXT line's entry whatever that line is, so a parent's first child and a table's next cell
 	 * carried the same unpainted boundary and neither was a row selection at all.
 	 *
-	 * A ROW THAT HOLDS NO EDITABLE POSITION IS REFUSED, and the caller then replaces the ROW
-	 * instead ({@link replaceRows}). It is the caret invariant read at the WRITE: a body no caret
-	 * may enter is not prose, it is the kind's own markup — a raw body between its literals, a
-	 * carved grid — so text written into it is bytes the kind cannot read back. Measured on a
-	 * selected table of contents: `'@toc⏎Section⏎@end'` typed over emitted `'@toc⏎Z- beta'`, the
-	 * closing literal gone and the row below merged in. The same reading `#placeInRow` makes, and
-	 * the reason it is a DOM one: whether a kind paints its own text is the consumer's, not the
-	 * tree's.
-	 *
 	 * IT ANSWERS THE DELETE PATH TOO ({@link anchorsForDelete}), which used to write the RAW pair
-	 * for any ranged selection and so carried every structural byte this resolves off. Its own
-	 * refusal is vacuous there: `rowSelection` is non-empty exactly when the selection is an exact
-	 * row cover, which is exactly when {@link replaceRows} has already consumed the key upstream.
+	 * for any ranged selection and so carried every structural byte this resolves off.
+	 *
+	 * A ROW NO CARET MAY ENTER IS NOT ITS BUSINESS, and that is {@link holdsFrozenRow}: the two
+	 * callers want opposite things from such a row — the typed character is refused, the delete
+	 * takes it — so the span and the refusal are separate reads rather than one answer that has to
+	 * mean both. Held together, the refusal was asked of the pair the EVENT named while the span
+	 * was resolved off the structure it landed on, and the two disagreed wherever the resolution
+	 * moved an edge.
 	 */
 	rowSelectionText(anchors: Anchors): Anchors | undefined {
 		const span = untracked(() => contentSpan(this.#tree.roots(), this.#offBlockInterior(anchors)))
 		if (!span) return undefined
-		if (!this.rowSelection(anchors).every(row => this.#dom.reachable(untracked(() => entryAnchor(row)))))
-			return undefined
 		// `<`, not `<=`: an EMPTY content span is a POSITION rather than a refusal — see
 		// {@link contentSpan}'s no-content arm — and refusing one put the raw pair back on the
 		// write path, which is the whole defect that arm exists to close.
 		const end = this.#visibleEnd(span)
 		if (end < span.start) return undefined
 		return {anchor: this.anchorAt(span.start), head: this.anchorAt(end)}
+	}
+
+	/**
+	 * DOES THIS SPAN HOLD A ROW THAT HOLDS NO EDITABLE POSITION — the caret invariant read at the
+	 * WRITE. A body no caret may enter is not prose, it is the kind's own markup — a raw body
+	 * between its literals, a carved grid — so text written into it is bytes the kind cannot read
+	 * back. Measured on a selected table of contents: `'@toc⏎Section⏎@end'` typed over emitted
+	 * `'@toc⏎Z- beta'`, the closing literal gone and the row below merged in. The same reading
+	 * `#placeInRow` makes, and the reason it is a DOM one: whether a kind paints its own text is
+	 * the consumer's fact, not the tree's.
+	 *
+	 * ASKED OF THE SPAN A WRITE IS ABOUT TO TAKE, never of the pair an event named, and that is the
+	 * whole of what it is for. {@link rowSelectionText} resolves each edge off the structural bytes
+	 * it landed on, so the rows the write ends up covering are not the rows the raw pair covered:
+	 * measured on `'aa⏎@card panel⏎```js⏎code⏎```'` with the card frozen, a sweep from `aa`'s start
+	 * into `code` is an ordinary TEXT selection by the raw pair — no row held, nothing refused —
+	 * while the resolved span stops at the fence's own boundary and covers the frozen row whole. One
+	 * `'Z'` emitted `'Z⏎```js⏎code⏎```'`, the frozen row gone through the very door this guards.
+	 *
+	 * OVERLAP, NOT COVER, and that is the difference from {@link rowSelection}: the write takes
+	 * whatever of a line lies inside it, so a span that holds only PART of a frozen row's own line
+	 * is the same defect with fewer bytes. It is also the only reading that answers the plainest
+	 * gesture of all — a click on frozen presentation selects the row across its own element, and
+	 * the span that resolves from is the row's INTERIOR, which covers no row at all.
+	 */
+	holdsFrozenRow(anchors: Anchors): boolean {
+		const lines = untracked(() => {
+			const roots = this.#tree.roots()
+			const ends = [offsetOfAnchor(roots, anchors.anchor), offsetOfAnchor(roots, anchors.head)]
+			const span = {start: Math.min(...ends), end: Math.max(...ends)}
+			return contentLineRows(roots)
+				.filter(line => line.range.start < span.end && span.start < line.range.end)
+				.map(line => ({row: line.row, entry: entryAnchor(line.row)}))
+		})
+		return lines.some(line => !this.#dom.reachable(line.entry))
 	}
 
 	/**

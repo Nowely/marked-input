@@ -332,15 +332,24 @@ export function contentSpan(roots: readonly TreeNode[], anchors: Anchors): {star
  * scanning them.
  */
 function contentLines(nodes: readonly TreeNode[]): {start: number; end: number}[] {
-	const out: {start: number; end: number}[] = []
+	return contentLineRows(nodes).map(line => line.range)
+}
+
+/**
+ * {@link contentLines} WITH THE ROW THAT OWNS EACH LINE, which is the same walk read by a caller
+ * that has to ask something ABOUT the row rather than about the range — whether the kind paints
+ * its own text, which is a DOM question and lives at the seam.
+ */
+export function contentLineRows(nodes: readonly TreeNode[]): {row: RowNode; range: {start: number; end: number}}[] {
+	const out: {row: RowNode; range: {start: number; end: number}}[] = []
 	for (const node of nodes) {
 		if (node.kind !== 'row') continue
 		if (hasCells(node)) {
-			out.push(...contentLines(node.rows()))
+			out.push(...contentLineRows(node.rows()))
 			continue
 		}
-		out.push(node.slotRange())
-		out.push(...contentLines(node.rows()))
+		out.push({row: node, range: node.slotRange()})
+		out.push(...contentLineRows(node.rows()))
 	}
 	return out
 }
