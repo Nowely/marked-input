@@ -107,7 +107,10 @@ Everything a kind declares beyond its markup lives in [`RowSpec`](/api/interface
 The `ref` is load-bearing. It is how the editor finds the row's element; a component that drops it
 leaves the row unbound and the caret cannot resolve into it. Nothing on screen says so, which is why
 the editor does: a row whose component paints no element the editor can bind is reported to the
-console, once per such row, naming the kind's markup.
+console, once per such row, naming the kind's markup. The check is re-asked whenever the component
+that paints a row changes, so a turn-into into a broken kind is reported too, and the verdict waits
+a frame — a kind that paints `null` first and its element on a flip set from its own mount is a
+correct kind and is never accused.
 
 **A kind that never renders `rows` cannot be nested under.** Rendering it is how the editor learns
 that this kind has somewhere to put a child: the wrapper the adapter hands over registers itself,

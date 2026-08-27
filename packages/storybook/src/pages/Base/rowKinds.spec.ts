@@ -11,10 +11,17 @@ import {mountComponent} from '../../shared/lib/page'
  * The fixtures are generated marks, which take the row's rendered children exactly as they take a
  * mark's — that shared shape is what lets one file drive both projects.
  */
+const REPORT =
+	'[markput] The row kind "# __slot__" rendered no element the editor could bind: spread `ref` onto ' +
+	'the one element the component renders. Until it does, the caret cannot resolve into this row.'
+
 const Heading = defineMark({tag: 'h1', class: 'heading'})
 const Quote = defineMark({tag: 'blockquote'})
 
 const ROWS = {separator: '\n', Mark} as const
+
+/** The frame `rowPainted` waits before it speaks. */
+const nextFrame = () => new Promise(resolve => requestAnimationFrame(resolve))
 
 describe('row kinds', () => {
 	it('paints a typed row through its own component and a paragraph through the paragraph slot', async () => {
@@ -89,11 +96,40 @@ describe('row kinds', () => {
 				...ROWS,
 				options: [{markup: '# __slot__', row: {Component: Empty}}],
 			})
+			await nextFrame()
 
-			expect(errors.mock.calls.map(call => String(call[0]))).toEqual([
-				'[markput] The row kind "# __slot__" rendered no element the editor could bind: spread `ref` onto ' +
-					'the one element the component renders. Until it does, the caret cannot resolve into this row.',
-			])
+			expect(errors.mock.calls.map(call => String(call[0]))).toEqual([REPORT])
+		} finally {
+			errors.mockRestore()
+		}
+	})
+
+	/**
+	 * THE TURN-INTO PATH, which is the one a consumer takes first: a slash menu applies a kind to
+	 * the row already under the caret. The row's node survives it — its id, its element and its
+	 * grip are the row's identity and only the kind changes underneath — so nothing remounts, and
+	 * asking at mount alone said nothing at all about the kind that just took over.
+	 */
+	it('reports a kind that painted no element after a turn-into', async () => {
+		const errors = vi.spyOn(console, 'error').mockImplementation(() => {})
+		try {
+			const {rerender} = await mountComponent({
+				value: 'plain',
+				...ROWS,
+				options: [{markup: '# __slot__', row: {Component: Empty}}],
+			})
+			await nextFrame()
+			expect(errors.mock.calls).toHaveLength(0)
+
+			const host = await rerender({
+				value: '# plain',
+				...ROWS,
+				options: [{markup: '# __slot__', row: {Component: Empty}}],
+			})
+			await nextFrame()
+
+			expect(host.textContent).toBe('')
+			expect(errors.mock.calls.map(call => String(call[0]))).toEqual([REPORT])
 		} finally {
 			errors.mockRestore()
 		}

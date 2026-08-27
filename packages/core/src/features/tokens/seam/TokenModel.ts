@@ -237,26 +237,40 @@ export class TokenModel {
 	 *
 	 * IT IS THE ADAPTER'S FACT TO HAND OVER, not core's to derive. `bind` runs on the COMMIT, which
 	 * is before the frame that paints it, so a row unconsigned there is the ordinary case of an
-	 * element that has not arrived yet. "The component mounted and its ref did not fire" is a
-	 * question only the caller that rendered it can answer, and both adapters answer it from the
-	 * hook that runs after refs attach.
+	 * element that has not arrived yet. "The component that paints this row ran and its ref did not
+	 * fire" is a question only the caller that rendered it can answer, and both adapters ask it
+	 * whenever the component changes — a mount, and a TURN-INTO, which keeps the row's node and
+	 * swaps the kind underneath it. Mount alone missed the slash menu, which is how a consumer
+	 * meets their own new kind first.
 	 *
 	 * REPORTED, NOT REPAIRED, and not extended to the row's other two props. There is nothing to
 	 * repair: without a consignment core has no element, and inventing one by walking the DOM is
 	 * the re-derivation consignment replaced. `className` and `style` are left alone deliberately —
 	 * their loss is a row that looks wrong, while this is a row the editor cannot use at all.
 	 *
-	 * Once per mounted row rather than once per kind: it takes a Set to say the latter, and a
+	 * Once per painted row rather than once per kind: it takes a Set to say the latter, and a
 	 * document holding many rows of one broken kind is a document whose author is about to fix it.
+	 *
+	 * THE VERDICT WAITS A FRAME, because the mount hook is one moment and a correct row kind is
+	 * allowed to arrive after it — an SSR guard, a lazy chart, a `defineAsyncComponent`, anything
+	 * that paints `null` first and its element on a flip set from its own mount. React processes
+	 * that flip after the passive flush and Vue queues it the same way, so both adapters' hooks see
+	 * the element-less commit and the check accused the one mistake the author had not made. A row
+	 * that is genuinely unbound stays unbound for the life of the document, so the wait costs
+	 * nothing. The caller gets the cancel back and owns the row's lifetime: a row taken out of the
+	 * document before the frame is not a row that failed to paint.
 	 */
-	rowPainted(node: RowNode): void {
-		if (this.#tokenElements.latest(node.id) !== undefined) return
-		const markup = node.descriptor()?.markup
-		reportBadProp(
-			`${markup === undefined ? 'The `slots.paragraph` component' : `The row kind "${markup}"`} rendered no ` +
-				'element the editor could bind: spread `ref` onto the one element the component renders. ' +
-				'Until it does, the caret cannot resolve into this row.'
-		)
+	rowPainted(node: RowNode): () => void {
+		const frame = requestAnimationFrame(() => {
+			if (this.#tokenElements.latest(node.id) !== undefined) return
+			const markup = node.descriptor()?.markup
+			reportBadProp(
+				`${markup === undefined ? 'The `slots.paragraph` component' : `The row kind "${markup}"`} rendered no ` +
+					'element the editor could bind: spread `ref` onto the one element the component renders. ' +
+					'Until it does, the caret cannot resolve into this row.'
+			)
+		})
+		return () => cancelAnimationFrame(frame)
 	}
 
 	// ═══ Engine SPI (in-core consumers) ═══════════════════════════════════════

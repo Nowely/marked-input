@@ -70,11 +70,17 @@ export const Row = memo(({node, depth, index}: RowRenderProps) => {
 		hostRow(el)
 	}
 
+	const [Component, props] = resolveNodeSlot(node, {depth, index})
+
 	// React attaches refs before it runs effects, so by here `setRowRef` has fired for every kind
 	// that spread the `ref` it was handed. Core reports the ones that did not; see `rowPainted`.
-	useEffect(() => {
-		tokens.rowPainted(node)
-	}, [tokens, node])
+	//
+	// `Component` is in the deps because a TURN-INTO keeps this row's node and swaps the kind under
+	// it, so nothing remounts and mount alone never asked again — the slash menu, which is how a
+	// consumer meets their own new kind first, was the one path this said nothing about. The
+	// cleanup is core's cancel: a row that leaves the document before the verdict's frame is not a
+	// row that failed to paint.
+	useEffect(() => tokens.rowPainted(node), [tokens, node, Component])
 
 	const childRows = node.rows()
 	// HIDDEN rather than absent is the consumer's contract for a collapsed row: an unpainted row
@@ -91,7 +97,6 @@ export const Row = memo(({node, depth, index}: RowRenderProps) => {
 		</span>
 	)
 
-	const [Component, props] = resolveNodeSlot(node, {depth, index})
 	// `node` in the resolved props is core's answer for "this row paints through its KIND's own
 	// component", and the kind is the one that takes `rows` as a PROP. A paragraph's is
 	// `slots.paragraph`, whose default is a bare `div` that would stringify a React node onto the
