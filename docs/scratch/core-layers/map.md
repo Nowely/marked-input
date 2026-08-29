@@ -5,6 +5,10 @@ move them. Six open questions, all raised as maintainer notes on 2026-08-15 and 
 against the tree before it was written down. None is a defect; every one of them is a design
 question whose answer is a ticket.
 
+[07](issues/07-two-tier-core-and-one-entry-interface.md) joins them from a different direction,
+2026-08-30: not "where is this boundary wrong" but "what is the kernel, and what is the one way a
+unit is written on top of it".
+
 Read with `docs/records/tokenmodel-architecture.md`, `docs/records/established-contracts.md`
 and `docs/adr/0001`–`0003`.
 
@@ -34,3 +38,7 @@ they cannot be settled inside core alone.
 - Whether "hide the host in the token model" is worth doing at all once the eight production
   readers outside `DomModel` are counted (01).
 - What "block mark" refers to — three candidate referents, three different projects (05).
+- The whole of 07, parked at the maintainer's word on the day it was raised. Its measurement
+  stands — nine cross-feature edges, three of them invisible in `Store.ts`, and all of them
+  `keyboard`'s once `edit` and two pure functions move — but none of its seven questions is
+  answered, and it decides nothing until they are.
