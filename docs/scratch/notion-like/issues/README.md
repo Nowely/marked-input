@@ -5,7 +5,7 @@ Two generations of tickets live here.
 - **01–11 are the PROBE's**, filed 2026-08-25 before any of the work started, against the editor as
   it then was. Seven are closed; `outcome.md:189-212` is the account of which decision closed each,
   and that four of the seven closures are ONE decision (the scan-first inversion, ADR-0010).
-- **12–45 came out of the BUILD**, filed 2026-08-27 from what the effort declared and did not
+- **12–47 came out of the BUILD**, filed 2026-08-27 from what the effort declared and did not
   build: `outcome.md`'s "What is declared but not built", `map.md`'s Fog, and `insights.md`'s
   ranked next steps and its "what I would not do yet". Nothing here is new analysis — every problem
   statement quotes a record and cites the file the record cites, re-verified against the code at
@@ -13,6 +13,12 @@ Two generations of tickets live here.
 had judged open and then carried inside a `resolved` ticket, and 44 during the affordance group's
 for the same reason. 45 is the exception to "nothing here is new analysis": it came out of 33's own
 measurement, which is the first one in this tracker to have been RUN rather than quoted.
+
+**Every question that only the maintainer can answer is collected in
+[`../decisions.md`](../decisions.md)** — twelve of them, each with its options, what each costs, what
+is blocked on it and a recommendation. The tickets stay the source of evidence; that file is the
+index of what is being ASKED, so returning to a question is reading rather than re-deriving. Two
+items in it are marked FREE: they need no answer and were left only because they sat next to one.
 
 `Status:` uses the five roles in `docs/agents/triage-labels.md`; the older tickets also use
 `resolved — <what answered it>`, which is the wayfinder vocabulary in
