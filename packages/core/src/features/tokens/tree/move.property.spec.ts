@@ -313,8 +313,17 @@ function expectPositionsTile(rows: readonly RowNode[], lines: readonly string[],
 	}
 }
 
+/**
+ * THE ENUMERATION IS THE ASSERTION here — both cases below bound their own corpus (`ran > 1000`,
+ * `sets > 200`), so the answer to "this is slow" is a budget rather than fewer cases. Measured at
+ * 2.3s each locally and timed out at the 15s default on CI, where the core project shares a runner
+ * with two browser projects; `writeRows.property.spec.ts` carries the same declaration for the same
+ * shape of test.
+ */
+const BUDGET = {timeout: 120_000}
+
 describe('move: a placement lands the subtree, or is refused', () => {
-	it('re-parses to the intended tree, keeping every row object, for every legal placement', () => {
+	it('re-parses to the intended tree, keeping every row object, for every legal placement', BUDGET, () => {
 		let ran = 0
 		let sets = 0
 		for (const entry of CASES) {
@@ -341,7 +350,7 @@ describe('move: a placement lands the subtree, or is refused', () => {
 		expect(sets).toBeGreaterThan(200)
 	})
 
-	it('refuses every illegal placement without touching the document', () => {
+	it('refuses every illegal placement without touching the document', BUDGET, () => {
 		let ran = 0
 		let sets = 0
 		for (const entry of CASES) {
