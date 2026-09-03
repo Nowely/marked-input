@@ -1,5 +1,12 @@
 # Typed, nested Rows — the design spec
 
+> **SUPERSEDED IN ONE PLACE, 2026-08-29.** This spec designs `RowProps.index` and uses it in three
+> worked examples (a numbered `<li value>`, a table cell's column, a header row's `index === 0`).
+> The prop was removed in ADR-0013 — it cost half of one Enter's latency at document scale — and a
+> run is numbered by a CSS counter now. The examples below are left as written: this file is the
+> record of what was designed, not a guide to what shipped.
+
+
 Status: **approved direction, revised 2026-08-25 after four reduction lenses and two adversarial
 verifications that ran real code.** Supersedes the deferral in ADR-0009. Every number below was
 re-measured on `b0` at `414424a1`; probe specs were temporary and removed (`git status` clean).

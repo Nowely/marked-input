@@ -1,7 +1,7 @@
 # The Vue adapter costs three times React for the same gesture at document scale
 
 Type: bug
-Status: needs-triage
+Status: resolved — the adapter rebuilt one shared computed's inputs on every sync; 820 -> 37.5 ms
 Blocked by: —
 
 > Filed out of [45](45-a-split-repaints-every-row-after-it.md), whose Vue half that ticket declared
@@ -55,3 +55,44 @@ none asserts cost.
 The React side now has one that does — `scale.react.spec.tsx` pins the repaint count — and it is
 React-only on purpose, because the count is meaningless in Vue. Whatever instrument answers this
 ticket is also what a Vue-side pin would be built from.
+
+## Answered 2026-08-29 (T-F), and the cause was in the adapter's props sync
+
+**EVERY ROW REPAINTED ON EVERY EDIT, wherever the caret was.** Counted rather than timed, at 4000
+rows: `4007` row updates per Enter at the top AND at the bottom — which is exactly why the cost
+barely depended on position and why this was never a Vue-flavoured copy of 45.
+
+**One subscription did it, and the probe named it.** Each row holds four `useMarkput` calls; per
+edit they ran `slot=4008`, `drag=1`, `sel=1`, `render=1`. So `useMarkput(s => s.slots.node)` woke
+once per row while the other three woke once for the whole document.
+
+**And one recompute upstream woke all four thousand.** `SlotsFeature.node` is ONE computed that
+every row subscribes to, and it recomputed exactly once per edit (`nodeSlot=1` in Vue, `0` in
+React — the same probe in both projects, which is what made the adapters comparable at all). Every
+watcher of it re-ran, each wrote a fresh resolver into its own `shallowRef`, and each row repainted.
+
+**The dirt came from `MarkedInput.vue`'s `syncProps`**, which rebuilt two of that computed's five
+inputs inline on every sync: `props.options?.map(...)` minted a new array of new option objects, and
+`markSlotComponents(props.slots)` a new slots object. React hands both through untouched, which is
+the whole of why its counter read zero. Both are Vue `computed`s now, so their identity holds while
+the consumer's own array and object are unchanged.
+
+| | before | after |
+| --- | --- | --- |
+| top of 1000 | 110.9 ms | 12.2 ms |
+| top of 4000 | 820.1 ms | **37.5 ms** |
+| bottom of 4000 | 475.2 ms | 33.4 ms |
+| row repaints per Enter at 4000 | 4007 | **0** |
+
+Vue is now faster than React on this gesture (37.5 against 117.5), because what remains on the React
+side is its own keyed reconciliation of the tail and Vue's patch does not pay it.
+
+**Pinned by `scale.vue.spec.ts`**, the twin of the React one and stronger: it counts repaints
+through the published `slots.paragraph`, asserts the edit actually happened first, and reddens at
+401 at BOTH caret positions when the sync is put back — the React pin can only redden at the top.
+
+**The general shape is worth keeping in view beyond this fix:** a shared computed that every row
+subscribes to and that returns a FRESH CLOSURE turns any dirtying of its inputs into a repaint of
+the whole document. Nothing guards that today in either adapter; what protects React is only that it
+passes its props through unchanged. A consumer who writes `:options="[...]"` inline in a template
+re-creates the array on every render and buys the same 820 ms back.

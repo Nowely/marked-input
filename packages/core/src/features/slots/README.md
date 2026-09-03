@@ -24,7 +24,7 @@ const props = store.slots.containerProps()
 // Node resolver — one for text, mark and ROW alike; a row with no kind falls back to
 // `slots.paragraph`, and `slotProps.row` is merged onto every row
 const resolveNode = store.slots.node()
-const [NodeComponent, nodeProps] = resolveNode(node, {depth, index})
+const [NodeComponent, nodeProps] = resolveNode(node, {depth})
 
 // Mark resolver — call() returns a resolver function, call it with the token
 const resolveMark = store.slots.mark()

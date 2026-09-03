@@ -1,6 +1,6 @@
 <script setup lang="ts" generic="TMarkProps = MarkProps, TOverlayProps extends CoreOption['overlay'] = OverlayProps">
 import {type CoreOption, type CoreSlots, Store} from '@markput/core'
-import {markRaw, provide, toRaw, watch} from 'vue'
+import {computed, markRaw, provide, toRaw, watch} from 'vue'
 
 import {STORE_KEY} from '../lib/providers/storeKey'
 import type {MarkedInputProps, MarkProps, OverlayProps} from '../types'
@@ -32,6 +32,21 @@ function markSlotComponents(slots: CoreSlots | undefined): CoreSlots | undefined
 	return result as CoreSlots
 }
 
+// DERIVED ONCE PER CHANGE, not once per sync, and that is a cost rather than a tidiness: both
+// values are read by `slots.node`, ONE computed that every row subscribes to. Rebuilt inline, they
+// arrived with a fresh identity on every sync, so `slots.node` recomputed, its 4000 watchers woke,
+// and EVERY row repainted for an edit in one of them — 400 ms of the 820 an Enter cost at 4000
+// rows, and the reason Vue's cost barely depended on where the caret was (issue 47). A Vue
+// `computed` keeps the identity while the consumer's own array and object are unchanged.
+const rawOptions = computed(() =>
+	props.options?.map(opt => ({
+		...opt,
+		Mark: opt.Mark ? markRaw(toRaw(opt.Mark)) : undefined,
+		Overlay: opt.Overlay ? markRaw(toRaw(opt.Overlay)) : undefined,
+	}))
+)
+const rawSlots = computed(() => markSlotComponents(props.slots as CoreSlots | undefined))
+
 function syncProps() {
 	const rawMark = props.Mark ? markRaw(toRaw(props.Mark)) : undefined
 	const rawSpan = props.Span ? markRaw(toRaw(props.Span)) : undefined
@@ -46,18 +61,14 @@ function syncProps() {
 		indent: props.indent,
 		history: props.history,
 		draggable: props.draggable,
-		options: props.options?.map(opt => ({
-			...opt,
-			Mark: opt.Mark ? markRaw(toRaw(opt.Mark)) : undefined,
-			Overlay: opt.Overlay ? markRaw(toRaw(opt.Overlay)) : undefined,
-		})),
+		options: rawOptions.value,
 		showOverlayOn: props.showOverlayOn,
 		Span: rawSpan,
 		Mark: rawMark,
 		Overlay: rawOverlay,
 		className: props.class,
 		style: props.style,
-		slots: markSlotComponents(props.slots as CoreSlots | undefined),
+		slots: rawSlots.value,
 		slotProps: props.slotProps,
 	})
 }
