@@ -100,7 +100,6 @@ Everything a kind declares beyond its markup lives in [`RowSpec`](/api/interface
 | `rows`                     | The row's CHILD ROWS, already rendered. Always present — empty when the row has none.               |
 | `meta`                     | The kind's `__meta__` gap — a to-do's flag, a fence's language.                                     |
 | `depth`                    | Nesting depth, counted from 0 — a root row is at depth 0.                                          |
-| `index`                    | Position among the row's own siblings.                                                             |
 | `node`                     | The live [`RowNode`](/api/interfaces/rownode/): its id, its own text, and its verbs.                |
 | `ref`, `className`, `style` | Slot plumbing. **Spread all three onto the element you render.**                                   |
 
@@ -162,7 +161,7 @@ inside the element the component renders.
 import {defineComponent} from 'vue'
 
 const Bullet = defineComponent({
-    props: {meta: String, node: {type: null}, depth: Number, index: Number},
+    props: {meta: String, node: {type: null}, depth: Number},
     template: '<li><slot /><slot name="rows" /></li>',
 })
 ```
@@ -170,7 +169,7 @@ const Bullet = defineComponent({
 Declare the props you read. Vue puts every prop a component does not declare onto its root element,
 so `node` and `depth` would otherwise land there as attributes.
 
-**Read the node through `useMarkput`, not straight.** `meta`, `depth` and `index` are ordinary props
+**Read the node through `useMarkput`, not straight.** `meta` and `depth` are ordinary props
 and are reactive; everything you ask the `node` itself — `node.slot()`, `node.meta()` — is a signal
 of the editor's own, which Vue's reactivity does not see. Read in a template it is right on the first
 paint and stale after every edit, and wrapping it in a `computed` is worse: with no reactive
@@ -181,7 +180,7 @@ import {defineComponent} from 'vue'
 import {useMarkput} from '@markput/vue'
 
 const Fence = defineComponent({
-    props: {meta: String, node: {type: null}, depth: Number, index: Number},
+    props: {meta: String, node: {type: null}, depth: Number},
     setup(props) {
         return {body: useMarkput(() => () => props.node.slot())}
     },

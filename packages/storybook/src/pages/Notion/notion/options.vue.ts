@@ -55,7 +55,6 @@ const rowProps = {
 	meta: {type: String, default: undefined},
 	node: {type: Object as () => RowNode, required: true},
 	depth: {type: Number, default: 0},
-	index: {type: Number, default: 0},
 } as const
 
 /**

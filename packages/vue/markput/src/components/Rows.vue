@@ -11,10 +11,13 @@ import Row from './Row.vue'
  * A bare `v-for` on the component, NOT a `<template v-for>`: rejection D9 measured that each
  * `<template v-for>` item gets its own Fragment and a Fragment mounts two empty text anchors,
  * pushing 2N stray text nodes into the editing host.
+ *
+ * NO POSITION IS HANDED DOWN: a sibling position changes for every row after an insert, and a row
+ * that takes one repaints whenever a distant row moves — see {@link RowRender}.
  */
 defineProps<{rows: readonly RowNode[]; depth: number}>()
 </script>
 
 <template>
-	<Row v-for="(row, index) in rows" :key="row.id" :node="row" :depth="depth" :index="index" />
+	<Row v-for="row in rows" :key="row.id" :node="row" :depth="depth" />
 </template>

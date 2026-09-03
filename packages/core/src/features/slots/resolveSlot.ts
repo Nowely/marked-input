@@ -72,17 +72,22 @@ export interface NodeSlotContext {
 }
 
 /**
- * What only the parent that MAPPED a row knows, and the tree therefore cannot answer: the row's
- * place among its siblings.
+ * What only the parent that MAPPED a row knows, and the tree therefore cannot answer: how deep it
+ * sits.
  *
- * The RENDERED CHILD ROWS are deliberately not here. They are framework values with no use in
- * core — it ships no components — and routing them through would put an `unknown` on this
+ * A SIBLING POSITION IS DELIBERATELY NOT HERE. It used to be, and it cost every row after an edit
+ * a repaint: inserting one row shifts the position of every later sibling, so a memo keyed on it
+ * misses on all of them while their content is unchanged — measured at 4000 rows, half of Enter's
+ * whole cost (ADR-0013). Nothing can hold both an always-exact position and a row that does not
+ * repaint when a distant row moves, so the position went and CSS counters number a run instead.
+ *
+ * The RENDERED CHILD ROWS are deliberately not here either. They are framework values with no use
+ * in core — it ships no components — and routing them through would put an `unknown` on this
  * interface for a spread straight back out. Each adapter hands them to the kind itself, off the
  * same `'node' in props` test core already answers below.
  */
 export interface RowRender {
 	depth: number
-	index: number
 }
 
 /**

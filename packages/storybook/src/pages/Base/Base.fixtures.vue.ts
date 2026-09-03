@@ -45,10 +45,7 @@ export const Overlay = defineComponent({template: `<span>I'm here!</span>`})
  * onto the type — Vue removes a DECLARED key from `$attrs`, so a `class` or `style` on `RowProps`
  * makes a kind written straight from it lose the editor's own paint, and nothing on screen says so.
  */
-const rowProps = {meta: String, node: {type: null}, depth: Number, index: Number} satisfies Record<
-	keyof RowProps,
-	unknown
->
+const rowProps = {meta: String, node: {type: null}, depth: Number} satisfies Record<keyof RowProps, unknown>
 
 /**
  * Spec fixtures: a row KIND that paints its own child rows. React delivers them as the `rows`

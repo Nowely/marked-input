@@ -1,7 +1,7 @@
 # A structural row edit re-renders every sibling after it
 
 Type: bug
-Status: needs-triage
+Status: resolved — the cause is confirmed and half the cost is gone; the residual is React's own and is named
 Blocked by: —
 
 > Filed out of [33](33-nothing-is-measured-at-document-scale.md), whose measurement found it. 33
@@ -65,3 +65,43 @@ the core half of the identical gesture at 6.03 ms on 4000 rows, and every read t
 — `rowOf` at 0.067 ms, the settle pass's three walks at 0.37 ms — is inside the noise of that. The
 incremental-parser work already costed and deferred
 (`docs/scratch/incremental-parser/spec.md`) attacks the 6 ms and would not touch the 280.
+
+## Answered 2026-08-29 (T-F), and its own discriminator was wrong
+
+**THE HYPOTHESIS IS CONFIRMED, THE DISCRIMINATOR IT PROPOSED IS NOT.** Line 46 says *"drop `index`
+from `Row`'s props and re-measure … if the slope goes and the fixed ~30 ms stays, `index` is the
+whole of it."* It is not the whole of it. Frozen, the slope FALLS BY ABOUT 65% and stays:
+248.3 → 117.5 ms at the top of 4000, with row repaints going 4001 → 1. An independent measurement,
+run blind — the seat was given the phenomenon and explicitly not the suspected cause, and was told
+not to read this directory until it had its own answer — reproduced the shape and the repaint
+counts on another machine and through another driver, at 194.1 / 119.4 / 15.5 ms, and put the slope
+at 0.045 → 0.016.
+
+**THE FIXED FLOOR IS NOT FIXED.** The table above reads 32.8 ms at row 3998 of 4000 and calls it a
+constant. Measured at two sizes, the bottom-of-document cost is 15.5 ms at 1000 rows and 46.8 at
+4000 — linear in the WHOLE document at about 0.010 ms per row, on top of a real constant near 5 ms.
+So there are two terms, not one and a floor.
+
+**A SECOND CAUSE RODE THE SAME PATH, and this ticket named nothing of it:** `setRowRef` was minted
+fresh on every render, so React detached and re-attached the ref of every repainted row — four
+rebind pulses per row, counted. Held stable it roughly halved the slope on its own, before `index`
+was touched. It cost no published surface and landed with the fix.
+
+**WHAT WAS RULED OUT, each by its own measurement rather than by argument.** With the position
+frozen and one component rendering, the residual slope is not: the settle pass (`#settleRows` +
+`#settleTail` + `#settleCaret` + `reclaimFocus` = 1.1 ms at 4000), DOM mutation (one node inserted,
+two attributes — identical top and bottom), forced reflow (0.7 ms for the same insertion, and 15
+geometry reads totalling 0.6 ms), recomputed subscriptions (12 recomputations, position-
+independent), React's render phase (6.8 ms by `<Profiler>`), the controlled round trip (an
+UNCONTROLLED mount shows the same slope: 79.7 vs 40.2), or core's re-adoption of the echoed value
+(9.4 ms, position-independent). A pure-React control — 4000 memoised keyed children, one inserted
+at the head — costs 4 ms. What is left is React's reconciliation of a keyed list whose head moved,
+and it needs windowing rather than a fix.
+
+**Line 28-30 is stale.** *"Typing costs 9.5 ms … which is core's own commit plus the ONE row React
+repaints"* — core writes a text surface through its own per-surface effect; React repaints neither
+a Row nor a Token for an ordinary text change.
+
+Landed as ADR-0013: `RowRender` carries `depth` alone, both adapters' `RowProps` drop `index`
+(a breaking change, taken at the maintainer's word), and `scale.react.spec.tsx` pins the REPAINT
+COUNT rather than a millisecond budget — seen red at 401 when the position is handed down again.

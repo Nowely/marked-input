@@ -1,7 +1,7 @@
 import type {RowNode} from '@markput/core'
 import {cx, renderSubscription} from '@markput/core'
 import type {CSSProperties} from 'react'
-import {memo, useEffect, useMemo} from 'react'
+import {memo, useCallback, useEffect, useMemo} from 'react'
 
 import {useMarkput} from '../lib/hooks/useMarkput'
 // oxlint-disable-next-line import/no-cycle -- A recursive component pair: `Rows` maps a sibling list and `Row` paints one row and its own list. The cycle is the recursion, and both sides are used only inside a render body.
@@ -14,9 +14,8 @@ import styles from '@markput/core/styles.module.css'
  * KIND's component receives and is a wider shape. */
 interface RowRenderProps {
 	node: RowNode
-	/** Nesting depth and position among siblings — both known by the parent that mapped them. */
+	/** Nesting depth, known by the parent that mapped this row. */
 	depth: number
-	index: number
 }
 
 /** `display: contents` for `TokenChildren`'s reason: the host must generate no box of its own. */
@@ -35,7 +34,7 @@ const rowsHostStyle: CSSProperties = {display: 'contents'}
  * component is `slots.paragraph`, whose default is a bare `div` that would stringify a React node
  * onto the element, so its child rows go in as ordinary children after the inline ones.
  */
-export const Row = memo(({node, depth, index}: RowRenderProps) => {
+export const Row = memo(({node, depth}: RowRenderProps) => {
 	const {resolveNodeSlot, tokens} = useMarkput(s => ({
 		resolveNodeSlot: s.slots.node,
 		tokens: s.tokens,
@@ -65,12 +64,20 @@ export const Row = memo(({node, depth, index}: RowRenderProps) => {
 	const hostRow = useMemo(() => tokens.children(node.id), [tokens, node.id])
 	const hostRows = useMemo(() => tokens.children(node.id, 'rows'), [tokens, node.id])
 
-	const setRowRef = (el: HTMLElement | null) => {
-		consignRow(el)
-		hostRow(el)
-	}
+	// MEMOISED TOO, and for a cost rather than for tidiness: React detaches and re-attaches a ref
+	// whose function identity changed, so a fresh closure here turned every repaint of a row into a
+	// full unbind/rebind of its element — measured at four rebind pulses per repainted row, and a
+	// second independent measurement put it at about half of the whole position-dependent slope
+	// before `index` was removed (ADR-0013).
+	const setRowRef = useCallback(
+		(el: HTMLElement | null) => {
+			consignRow(el)
+			hostRow(el)
+		},
+		[consignRow, hostRow]
+	)
 
-	const [Component, props] = resolveNodeSlot(node, {depth, index})
+	const [Component, props] = resolveNodeSlot(node, {depth})
 
 	// React attaches refs before it runs effects, so by here `setRowRef` has fired for every kind
 	// that spread the `ref` it was handed. Core reports the ones that did not; see `rowPainted`.

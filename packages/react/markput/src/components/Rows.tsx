@@ -9,7 +9,10 @@ import {Row} from './Row'
  * through the same component, because they are the same list.
  */
 export const Rows = memo(({rows, depth}: {rows: readonly RowNode[]; depth: number}) => {
-	return rows.map((row, index) => <Row key={row.id} node={row} depth={depth} index={index} />)
+	// NO POSITION IS HANDED DOWN. `Row` is memoised on what it is given, and a sibling position
+	// changes for every row after an insert, so passing one made a structural edit repaint the
+	// whole tail — see {@link RowRender}.
+	return rows.map(row => <Row key={row.id} node={row} depth={depth} />)
 })
 
 Rows.displayName = 'Rows'

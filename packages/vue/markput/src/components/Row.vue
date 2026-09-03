@@ -25,7 +25,7 @@ import styles from '@markput/core/styles.module.css'
  * component is `slots.paragraph`, whose default is a bare `div`, so its child rows go in as ordinary
  * children after the inline ones.
  */
-const props = defineProps<{node: RowNode; depth: number; index: number}>()
+const props = defineProps<{node: RowNode; depth: number}>()
 
 const store = useStore()
 
@@ -67,7 +67,7 @@ const resolved = computed(() => {
 	// No `rows` in the render context: Vue hands the child rows over as a SLOT, so the framework
 	// node itself never travels through core. What core decides is where the row's own data may
 	// go at all.
-	return resolveNodeSlot.value(props.node, {depth: props.depth, index: props.index})
+	return resolveNodeSlot.value(props.node, {depth: props.depth})
 })
 // Vue sets template refs before it runs post-flush callbacks, so by here `setRowRef` has fired for
 // every kind that let the editor's `ref` reach an element. Core reports the ones that did not; see
