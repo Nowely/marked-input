@@ -1,5 +1,38 @@
 # Changelog
 
+## [0.16.0](https://github.com/Nowely/marked-input/compare/0.15.0...0.16.0) (2026-09-03)
+
+
+### ⚠ BREAKING CHANGES
+
+* **core:** typed nested rows, and a Notion-shaped editor built from the published API alone ([#302](https://github.com/Nowely/marked-input/issues/302))
+* **core:** the layout enum shrinks to one line, and four crash paths close ([#301](https://github.com/Nowely/marked-input/issues/301))
+
+### Features
+
+* **core:** typed nested rows, and a Notion-shaped editor built from the published API alone ([#302](https://github.com/Nowely/marked-input/issues/302)) ([0f6b1a0](https://github.com/Nowely/marked-input/commit/0f6b1a0c6a8789265bf472b36dba381787e0ea55))
+* roll the Markput logo out across the repo ([#299](https://github.com/Nowely/marked-input/issues/299)) ([1c3bcc9](https://github.com/Nowely/marked-input/commit/1c3bcc9584b364f5cf1fe4ac04198d2dc5f401c5))
+
+
+### Bug Fixes
+
+* **core:** close row-mark round-1 defects — drop provenance, resting-grip drift, anchorAt side ([#297](https://github.com/Nowely/marked-input/issues/297)) ([494a722](https://github.com/Nowely/marked-input/commit/494a722299eb904b78a44223c9f8fbcbe2151417))
+* **core:** the grip stays hit-testable while it is dragged, so the drag can start at all ([#300](https://github.com/Nowely/marked-input/issues/300)) ([8ef1a30](https://github.com/Nowely/marked-input/commit/8ef1a30a1fb5239a0c8602a59b0e12d7c259df1a))
+* **core:** the parser stops two silent misparses, and four dead rules go with them ([#295](https://github.com/Nowely/marked-input/issues/295)) ([e97512a](https://github.com/Nowely/marked-input/commit/e97512a80aab63173d4426324504f121b85d5809))
+
+
+### Refactoring
+
+* **core,react,vue:** the row controls leave the row, and the input pipeline stops being two ([#296](https://github.com/Nowely/marked-input/issues/296)) ([d2cfb35](https://github.com/Nowely/marked-input/commit/d2cfb350768e0e9eb42aa2e2636a698b0ee96145))
+* **core:** simplification round 2 — the sweep lands, and the seven ownership moves with it ([#292](https://github.com/Nowely/marked-input/issues/292)) ([98fa92c](https://github.com/Nowely/marked-input/commit/98fa92c563d7d3dba37b0ce9ee59fde50192acf6))
+* **core:** the commit becomes atomic, and the token layer sheds its compensating state ([#294](https://github.com/Nowely/marked-input/issues/294)) ([1f616a6](https://github.com/Nowely/marked-input/commit/1f616a69a2c5b06b0c1701ad852a0f1cfc807eab))
+* **core:** the layout enum shrinks to one line, and four crash paths close ([#301](https://github.com/Nowely/marked-input/issues/301)) ([1235da9](https://github.com/Nowely/marked-input/commit/1235da9a778cb611064d6870031db1e05952c759))
+
+
+### Documentation
+
+* **website:** adopt the Mention Aperture logo and refresh the favicon ([#298](https://github.com/Nowely/marked-input/issues/298)) ([bf8fa6b](https://github.com/Nowely/marked-input/commit/bf8fa6b745bab7403ee58a987cf2c24e2ffe754e))
+
 ## [0.15.0](https://github.com/Nowely/marked-input/compare/0.14.3...0.15.0) (2026-08-20)
 
 
