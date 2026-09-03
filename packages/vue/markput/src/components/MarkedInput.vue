@@ -32,12 +32,17 @@ function markSlotComponents(slots: CoreSlots | undefined): CoreSlots | undefined
 	return result as CoreSlots
 }
 
-// DERIVED ONCE PER CHANGE, not once per sync, and that is a cost rather than a tidiness: both
-// values are read by `slots.node`, ONE computed that every row subscribes to. Rebuilt inline, they
-// arrived with a fresh identity on every sync, so `slots.node` recomputed, its 4000 watchers woke,
-// and EVERY row repainted for an edit in one of them — 400 ms of the 820 an Enter cost at 4000
-// rows, and the reason Vue's cost barely depended on where the caret was (issue 47). A Vue
-// `computed` keeps the identity while the consumer's own array and object are unchanged.
+// DERIVED ONCE PER CHANGE, not once per sync, and that is a cost rather than a tidiness. This is
+// read by `slots.node`, ONE computed that every row subscribes to; rebuilt inline it arrived with
+// fresh OPTION OBJECTS on every sync, so `slots.node` recomputed, its 4000 watchers woke, and EVERY
+// row repainted for an edit in one of them — the whole of why Vue's cost barely depended on where
+// the caret was (issue 47).
+//
+// `props.options` carries an element-wise equality gate, so a caller's fresh ARRAY of unchanged
+// options is already absorbed; what defeats it is minting new elements, which is exactly what the
+// `markRaw` map does. The slots object needs no twin of this: `props.slots` gained the same gate,
+// which absorbs a fresh object with unchanged components — measured, and the sibling half of this
+// fix until then.
 const rawOptions = computed(() =>
 	props.options?.map(opt => ({
 		...opt,
@@ -45,7 +50,6 @@ const rawOptions = computed(() =>
 		Overlay: opt.Overlay ? markRaw(toRaw(opt.Overlay)) : undefined,
 	}))
 )
-const rawSlots = computed(() => markSlotComponents(props.slots as CoreSlots | undefined))
 
 function syncProps() {
 	const rawMark = props.Mark ? markRaw(toRaw(props.Mark)) : undefined
@@ -68,7 +72,7 @@ function syncProps() {
 		Overlay: rawOverlay,
 		className: props.class,
 		style: props.style,
-		slots: rawSlots.value,
+		slots: markSlotComponents(props.slots as CoreSlots | undefined),
 		slotProps: props.slotProps,
 	})
 }

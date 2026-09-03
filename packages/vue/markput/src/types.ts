@@ -52,7 +52,16 @@ export interface RowProps {
 	 * rather than made cheaper is ADR-0013.
 	 */
 	depth: number
-	/** The live row node: its id, its own text and its verbs. */
+	/**
+	 * The live row node: its id, its own text and its verbs — and REACTIVE, which a `RowNode` is
+	 * not on its own. What the node answers are core's signals, which Vue does not track, so the
+	 * one a kind receives is wrapped: every read touches this row's subscription inside the
+	 * READER's effect, so `computed(() => node.slot())` in a child component re-reads after an
+	 * edit. Reading outside a reactive scope captures a value, as any one-time read would.
+	 *
+	 * THE WRAPPER IS NOT THE OBJECT THE EDITOR HOLDS. Compare rows by `node.id`, never by `===`;
+	 * methods, reads and verbs are unchanged (ADR-0014).
+	 */
 	node: RowNode
 }
 

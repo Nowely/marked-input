@@ -1,5 +1,5 @@
 import type {Option, RowNode} from '@markput/vue'
-import {Atomic, useControlRef, useMarkput} from '@markput/vue'
+import {Atomic, useControlRef} from '@markput/vue'
 import type {Component} from 'vue'
 import {computed, defineComponent, ref} from 'vue'
 
@@ -57,23 +57,6 @@ const rowProps = {
 	depth: {type: Number, default: 0},
 } as const
 
-/**
- * A RAW-BODIED ROW'S OWN TEXT, as a VUE ref. `node.slot()` is a core signal, and core's signals
- * are not Vue-reactive: read straight in a template it is correct on the first paint and stale
- * for ever after, because the render effect that read it has nothing to invalidate it.
- *
- * A `computed` is worse, not better — with no reactive dependency at all it caches its first
- * answer — and reading it through a method only survives while the kind itself re-renders. It does
- * not here: every panel below hands its data to a CHILD component ({@link Atomic}, and the leaf
- * inside it), and a child with unchanged props and a compiled stable slot is skipped when its
- * parent repaints. What re-renders such a child is its OWN render effect seeing a reactive read,
- * which is exactly what this ref is.
- *
- * MEASURED on the board: a card dragged between columns wrote the document — the emitted value was
- * right and undo took it back — and the columns on screen never moved.
- */
-const useSlot = (node: RowNode) => useMarkput(() => () => node.slot())
-
 /* ── page furniture ─────────────────────────────────────────────────────── */
 
 const Title = defineComponent({
@@ -95,7 +78,7 @@ const Properties = defineComponent({
 	components: {Atomic, PropertiesPanel},
 	props: rowProps,
 	setup: props => {
-		const body = useSlot(props.node)
+		const body = computed(() => props.node.slot())
 		return {properties: computed(() => readProperties(body.value))}
 	},
 	template: '<div><Atomic><PropertiesPanel :properties="properties" /></Atomic></div>',
@@ -120,7 +103,7 @@ const Toc = defineComponent({
 	components: {Atomic},
 	props: rowProps,
 	setup: props => {
-		const body = useSlot(props.node)
+		const body = computed(() => props.node.slot())
 		return {theme, entries: computed(() => readTocEntries(body.value))}
 	},
 	template: `
@@ -375,7 +358,7 @@ const Views = defineComponent({
 	components: {Atomic, ViewTabs},
 	props: rowProps,
 	setup(props) {
-		const body = useSlot(props.node)
+		const body = computed(() => props.node.slot())
 		const active = ref(body.value.split('|')[0] ?? '')
 		return {
 			tabs: computed(() => body.value.split('|')),
@@ -399,7 +382,7 @@ const BoardRow = defineComponent({
 	components: {Atomic, Board},
 	props: rowProps,
 	setup: props => {
-		const body = useSlot(props.node)
+		const body = computed(() => props.node.slot())
 		return {
 			columns: computed(() => readBoard(body.value)),
 			move: (next: readonly BoardColumnData[]) => props.node.turnInto(kinds.board, {text: writeBoard(next)}),
@@ -413,7 +396,7 @@ const Metrics = defineComponent({
 	components: {Atomic, CardGrid, MetricCard},
 	props: rowProps,
 	setup: props => {
-		const body = useSlot(props.node)
+		const body = computed(() => props.node.slot())
 		return {metrics: computed(() => readMetrics(body.value))}
 	},
 	template: `
@@ -437,7 +420,7 @@ const Bookmark = defineComponent({
 	components: {Atomic, BookmarkCard},
 	props: rowProps,
 	setup: props => {
-		const body = useSlot(props.node)
+		const body = computed(() => props.node.slot())
 		return {body, card: computed(() => readBookmark(props.meta ?? ''))}
 	},
 	template: `
@@ -454,7 +437,7 @@ const Comments = defineComponent({
 	components: {Atomic, CommentThread},
 	props: rowProps,
 	setup: props => {
-		const body = useSlot(props.node)
+		const body = computed(() => props.node.slot())
 		return {comments: computed(() => readComments(body.value))}
 	},
 	template: '<div><Atomic><CommentThread :comments="comments" /></Atomic></div>',

@@ -1,7 +1,7 @@
 # A Vue row kind has no reactive read of its own node, so every kind copies an incantation
 
 Type: task
-Status: needs-triage
+Status: resolved — the node itself is reactive now, and neither candidate answer was taken
 Blocked by: —
 
 > Filed out of [26](26-vue-showcase-p12.md), which discovered it and shipped the workaround. The
@@ -60,3 +60,29 @@ Notion-shaped editor is options and components.
 Either way, `boundary.spec.ts`'s store-hook rule tightens back to a total ban once one exists, and
 that is the acceptance test for this ticket: the showcase's Vue paint imports no store hook at all,
 and the rule below `WHAT IT ADMITS` goes back to naming `useMarkput` outright.
+
+## Answered 2026-08-29 (T-F), by a third shape neither candidate named
+
+**THE NODE IS REACTIVE, so there is nothing left to publish.** `Row.vue` hands a kind its node
+through a wrapper whose every read touches the row's own `renderSubscription` ref INSIDE THE
+READER'S EFFECT. A plain `computed(() => node.slot())` in a child component now works, which is the
+one shape the ticket said was impossible without the bridge. ADR-0014 has the record.
+
+It beats both candidates on the doctrine's first question — what does the proposal delete. Candidate
+1 (`useNode(node)`) adds a published hook and leaves the two adapters saying different things to a
+consumer; candidate 2 (`slot` as a prop) answers only the read the showcase happened to need and
+grows the surface for the next one. This deletes the incantation, deletes the guide's rule about it,
+deletes the hole in `boundary.spec.ts`, and adds nothing.
+
+**Its cost, named because it is a published behaviour change:** the node a Vue kind receives is not
+the object the editor holds, so `===` against one obtained elsewhere is false. `node.id`, every read
+and every verb are unchanged. Rows are already compared by id everywhere in this codebase.
+
+**Measured rather than argued.** All 146 Vue showcase tests pass with `useSlot` deleted from
+`options.vue.ts` and its seven call sites reading the node plainly. Removing the wrapper while
+keeping the plain reads reddens *moves a card between board columns* and *re-counts both columns
+from the document the drag wrote* — two of the three ticket 26 measured the workaround against.
+
+**THE ACCEPTANCE TEST IS MET.** `boundary.spec.ts`'s store-hook rule is a total ban again — it
+matches `useMarkput` outright rather than admitting the zero-argument form — and it was seen red on
+both the import and the call when the hook was put back into a showcase file.

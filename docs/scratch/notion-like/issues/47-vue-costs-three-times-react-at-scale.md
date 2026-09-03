@@ -91,8 +91,24 @@ side is its own keyed reconciliation of the tail and Vue's patch does not pay it
 through the published `slots.paragraph`, asserts the edit actually happened first, and reddens at
 401 at BOTH caret positions when the sync is put back — the React pin can only redden at the top.
 
-**The general shape is worth keeping in view beyond this fix:** a shared computed that every row
-subscribes to and that returns a FRESH CLOSURE turns any dirtying of its inputs into a repaint of
-the whole document. Nothing guards that today in either adapter; what protects React is only that it
-passes its props through unchanged. A consumer who writes `:options="[...]"` inline in a template
-re-creates the array on every render and buys the same 820 ms back.
+**The general shape, corrected — the first version of this paragraph was wrong.** It said a consumer
+writing `:options="[...]"` inline buys the same 820 ms back. That is FALSE, and reading
+`reportBadProp`'s own docblock is what caught it: `props.options` carries `{equals: shallow}`
+(`PropsModel.ts:26`), an ELEMENT-WISE gate, so a fresh array holding unchanged options is already
+absorbed. What defeats the gate is minting new ELEMENTS, which is exactly what `syncProps`' `markRaw`
+map did — the array was never the problem, its contents were.
+
+**`slots` and `slotProps` had no gate at all**, and that WAS a live consumer hazard: a fresh object
+each render — which `slots={{paragraph: P}}` written inline is — dirtied one input of the same
+shared computed and repainted the whole document. Both carry `{equals: shallow}` now. Measured on
+the pin: with the slots object deliberately rebuilt on every sync, it reddened at 401 before the
+gate and is green after, so the gate is what closes it rather than the adapter's own care. The
+adapter's `rawSlots` computed came out again as redundant once the gate existed; `rawOptions` stays,
+because no shallow gate can absorb newly minted elements.
+
+**Which half was load-bearing: both, independently.** Rebuilding only the options and rebuilding
+only the slots each redden the pin at 401 on their own, so neither fix was riding the other.
+
+**What is still unguarded, honestly:** `slotProps`' nested bags are compared by reference, so a
+consumer rebuilding `{row: {...}}` inline still dirties it. One more level of comparison would cost
+more than it is worth until someone meets it.

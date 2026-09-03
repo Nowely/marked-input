@@ -121,29 +121,24 @@ describe('the Notion showcase is options and components', () => {
 	})
 
 	/**
-	 * AND NO SELECTOR NAMES THE STORE. `useMarkput` is the adapter's published store hook and the
-	 * only way a consumer reaches a store from outside; the member check above catches what you do
-	 * with one, this catches holding it. A destructure — `const {tokens} = useMarkput(s => s)` — is
-	 * invisible to a member grep and is not invisible here.
+	 * AND NO SELECTOR NAMES THE STORE — nor is the hook held at all. `useMarkput` is the adapter's
+	 * published store hook and the only way a consumer reaches a store from outside; the member
+	 * check above catches what you do with one, this catches holding it. A destructure —
+	 * `const {tokens} = useMarkput(s => s)` — is invisible to a member grep and is not invisible
+	 * here.
 	 *
-	 * WHAT IT ADMITS, and why that is a narrowing rather than a hole: `useMarkput(() => …)` takes no
-	 * store at all. It is the Vue paint's bridge from a core signal to Vue reactivity, which React
-	 * gets for free from re-rendering, and it is load-bearing — `Atomic` is a child component with
-	 * unchanged props and a stable slot, so a parent's repaint stops at it and a panel fed a plain
-	 * read is correct once and stale for ever. A selector that takes a PARAMETER is the whole of
-	 * what reaching for a store looks like, and that is what this rejects.
-	 *
-	 * IT IS A NARROWING TAKEN FOR A MISSING AFFORDANCE, not for a consumer need: the showcase
-	 * reaches for `useMarkput` only because a Vue row kind has no published reactive read of its own
-	 * node. Ticket 46 owns the way out, and closing it tightens this rule back to naming
-	 * `useMarkput` outright — that is 46's acceptance test.
+	 * THIS USED TO ADMIT `useMarkput(() => …)`, the zero-argument form, and that narrowing was taken
+	 * for a missing affordance rather than a consumer need: a Vue row kind had no reactive read of
+	 * its own node, so the showcase bridged one by hand. Ticket 46 closed that — the `node` a kind
+	 * receives is Vue-reactive now, so `computed(() => node.slot())` works in a template — and this
+	 * rule went back to naming the hook outright. That was 46's stated acceptance test.
 	 */
-	it('lets no `useMarkput` selector take a store', () => {
+	it('names the store hook nowhere at all', () => {
 		const offenders = files.flatMap(([path, source]) =>
 			stripComments(source)
 				.split('\n')
 				.map((text, index) => ({line: index + 1, text}))
-				.filter(entry => /\buseMarkput\s*(?:<[^<>]*>)?\s*\(\s*(?!\(\s*\)\s*=>)/.test(entry.text))
+				.filter(entry => /\buseMarkput\b/.test(entry.text))
 				.map(entry => `${path}:${entry.line} ${entry.text.trim()}`)
 		)
 

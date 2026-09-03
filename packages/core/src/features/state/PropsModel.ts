@@ -72,8 +72,17 @@ export class PropsModel {
 	readonly className = signal<string>({readonly: true})
 	readonly style = signal<CSSProperties>({equals: shallow, readonly: true})
 
-	readonly slots = signal<CoreSlots>({readonly: true})
-	readonly slotProps = signal<CoreSlotProps>({readonly: true})
+	/**
+	 * SHALLOW, like {@link options} and for the same measured reason: `slots` is read by
+	 * `SlotsFeature.node`, ONE computed that every row subscribes to, so a fresh object with the
+	 * same components in it woke every watcher and repainted the whole document. A consumer writing
+	 * `slots={{paragraph: P}}` inline builds that fresh object on every render, and the gate is what
+	 * makes it free (issue 47).
+	 */
+	readonly slots = signal<CoreSlots>({readonly: true, equals: shallow})
+	/** Shallow for {@link slots}' reason; its own values are compared by reference, so a caller
+	 * rebuilding the NESTED bag each render still dirties it. */
+	readonly slotProps = signal<CoreSlotProps>({readonly: true, equals: shallow})
 
 	/**
 	 * The adapter's full sync, called on every render: every declared prop takes its incoming

@@ -101,8 +101,28 @@ const rowStyle = computed(() => ({
 	opacity: isDragging.value ? 0.4 : 1,
 	...(resolved.value[1].style as CSSProperties | undefined),
 }))
+// THE NODE A KIND RECEIVES, MADE VUE-REACTIVE (ADR-0014). What a `RowNode` answers are core's
+// signals, which Vue does not track, so a kind reading `node.slot()` was right once and stale for
+// ever. Every access here touches this row's own subscription INSIDE THE READER'S EFFECT, which is
+// what makes it work in a CHILD component: a parent's repaint does not reach a child whose props
+// are unchanged, so the child's own render effect is the one that has to see a reactive read.
+//
+// Only the props a KIND receives are wrapped, and only after the resolver has run on the real node
+// — core never sees this. The cost is identity: `===` against a node obtained elsewhere is false,
+// so rows are compared by `id`.
+const reactiveNode = computed(() => {
+	const raw = props.node
+	return new Proxy(raw, {
+		get(target, key, receiver) {
+			void rendered.value
+			const value: unknown = Reflect.get(target, key, receiver)
+			return typeof value === 'function' ? (value as (...a: unknown[]) => unknown).bind(target) : value
+		},
+	})
+})
 const rowProps = computed(() => {
 	const {style: _s, className, ...rest} = resolved.value[1]
+	if ('node' in rest) rest.node = reactiveNode.value
 	// `class`, which is Vue's own spelling and the one `RowProps` publishes. Handed over as
 	// `className` — the resolver's key, and React's prop name — it reached the element as a DOM
 	// PROPERTY write, so a kind whose template carried any class of its own had it silently
