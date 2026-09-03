@@ -5,7 +5,7 @@ prev: false
 title: "SlotProps"
 ---
 
-Defined in: [react/markput/src/types.ts:147](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/types.ts#L147)
+Defined in: [react/markput/src/types.ts:144](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/types.ts#L144)
 
 Props merged onto the components the editor paints itself. EXTENDS the core contract, so a key
 core learns to read is a key this type declares.
@@ -25,7 +25,7 @@ for a row with NO kind, while `slotProps.row` reaches every row.
 optional container: Record<string, unknown> & object & DataAttributes;
 ```
 
-Defined in: [react/markput/src/types.ts:148](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/types.ts#L148)
+Defined in: [react/markput/src/types.ts:145](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/types.ts#L145)
 
 #### Type Declaration
 
@@ -55,7 +55,7 @@ CoreSlotProps.container
 optional row: Record<string, unknown> & object & DataAttributes;
 ```
 
-Defined in: [react/markput/src/types.ts:150](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/types.ts#L150)
+Defined in: [react/markput/src/types.ts:147](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/types.ts#L147)
 
 Merged onto EVERY row's wrapper — kind or paragraph alike, unlike `slots.paragraph`.
 

@@ -47,12 +47,9 @@ export interface RowProps {
 	/**
 	 * Nesting depth, counted from 0: a ROOT row is at depth 0, its child at depth 1.
 	 *
-	 * THERE IS NO SIBLING POSITION BESIDE IT, and its absence is the contract. A position changes
-	 * for every row after an insert, so handing one down made a single Enter repaint the whole tail
-	 * of the document — half of the whole cost at 4000 rows (ADR-0013). Number a run with a CSS
-	 * counter, which is exact and free; `pages/Notion/notion/rows.module.css` is the worked example,
-	 * and it was already doing that when the prop still existed, because a position among siblings
-	 * of EVERY kind is not a list ordinal.
+	 * THERE IS NO SIBLING POSITION BESIDE IT. Number a run with a CSS counter, which the browser
+	 * keeps exact for free — the row-kinds guide has the rule to copy. Why the prop was removed
+	 * rather than made cheaper is ADR-0013.
 	 */
 	depth: number
 	/** The live row node: its id, its own text and its verbs. */

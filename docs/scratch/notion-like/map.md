@@ -550,7 +550,10 @@ becomes a ticket here.
   the caret, the focus, the freeze or the row count. A page's proving spec needs at least one
   reading per gesture that only a live caret can produce — "type the next character and assert
   the value" is the cheapest one, and it is what caught the slash menu blurring its own editor.
-- **`RowProps.index` has no reader anywhere in the repo, and is KEPT.** P11 was the phase that
+- **`RowProps.index` has no reader anywhere in the repo, and was kept — then REMOVED on 2026-08-29
+  (ADR-0013), when it turned out to cost half of Enter's whole latency at document scale. The
+  paragraph below is the reasoning as it stood before that measurement; it is left standing because
+  the verdict it reached was right on the evidence it had and wrong on evidence nobody had yet.** P11 was the phase that
   was meant to be its caller and declined it — a numbered run counts through a CSS counter,
   because `index` is the position among ALL siblings. Measured removable: deleting it from
   `RowRender`, both adapters' `RowProps` and both `Rows`/`Block` pairs leaves `pnpm run typecheck`

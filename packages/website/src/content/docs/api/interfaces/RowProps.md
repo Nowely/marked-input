@@ -32,7 +32,7 @@ The row's own inline content, already rendered.
 optional className: string;
 ```
 
-Defined in: [react/markput/src/types.ts:83](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/types.ts#L83)
+Defined in: [react/markput/src/types.ts:80](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/types.ts#L80)
 
 ***
 
@@ -42,16 +42,13 @@ Defined in: [react/markput/src/types.ts:83](https://github.com/Nowely/marked-inp
 depth: number;
 ```
 
-Defined in: [react/markput/src/types.ts:72](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/types.ts#L72)
+Defined in: [react/markput/src/types.ts:69](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/types.ts#L69)
 
 Nesting depth, counted from 0: a ROOT row is at depth 0, its child at depth 1.
 
-THERE IS NO SIBLING POSITION BESIDE IT, and its absence is the contract. A position changes
-for every row after an insert, so handing one down made a single Enter repaint the whole tail
-of the document — half of the whole cost at 4000 rows (ADR-0013). Number a run with a CSS
-counter, which is exact and free; `pages/Notion/notion/rows.module.css` is the worked example,
-and it was already doing that when the prop still existed, because a position among siblings
-of EVERY kind is not a list ordinal.
+THERE IS NO SIBLING POSITION BESIDE IT. Number a run with a CSS counter, which the browser
+keeps exact for free — the row-kinds guide has the rule to copy. Why the prop was removed
+rather than made cheaper is ADR-0013.
 
 ***
 
@@ -73,7 +70,7 @@ The kind's metadata gap — a todo's checked flag, a fence's language.
 node: RowNode;
 ```
 
-Defined in: [react/markput/src/types.ts:74](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/types.ts#L74)
+Defined in: [react/markput/src/types.ts:71](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/types.ts#L71)
 
 The live row node: its id, its own text and its verbs.
 
@@ -85,7 +82,7 @@ The live row node: its id, its own text and its verbs.
 optional ref: RefCallback<HTMLElement>;
 ```
 
-Defined in: [react/markput/src/types.ts:82](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/types.ts#L82)
+Defined in: [react/markput/src/types.ts:79](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/types.ts#L79)
 
 A row kind's component is a SLOT component: spread `ref`, `className` and `style` onto the
 element it renders, the way `slots.container` and `slots.paragraph` consumers already do. The
@@ -122,4 +119,4 @@ would walk into a row with no element.
 optional style: CSSProperties;
 ```
 
-Defined in: [react/markput/src/types.ts:84](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/types.ts#L84)
+Defined in: [react/markput/src/types.ts:81](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/types.ts#L81)

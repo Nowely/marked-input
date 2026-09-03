@@ -12,8 +12,7 @@ import Row from './Row.vue'
  * `<template v-for>` item gets its own Fragment and a Fragment mounts two empty text anchors,
  * pushing 2N stray text nodes into the editing host.
  *
- * NO POSITION IS HANDED DOWN: a sibling position changes for every row after an insert, and a row
- * that takes one repaints whenever a distant row moves — see {@link RowRender}.
+ * No position is handed down; the rule and its cost are on core's `RowRender` (ADR-0013).
  */
 defineProps<{rows: readonly RowNode[]; depth: number}>()
 </script>

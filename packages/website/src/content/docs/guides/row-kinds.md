@@ -103,6 +103,28 @@ Everything a kind declares beyond its markup lives in [`RowSpec`](/api/interface
 | `node`                     | The live [`RowNode`](/api/interfaces/rownode/): its id, its own text, and its verbs.                |
 | `ref`, `className`, `style` | Slot plumbing. **Spread all three onto the element you render.**                                   |
 
+There is no `index`. It was published and was removed: a sibling position changes for every row
+after an insert, so a row that is handed one repaints whenever a distant row moves — half the cost
+of one Enter in a 4000-row document, measured. Number a run with a CSS counter instead, which the
+browser keeps exact for free:
+
+```css
+.numbered {
+	counter-increment: item;
+}
+/* The reset sits on the FIRST item of a run, so each run counts from one. */
+.numbered:not(.numbered + .numbered) {
+	counter-reset: item;
+}
+.numbered::before {
+	content: counter(item) '.';
+}
+```
+
+A counter is also the RIGHT number, which the prop never was: a position among siblings of every
+kind counts the paragraphs before a list, so the first item of a list under two paragraphs reported
+`2` and `index + 1` read "3.".
+
 The `ref` is load-bearing. It is how the editor finds the row's element; a component that drops it
 leaves the row unbound and the caret cannot resolve into it. Nothing on screen says so, which is why
 the editor does: a row whose component paints no element the editor can bind is reported to the

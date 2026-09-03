@@ -66,9 +66,7 @@ export const Row = memo(({node, depth}: RowRenderProps) => {
 
 	// MEMOISED TOO, and for a cost rather than for tidiness: React detaches and re-attaches a ref
 	// whose function identity changed, so a fresh closure here turned every repaint of a row into a
-	// full unbind/rebind of its element — measured at four rebind pulses per repainted row, and a
-	// second independent measurement put it at about half of the whole position-dependent slope
-	// before `index` was removed (ADR-0013).
+	// full unbind/rebind of its element (ADR-0013).
 	const setRowRef = useCallback(
 		(el: HTMLElement | null) => {
 			consignRow(el)

@@ -15,12 +15,14 @@ import {MarkputHandle} from './MarkputHandle'
  *
  * THE NAME STAYS, and that is a decision rather than an omission. It carried
  * `//TODO rename to Markput, Core, Engine, Editor?` from before either adapter published it; all
- * TODO Extract MarkputContext with core 0 primitives that used controllers? 
  * four name the PRODUCT or the PACKAGE rather than this object's role, `MarkputHandle` already
  * carries the product name for the thing a consumer holds, and this is `useMarkput`'s selector
  * parameter — so a rename lands in the first line of every consumer that reaches the imperative
  * surface, against no defect and no better name.
  */
+// TODO Extract MarkputContext with core 0 primitives that used controllers?
+// Outside the docblock on purpose: TypeDoc publishes what is inside it, and this note reached
+// the consumer-facing `api/Store.md` page.
 export class Store {
 	readonly host = new Host()
 	readonly props = new PropsModel()

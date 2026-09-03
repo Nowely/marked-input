@@ -72,14 +72,15 @@ export interface NodeSlotContext {
 }
 
 /**
- * What only the parent that MAPPED a row knows, and the tree therefore cannot answer: how deep it
- * sits.
+ * What the parent that MAPPED a row hands it: how deep it sits.
  *
- * A SIBLING POSITION IS DELIBERATELY NOT HERE. It used to be, and it cost every row after an edit
- * a repaint: inserting one row shifts the position of every later sibling, so a memo keyed on it
- * misses on all of them while their content is unchanged — measured at 4000 rows, half of Enter's
- * whole cost (ADR-0013). Nothing can hold both an always-exact position and a row that does not
- * repaint when a distant row moves, so the position went and CSS counters number a run instead.
+ * WHAT MAY TRAVEL HERE IS DECIDED BY ONE RULE — it must be INVARIANT UNDER AN EDIT SOMEWHERE ELSE.
+ * A row is painted through a memoised component, so a field that moves when a distant row moves
+ * costs a repaint of every row it moved for. `depth` obeys the rule: a row's depth changes only
+ * when that row is indented. A SIBLING POSITION does not, and used to be here: inserting one row
+ * shifted it for every later sibling and repainted all of them with their content unchanged — at
+ * 4000 rows, half of Enter's whole cost. It is gone, and a run that wants ordinals is numbered by
+ * a CSS counter instead (ADR-0013).
  *
  * The RENDERED CHILD ROWS are deliberately not here either. They are framework values with no use
  * in core — it ships no components — and routing them through would put an `unknown` on this

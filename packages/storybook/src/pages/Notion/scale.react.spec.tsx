@@ -8,21 +8,26 @@ import {NOTION_THEME, theme} from './notion'
 import * as NotionStories from './Notion.stories'
 
 /**
- * A STRUCTURAL EDIT MUST NOT REPAINT THE ROWS AFTER IT, and this counts the repaints rather than
- * timing them: a budget in milliseconds says nothing on a loaded machine, while the count is the
- * mechanism itself.
+ * A STRUCTURAL EDIT MUST NOT REPAINT THE ROWS AFTER IT — ADR-0013's first half, counted rather
+ * than timed. A millisecond budget says nothing on a loaded machine; the count is the mechanism.
  *
- * The defect this pins cost 4000 row repaints on one Enter at the top of a 4000-row document —
- * about half of the whole 250 ms, measured — because `Rows` handed each row its position among its
- * siblings and `Row` is memoised on what it is given. Inserting one row shifts that position for
- * every later sibling, so the memo missed on all of them while their content was unchanged.
- * ADR-0013 has the numbers and the trade.
+ * REACT-ONLY, and deliberately: the mechanism is React's `memo`. Vue paints off its own reactivity
+ * and never carried this shape; its own cost at document scale is issue 47.
  *
- * REACT-ONLY, and deliberately: the memo is React's. Vue re-renders off its own reactivity and
- * never carried this shape — its own cost at document scale is issue 47.
+ * ADR-0013's SECOND half — that a repaint must not rebind the row's element — is NOT pinned here,
+ * and that is recorded rather than papered over: once no position is handed down, no gesture in
+ * reach of this harness repaints enough rows for a churning `ref` to show up at all, and a test
+ * that stays green either way is not a pin. Pinning it needs a gesture that repaints MANY rows at
+ * once — a select-all across rows is the candidate — and the harness has no helper for one.
  *
- * The counter rides `slots.paragraph`, which is published API: every row in the document below is
- * a plain paragraph, so one render of that component is one repainted row.
+ * The counter rides PUBLISHED surface: `slots.paragraph` is the component every row in the document
+ * below paints through, so one call of it is one repainted row.
+ *
+ * WHAT THIS DOES NOT COVER, said here so nobody reads it as more than it is: the `bottom` case
+ * cannot redden (an Enter two rows from the end repaints two rows whatever the code does) and is a
+ * CONTROL rather than a pin; the document is 400 rows against the 4000 the defect was measured at,
+ * which is enough to catch anything proportional and no more; and `mountEcho` merges its args over
+ * the story's, so the showcase's own `container` slot is not exercised here.
  */
 const {Showcase} = composePage(NotionStories)
 
@@ -53,20 +58,24 @@ const plainDoc = (rows: number) => Array.from({length: rows}, (_, i) => `row ${i
 
 const frame = () => new Promise(resolve => requestAnimationFrame(resolve))
 
+const mount = async (where: 'top' | 'bottom') => {
+	const {host} = await mountEcho(Showcase, {
+		value: plainDoc(SIZE),
+		draggable: false,
+		slots: {paragraph: CountingParagraph},
+	})
+	const rows = rowsOf(host)
+	expect(rows.length).toBeGreaterThan(SIZE - 5)
+	await focusAtStart(where === 'top' ? rows[0] : rows[rows.length - 2])
+	await settle()
+	await frame()
+	return {host, before: rows.length}
+}
+
 describe('a structural edit at scale', () => {
 	for (const where of ['top', 'bottom'] as const) {
 		it(`repaints a handful of rows for Enter at the ${where}`, async () => {
-			const {host} = await mountEcho(Showcase, {
-				value: plainDoc(SIZE),
-				draggable: false,
-				slots: {paragraph: CountingParagraph},
-			})
-			const rows = rowsOf(host)
-			expect(rows.length).toBeGreaterThan(SIZE - 5)
-
-			await focusAtStart(where === 'top' ? rows[0] : rows[rows.length - 2])
-			await settle()
-			await frame()
+			const {host, before} = await mount(where)
 
 			paints = 0
 			editingHost(host).dispatchEvent(
@@ -74,9 +83,12 @@ describe('a structural edit at scale', () => {
 			)
 			await frame()
 
-			// The row that split, the row it grew, and room for the editor's own settle to touch a
-			// neighbour. Anything proportional to the document is the regression.
-			expect(paints).toBeLessThan(10)
+			// THE EDIT HAS TO HAVE HAPPENED, or a swallowed Enter passes the count below with zero.
+			expect(rowsOf(host).length).toBe(before + 1)
+			// The row that split and the row it grew, with room for the settle pass to touch a
+			// neighbour. Anything proportional to the document is the regression; measured at 1, and
+			// at SIZE + 1 when a sibling position is handed down again.
+			expect(paints).toBeLessThanOrEqual(3)
 		}, 120000)
 	}
 })
