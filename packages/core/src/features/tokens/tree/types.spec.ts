@@ -36,12 +36,12 @@ describe('tree contract types', () => {
 			readonly text: Signal<string>
 			position: {start: number; end: number}
 			range: () => {start: number; end: number}
-			// Structural, so they are on EVERY node — a block row can be a text node.
+			// Structural, so they are on EVERY node. `moveTo` is NOT among them: it addresses a
+			// placement in the ROW tree, which a text or mark node has no position in.
 			remove: () => boolean
 			duplicate: () => boolean
 			insertAfter: (text: string) => boolean
 			mergeWith: (next: TreeNode) => boolean
-			moveTo: (index: number) => boolean
 		}>()
 		expectTypeOf<MarkNode>().toMatchObjectType<{
 			readonly kind: 'mark'
@@ -60,7 +60,6 @@ describe('tree contract types', () => {
 			duplicate: () => boolean
 			insertAfter: (text: string) => boolean
 			mergeWith: (next: TreeNode) => boolean
-			moveTo: (index: number) => boolean
 		}>()
 		// NodeAnchor: text offsets, boundary forms, document edges — the annotation is the check
 		const start: NodeAnchor = 'start'

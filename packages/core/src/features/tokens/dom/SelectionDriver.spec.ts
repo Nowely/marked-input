@@ -113,7 +113,7 @@ describe('SelectionDriver', () => {
 		// `anchorAt` rebuilds a fresh `{node, offset}` object each time, so only the stored
 		// signal's value equality collapses the second write.
 		const store = new Store()
-		store.props.set({defaultValue: 'hello'})
+		store.props.set({separator: null, defaultValue: 'hello'})
 		const notify = vi.fn()
 		const stop = watch(() => store.tokens.selection.anchors(), notify)
 		caretAt(store, 5)
@@ -297,7 +297,7 @@ describe('SelectionDriver', () => {
 	describe('selectAll', () => {
 		it('sets range to full value range and applies it to DOM', () => {
 			const store = new Store()
-			store.props.set({defaultValue: 'hello'})
+			store.props.set({separator: null, defaultValue: 'hello'})
 			const container = document.createElement('div')
 			const span = document.createElement('span')
 			span.appendChild(document.createTextNode('hello'))
@@ -317,7 +317,7 @@ describe('SelectionDriver', () => {
 		})
 		it('retains range intent when the DOM has no target yet', () => {
 			const store = new Store()
-			store.props.set({defaultValue: 'hello'})
+			store.props.set({separator: null, defaultValue: 'hello'})
 			// No container set → no DOM index has been committed → placement is deferred
 			// until the next render. The range signal still reflects user intent.
 			store.tokens.selection.selectAll()
@@ -395,7 +395,7 @@ describe('SelectionDriver', () => {
 			container.appendChild(span)
 			document.body.appendChild(container)
 
-			store.props.set({defaultValue: 'hello'})
+			store.props.set({separator: null, defaultValue: 'hello'})
 			store.host.container(container)
 			consignRendered(store, container)
 			caretAt(store, 5)
@@ -413,7 +413,7 @@ describe('SelectionDriver', () => {
 			const store = new Store()
 			const container = document.createElement('div')
 			document.body.appendChild(container)
-			store.props.set({defaultValue: 'hello'})
+			store.props.set({separator: null, defaultValue: 'hello'})
 			store.host.container(container)
 			caretAt(store, 3)
 			expect(selectionRange(store)).toEqual({start: 3, end: 3})
@@ -425,7 +425,7 @@ describe('SelectionDriver', () => {
 			// unchanged: `anchorAt(999)` finds no node containing the offset, so it answers
 			// `'end'`, which resolves to the last root's end.
 			const store = new Store()
-			store.props.set({defaultValue: 'hello'})
+			store.props.set({separator: null, defaultValue: 'hello'})
 			const container = document.createElement('div')
 			const span = document.createElement('span')
 			span.appendChild(document.createTextNode('hello'))
@@ -441,7 +441,7 @@ describe('SelectionDriver', () => {
 
 		it('resolves an out-of-range selection to the document end', () => {
 			const store = new Store()
-			store.props.set({defaultValue: 'hello'})
+			store.props.set({separator: null, defaultValue: 'hello'})
 			const container = document.createElement('div')
 			const span = document.createElement('span')
 			span.appendChild(document.createTextNode('hello'))
@@ -482,10 +482,10 @@ describe('SelectionDriver', () => {
 
 			expect(container.getAttribute('contenteditable')).toBe('true')
 
-			store.props.set({readOnly: true})
+			store.props.set({separator: null, readOnly: true})
 			expect(container.getAttribute('contenteditable')).toBe('false')
 
-			store.props.set({readOnly: false})
+			store.props.set({separator: null, readOnly: false})
 			expect(container.getAttribute('contenteditable')).toBe('true')
 			container.remove()
 		})
@@ -533,6 +533,184 @@ describe('SelectionDriver', () => {
 
 			expect(store.tokens.value()).toBe('@[aX @[b] c]')
 			expect(selectionRange(store)).toEqual({start: 4, end: 4})
+			container.remove()
+		})
+	})
+
+	/**
+	 * A CLAIM ANSWERS A LANDING, and a landing is a gesture whose POSITION the model cannot name.
+	 * Everything else the pointer touches is read, not claimed.
+	 *
+	 * Both arms of `syncIfInEditor` used to reach for the claim on the strength of ONE ENDPOINT —
+	 * the focus node sitting in a control root — which is the browser's raw range deciding rather
+	 * than informing. The other side of the same rule is the `click` listener: a control the browser
+	 * can FOCUS provokes no `selectionchange` at all, so on a page with no caret yet nothing ever
+	 * consumed the claim and the focus stayed on the control.
+	 */
+	describe('the pointer claim answers a landing, never a selection', () => {
+		/** Two typed rows, each painted with a REGISTERED decoration before its own text surface. */
+		function mountDecoratedRows() {
+			const store = new Store()
+			store.props.set({
+				defaultValue: '- one\n- two',
+				separator: '\n',
+				options: [{markup: '- __slot__', row: {Component: 'li'}}],
+				Mark: () => null,
+			})
+			const container = document.createElement('div')
+			document.body.append(container)
+			store.host.container(container)
+			const dots: HTMLElement[] = []
+			const surfaces: HTMLElement[] = []
+			store.tokens.nodes().forEach(node => {
+				const row = document.createElement('div')
+				const dot = document.createElement('span')
+				dot.tabIndex = 0
+				row.append(dot)
+				store.tokens.control()(dot)
+				const surface = document.createElement('span')
+				row.append(surface)
+				container.append(row)
+				dots.push(dot)
+				surfaces.push(surface)
+				store.tokens.consign(node.id)(row)
+				store.tokens.children(node.id)(row)
+				if (node.kind === 'row') store.tokens.consign(node.children()[0].id)(surface)
+			})
+			return {store, container, dots, surfaces}
+		}
+
+		/**
+		 * A sweep that merely ENDS on a decoration is a SELECTION. It used to be thrown away whole:
+		 * measured on `'one⏎- [ ] todo item⏎> [!warning] boom'`, a triple-click of the to-do ends at
+		 * the callout's icon, the caret was claimed into the callout, and `'ZZ'` landed there.
+		 */
+		it('keeps a ranged reading whose end sits on a decoration', () => {
+			const {store, container, dots, surfaces} = mountDecoratedRows()
+			const text = surfaces[0].firstChild
+			if (!text) throw new Error('the row surface rendered no text node')
+
+			window.getSelection()?.setBaseAndExtent(text, 0, dots[1], 0)
+			document.dispatchEvent(new Event('selectionchange'))
+
+			const anchors = store.tokens.selection.anchors()
+			const roots = store.tokens.nodes()
+			// '- one\n- two': row 0's body starts at 2 and row 1's ENTRY is 8.
+			expect(anchors && offsetOfAnchor(roots, anchors.anchor)).toBe(2)
+			expect(anchors && offsetOfAnchor(roots, anchors.head)).toBe(8)
+			expect(store.rows.selected()).toHaveLength(1)
+			container.remove()
+		})
+
+		/**
+		 * AND THE CLICK CONSUMES THE CLAIM. A focusable control leaves the selection exactly where it
+		 * was, so the reclaim's own gate — "only where there is a caret to go back to" — had nothing
+		 * to answer with on first contact and stood down. MEASURED on the showcase's
+		 * `'+ Add a property'` and a comment thread's `'Reply…'`: fresh load, zero ranges in the
+		 * document, focus left on the BUTTON, and the next two characters swallowed in silence.
+		 */
+		it('claims the pointer row on a click that provoked no selectionchange', async () => {
+			const {store, container, dots} = mountDecoratedRows()
+			// A tick for the mount's own clocks, then the state a fresh page is in: nothing selected
+			// anywhere, and the focus on the control the pointer is about to press.
+			await new Promise(resolve => setTimeout(resolve, 0))
+			window.getSelection()?.removeAllRanges()
+			dots[1].focus()
+			expect(store.tokens.domAnchors()).toBeUndefined()
+
+			dots[1].dispatchEvent(new PointerEvent('pointerdown', {bubbles: true}))
+			dots[1].dispatchEvent(new MouseEvent('click', {bubbles: true}))
+			await Promise.resolve()
+
+			const anchors = store.tokens.selection.anchors()
+			expect(anchors && offsetOfAnchor(store.tokens.nodes(), anchors.anchor)).toBe(8)
+			expect(document.activeElement).toBe(container)
+			container.remove()
+		})
+
+		/**
+		 * AND A CARET THE GESTURE COULD NOT HAVE MOVED DOES NOT OUTRANK IT. Frozen presentation the
+		 * browser can DRAG — a board card — moves no caret and provokes no `selectionchange`, so the
+		 * click is the only arm its claim ever reaches, and the gate there read "there is a reading" as
+		 * "there is nothing to claim". MEASURED on the showcase: caret in the intro paragraph, one click
+		 * on the `'Sign the vendor SLA'` card, one `'Y'` — `'Apollo Ymoves the collaboration layer'`,
+		 * three screens from where the pointer went down.
+		 */
+		it('claims the pointer row over a caret the gesture could not have moved', async () => {
+			const {store, container, dots, surfaces} = mountDecoratedRows()
+			await new Promise(resolve => setTimeout(resolve, 0))
+			const text = surfaces[0].firstChild
+			if (!text) throw new Error('the row surface rendered no text node')
+			// The state a click on a `draggable` island leaves: a caret in ANOTHER row, untouched, and the
+			// host still holding the focus because the island is not focusable.
+			container.focus()
+			window.getSelection()?.collapse(text, 1)
+			document.dispatchEvent(new Event('selectionchange'))
+			expect(store.tokens.domAnchors()).toBeDefined()
+
+			dots[1].dispatchEvent(new PointerEvent('pointerdown', {bubbles: true}))
+			dots[1].dispatchEvent(new MouseEvent('click', {bubbles: true}))
+			await Promise.resolve()
+
+			const anchors = store.tokens.selection.anchors()
+			// '- one\n- two': row 1's ENTRY is 8, and row 0's caret was at 1.
+			expect(anchors && offsetOfAnchor(store.tokens.nodes(), anchors.anchor)).toBe(8)
+			container.remove()
+		})
+
+		/**
+		 * A DOCUMENT WITH NO SELECTION AT ALL IS THE DOM LOSING WHAT THE MODEL HOLDS. MEASURED on the
+		 * showcase: click a chip, a table-of-contents entry or a metric card and click the SAME target
+		 * again, and Chromium empties the selection on the second mouse UP — proven by patching
+		 * `Selection.removeAllRanges`, whose only caller was our own paint of the first click. The model
+		 * still held the row, nothing on screen said so, and the next keystroke was answered with the
+		 * caret Chromium INVENTS at the host's start: `'@title YApollo — Q2 launch plan'`.
+		 */
+		it('puts the stored selection back when the browser empties the document', async () => {
+			const {store, container, surfaces} = mountDecoratedRows()
+			await new Promise(resolve => setTimeout(resolve, 0))
+			const text = surfaces[1].firstChild
+			if (!text) throw new Error('the row surface rendered no text node')
+			container.focus()
+			window.getSelection()?.collapse(text, 2)
+			document.dispatchEvent(new Event('selectionchange'))
+			const held = store.tokens.selection.anchors()
+
+			// What the second click on frozen presentation leaves behind, with no call of ours involved.
+			window.getSelection()?.removeAllRanges()
+			document.dispatchEvent(new Event('selectionchange'))
+
+			expect(window.getSelection()?.rangeCount).toBe(1)
+			expect(store.tokens.domAnchors()).toBeDefined()
+			expect(store.tokens.selection.anchors()).toBe(held)
+			container.remove()
+		})
+
+		/**
+		 * AND THE TRIPLE-CLICK IS THE EDITOR'S. The platform answers a VISUAL LINE — the same gesture on
+		 * the same row selects a different amount of text depending on where the window edge falls — and
+		 * its raw range ends on the NEXT row's own element, which is bytes no highlight showed. The
+		 * ROW's own content is what every other editor answers and what the write path can address.
+		 */
+		it("takes the row's content on a triple-click", async () => {
+			const {store, container, surfaces} = mountDecoratedRows()
+			await new Promise(resolve => setTimeout(resolve, 0))
+			const text = surfaces[1].firstChild
+			if (!text) throw new Error('the row surface rendered no text node')
+			container.focus()
+			// The platform's own answer, standing in for the wrapped line: one character of the row.
+			window.getSelection()?.setBaseAndExtent(text, 1, text, 2)
+			document.dispatchEvent(new Event('selectionchange'))
+
+			surfaces[1].dispatchEvent(new MouseEvent('click', {bubbles: true, detail: 3}))
+			await Promise.resolve()
+
+			const anchors = store.tokens.selection.anchors()
+			const roots = store.tokens.nodes()
+			// '- one\n- two': row 1's body runs from 8 to 11.
+			expect(anchors && offsetOfAnchor(roots, anchors.anchor)).toBe(8)
+			expect(anchors && offsetOfAnchor(roots, anchors.head)).toBe(11)
+			expect(store.rows.selected()).toHaveLength(1)
 			container.remove()
 		})
 	})

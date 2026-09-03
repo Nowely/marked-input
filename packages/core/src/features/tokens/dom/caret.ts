@@ -20,6 +20,74 @@ export function getRect(): DOMRect | null {
 }
 
 /**
+ * SCROLL THE CARET BACK ONTO THE SCREEN, and by the smallest amount that does it.
+ *
+ * The editor writes its own caret, so the browser's own "keep the caret visible" never runs: a
+ * programmatic `Selection.collapse` scrolls nothing. Typing at the end of a long page put the
+ * caret at y=882 of a 900px viewport and the scroll position never moved — the next line was
+ * typed below the fold.
+ *
+ * EVERY SCROLLER ON THE WAY UP, innermost first, and then the viewport: the editor may sit in a
+ * consumer's `overflow: auto` box, in the page, or in both. The rect is RE-READ per step because
+ * scrolling one ancestor moves it — a single measurement would over-scroll the next.
+ *
+ * `measure` rather than a rect, for that reason. It answers `undefined` when there is no caret to
+ * follow, which ends the walk.
+ */
+export function revealCaret(from: HTMLElement, measure: () => DOMRect | null): void {
+	for (let element: HTMLElement | null = from; element; element = element.parentElement) {
+		// The CHEAP half of the scroller test first, and it is on the keystroke path: this runs
+		// after every caret placement, and `getComputedStyle` on every ancestor of every editor on
+		// every character is a cost nothing here needs to pay. An element with no overflow to
+		// scroll cannot be the one clipping the caret whatever its `overflow` says.
+		if (!overflows(element)) continue
+		if (!isScroller(element)) continue
+		const rect = measure()
+		if (!rect) return
+		const box = element.getBoundingClientRect()
+		const top = box.top + element.clientTop
+		const left = box.left + element.clientLeft
+		element.scrollTop += scrollDelta(rect.top, rect.bottom, top, top + element.clientHeight)
+		element.scrollLeft += scrollDelta(rect.left, rect.right, left, left + element.clientWidth)
+	}
+	const rect = measure()
+	if (!rect) return
+	const x = scrollDelta(rect.left, rect.right, 0, window.innerWidth)
+	const y = scrollDelta(rect.top, rect.bottom, 0, window.innerHeight)
+	if (x !== 0 || y !== 0) window.scrollBy(x, y)
+}
+
+/**
+ * How far to scroll so that `[lo, hi]` sits inside `[min, max]`, and 0 when it already does.
+ * NEAR EDGE WINS when the span is taller than the box: a caret taller than its scroller is
+ * followed by its top, which is where the text being typed is.
+ */
+function scrollDelta(lo: number, hi: number, min: number, max: number): number {
+	if (lo < min) return lo - min
+	if (hi > max) return Math.min(hi - max, lo - min)
+	return 0
+}
+
+/** Has this element anything to scroll at all — two property reads, no style resolution. */
+function overflows(element: HTMLElement): boolean {
+	return element.scrollHeight > element.clientHeight || element.scrollWidth > element.clientWidth
+}
+
+/**
+ * Does this element scroll its overflow — `auto`/`scroll` on the axis that overflows. `hidden` is
+ * deliberately NOT one: it is a consumer saying the box does not move, and a programmatic scroll
+ * of it is a layout the consumer did not ask for.
+ */
+function isScroller(element: HTMLElement): boolean {
+	const style = getComputedStyle(element)
+	const scrolls = (value: string) => value === 'auto' || value === 'scroll'
+	return (
+		(scrolls(style.overflowY) && element.scrollHeight > element.clientHeight) ||
+		(scrolls(style.overflowX) && element.scrollWidth > element.clientWidth)
+	)
+}
+
+/**
  * A concrete DOM boundary — what a `Range` endpoint and a collapsed caret both take. TWO
  * shapes reach it and they are not interchangeable: a text surface resolves to (Text, char
  * offset), while a MARK has no anchorable interior and resolves to its PARENT plus the child
@@ -28,12 +96,20 @@ export function getRect(): DOMRect | null {
 export type CaretBoundary = {node: Node; offset: number}
 
 /**
- * Resolve a character offset within a structural text surface to a concrete
- * (Text, offset) pair. If the surface contains no Text node, append an empty
- * one and target it. Used by `TokenHandle.caretBoundary` — needs the
- * empty-Text fallback so freshly-mounted empty surfaces still accept a caret.
+ * Resolve a character offset within a structural text surface to a concrete boundary. Used by
+ * `TokenHandle.caretBoundary`.
+ *
+ * AN EMPTY SURFACE ANSWERS ITSELF, and that is not a detail of shape. It used to have an empty
+ * `Text` appended to it so a freshly-mounted empty surface would accept a caret — and MEASURED,
+ * with no editor in the page: a zero-length `Text` inside an empty inline-block defeats Chromium's
+ * own vertical caret movement in BOTH directions, exactly as if the line box were not there
+ * (`'one', '', 'three', '', 'five'`: ArrowDown visits 2, 4 and ArrowUp visits 2, 0, where the same
+ * markup without the node visits every row). So the caret's own first visit to a blank row was what
+ * made that row unreachable by an arrow key ever after. The surface itself is an anchorable
+ * boundary and needs nothing added to it; `caretBoundary` already answers element boundaries for a
+ * token with no surface at all.
  */
-export function findTextBoundary(surface: HTMLElement, offset: number): {node: Text; offset: number} {
+export function findTextBoundary(surface: HTMLElement, offset: number): CaretBoundary {
 	const walker = document.createTreeWalker(surface, NodeFilter.SHOW_TEXT)
 	let remaining = Math.max(0, offset)
 	let node = nextText(walker)
@@ -42,9 +118,9 @@ export function findTextBoundary(surface: HTMLElement, offset: number): {node: T
 		remaining -= node.length
 		node = nextText(walker)
 	}
-	const text = surface.firstChild instanceof Text ? surface.firstChild : document.createTextNode('')
-	if (!text.parentNode) surface.append(text)
-	return {node: text, offset: text.length}
+	const text = surface.firstChild
+	if (text instanceof Text) return {node: text, offset: text.length}
+	return {node: surface, offset: surface.childNodes.length}
 }
 
 /**
@@ -60,7 +136,7 @@ export function findTextBoundary(surface: HTMLElement, offset: number): {node: T
  * `commitCost.bench.ts`'s L6 rung, A/B'd by reverting this one line, five runs on an idle machine:
  *
  *   inline 100 marks   addRange 0.332 / 0.334 ms   collapse 0.294 / 0.261 / 0.257 ms   -18.6%
- *   block 1000 rows    addRange 0.887 / 0.881 ms   collapse 0.717 / 0.697 / 0.731 ms   -19.1%
+ *   1000 rows         addRange 0.887 / 0.881 ms   collapse 0.717 / 0.697 / 0.731 ms   -19.1%
  *
  * So ~19% off a whole keystroke, and the same figure on two very different document shapes. An
  * earlier reading of ~24% was taken while background agents were loading the machine; ratios
@@ -81,10 +157,19 @@ export function collapseTo(boundary: CaretBoundary): void {
  * The pair is normalized in DOM order first, because `setEnd` before the start COLLAPSES the
  * range rather than spanning backwards. `comparePoint` answers that without a coordinate:
  * both boundaries live under the one editing host, so they are always comparable.
+ *
+ * THE EXTENT IS OURS AND THE DIRECTION IS THE BROWSER'S, which is why a pair the DOM already
+ * holds is left alone. `addRange` can only produce a FORWARD selection, so re-applying a
+ * BACKWARD one moves its base to the low end — and a mouse drag extends from its base, so every
+ * `mousemove` re-seated the anchor under the pointer and an upward sweep across a row boundary
+ * collapsed to a caret instead of growing. The model's own pair is document-ordered
+ * ({@link SelectionDriver.domAnchors}) and cannot express the difference, so the DOM's own
+ * direction is the only record of it there is.
  */
 export function placeRangeAcrossBoundaries(a: CaretBoundary, b: CaretBoundary): void {
 	const selection = window.getSelection()
 	if (!selection) return
+	if (spans(selection, a, b)) return
 	const probe = document.createRange()
 	probe.setStart(a.node, a.offset)
 	probe.collapse(true)
@@ -94,6 +179,15 @@ export function placeRangeAcrossBoundaries(a: CaretBoundary, b: CaretBoundary): 
 	range.setEnd(hi.node, hi.offset)
 	selection.removeAllRanges()
 	selection.addRange(range)
+}
+
+/** Does the live selection already end on these two boundaries, in either direction? */
+function spans(selection: globalThis.Selection, a: CaretBoundary, b: CaretBoundary): boolean {
+	const at = (node: Node | null, offset: number, boundary: CaretBoundary) =>
+		node === boundary.node && offset === boundary.offset
+	const base = (boundary: CaretBoundary) => at(selection.anchorNode, selection.anchorOffset, boundary)
+	const extent = (boundary: CaretBoundary) => at(selection.focusNode, selection.focusOffset, boundary)
+	return (base(a) && extent(b)) || (base(b) && extent(a))
 }
 
 /**

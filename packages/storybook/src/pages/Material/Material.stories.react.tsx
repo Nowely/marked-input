@@ -11,12 +11,14 @@ import {MaterialMentions} from './components/MaterialMentions'
 export default {
 	title: 'Styled/Material',
 	component: MarkedInput,
+	/** A plain annotated field: this page never splits its value into rows (ADR-0011). */
+	args: {separator: null},
 } satisfies Meta<typeof MarkedInput>
 
 export const Mentions = () => {
 	const [value, setValue] = useState(`Enter the '@' for calling mention list:\n- Hello @Agustina and @[Ruslan]!`)
 
-	return <MaterialMentions value={value} onChange={setValue} />
+	return <MaterialMentions separator={null} value={value} onChange={setValue} />
 }
 
 const initialValue = 'Hello beautiful the @[first](outlined:1) world from the @[second](common:2) '
@@ -46,6 +48,7 @@ export const Overridden = () => {
 			// oxlint-disable-next-line no-unsafe-type-assertion -- MUI types inputComponent by its own props; MarkedInput's props are unrelated but forwarded verbatim via inputProps
 			inputComponent={MarkedInput as unknown as ComponentType<InputBaseComponentProps>}
 			inputProps={{
+				separator: null,
 				Mark: Chip,
 				options: [
 					{

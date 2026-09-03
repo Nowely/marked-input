@@ -3,22 +3,24 @@ import {escape} from '../../shared/escape'
 import {reportBadProp} from '../../shared/reportBadProp'
 import {signal, computed, event, effect, watch, listen} from '../../shared/signals/index.js'
 import type {Computed} from '../../shared/signals/index.js'
-import type {CoreOption, OverlayMatch, Slot} from '../../shared/types'
+import type {CoreOption, OverlayMatch, OverlayPick, Slot} from '../../shared/types'
+import {fitPopup, popupSize, windowViewport} from '../../shared/utils/fitPopup'
+import {shallow} from '../../shared/utils/shallow'
 import type {EditController} from '../edit'
 import type {OverlaySlot} from '../slots'
 import {resolveOverlaySlot} from '../slots/resolveSlot'
 import type {Host} from '../state/Host'
 import type {PropsModel} from '../state/PropsModel'
-import type {TokenModel} from '../tokens'
-import {anchorEquals, annotate, markupError} from '../tokens'
-import {SuggestionsModel} from './SuggestionsModel'
+import type {RowNode, TokenModel} from '../tokens'
+import {anchorEquals, annotate, hasRawBody, markupError} from '../tokens'
+import {OverlayListModel} from './OverlayListModel'
 
 export class OverlayController {
 	/**
 	 * THE open overlay, or `undefined`. Compared BY CONTENT, because `#findTrigger` allocates a
 	 * fresh match on every probe and every commit re-probes. Without this, a commit that changes
 	 * nothing the overlay can see — a parent re-setting `value` to what it already holds, a
-	 * reparse — announced a "new" match, and `SuggestionsModel`'s watch reset the highlighted
+	 * reparse — announced a "new" match, and `OverlayListModel`'s watch reset the highlighted
 	 * suggestion to NaN. The user lost the row they had arrowed to, for a probe that found
 	 * exactly the same thing. Measured field by field: value, source, span, node, option and
 	 * both anchors were all identical, including the anchors' own node objects.
@@ -44,14 +46,17 @@ export class OverlayController {
 	/** The `{current}` facade over `element` that both adapters hand out as `OverlayHandler.ref`. */
 	readonly ref: {current: HTMLElement | null}
 
-	readonly suggestions: SuggestionsModel
+	/** The ONE list the open overlay offers, its highlight and its keyboard. */
+	readonly list: OverlayListModel
 
 	/**
-	 * `choose` under the `{value, meta}` payload shape both adapters expose as
-	 * `OverlayHandler.select`. An arrow so the adapters can pass it around unbound.
+	 * THE DOCUMENTED ALIAS of {@link choose}'s value arm, and the older of the two spellings —
+	 * every overlay example in the docs calls it, which is why it stays. `choose` is canonical:
+	 * it takes either arm of an {@link OverlayPick} and says whether it wrote. An arrow so the
+	 * adapters can pass it around unbound.
 	 */
 	readonly select = (value: {value: string; meta?: string}): void => {
-		this.choose(value.value, value.meta)
+		this.choose(value)
 	}
 
 	readonly slot: OverlaySlot = computed(() => {
@@ -61,12 +66,26 @@ export class OverlayController {
 
 	readonly close = event()
 
-	readonly position: Computed<{left: number; top: number}> = computed(() => {
-		if (!this.match()) return {left: 0, top: 0}
-		const rect = this.tokens.caretRect()
-		if (!rect) return {left: 0, top: 0}
-		return {left: rect.left, top: rect.top + rect.height + 1}
-	})
+	/**
+	 * Where the overlay paints, in viewport coordinates: under the caret when it fits there, above
+	 * it when it does not — see {@link fitPopup}.
+	 *
+	 * IT READS {@link element}, which is what makes the flip reactive: the popup's own size is
+	 * unknowable until it has mounted, and the mount writes that signal. So this runs twice for a
+	 * newly opened overlay — once unmeasured at the caret, once measured and fitted — and once per
+	 * keystroke after that, since `match` moves on every one and the list's height moves with it.
+	 */
+	readonly position: Computed<{left: number; top: number}> = computed(
+		() => {
+			if (!this.match()) return {left: 0, top: 0}
+			const rect = this.tokens.caretRect()
+			if (!rect) return {left: 0, top: 0}
+			return fitPopup(rect, popupSize(this.element()), windowViewport(), 1)
+		},
+		// A fresh object per evaluation would call every re-probe a move and re-render both
+		// adapters' popups for a position that did not change.
+		{equals: shallow}
+	)
 
 	constructor(
 		private readonly host: Host,
@@ -74,7 +93,7 @@ export class OverlayController {
 		private readonly edit: EditController,
 		private readonly tokens: TokenModel
 	) {
-		this.suggestions = new SuggestionsModel(host, this)
+		this.list = new OverlayListModel(host, props, this)
 
 		const element = this.element
 		this.ref = {
@@ -138,7 +157,19 @@ export class OverlayController {
 				const handler = () => {
 					const container = this.host.container()
 					if (!container?.contains(document.activeElement)) return
-					if (this.#wantsTrigger('selectionChange')) this.#probeTrigger()
+					// AN OPEN MATCH IS RE-PROBED WHENEVER THE CARET MOVES, whatever `showOverlayOn`
+					// says. That prop decides when an overlay OPENS; whether one already open still
+					// belongs to the caret is a different question, and nothing was asking it. At
+					// the default `'change'` a click into another row left the menu standing — the
+					// outside-click listener returns early for any click INSIDE the container — and
+					// the next pick retyped the row the user had LEFT: caret in `gamma`, pointer on
+					// Heading 2, value `'## alpha⏎beta⏎gamma'`. An arrow key with the menu open did
+					// the same thing more quietly, moving the document caret under an open popup.
+					//
+					// It cannot OPEN anything: the arm runs only while a match already stands, and
+					// `#probeTrigger` writes whatever the caret's own text answers — the same match
+					// while the caret is still on its trigger, and `undefined` once it is not.
+					if (this.#wantsTrigger('selectionChange') || this.match()) this.#probeTrigger()
 				}
 				listen(document, 'selectionchange', handler)
 			})
@@ -162,22 +193,110 @@ export class OverlayController {
 	 * `Parser` rejects, writing text nothing reads back as a mark straight into the document.
 	 * Reported for the same reason, and at the moment the consumer's user actually loses a
 	 * selection rather than at a mount they may never have watched.
+	 *
+	 * A PICK rather than two positional strings: it is the one accept path, and what a pick names
+	 * is what gets written. `false` says nothing was — the overlay stays open on a refusal, so the
+	 * user still has the selection they made.
+	 *
+	 * AN `option` NAMES A ROW KIND and takes the other arm entirely: the trigger span leaves the
+	 * caret's row and that row takes the kind, in ONE splice, because two verbs cannot compose in
+	 * controlled mode — the tree has not moved when the first returns. That is `turnInto(option,
+	 * {text})`, and it is why the verb takes the body text at all. On a row holding nothing but
+	 * the trigger the entry's own `menu.text`/`menu.meta` seed the empty body; on a row that
+	 * already has text the body is kept, because a turn-into must not discard what was typed.
+	 *
+	 * The two arms are a UNION, so an option arm carries no `value`/`meta` for `turnInto` to
+	 * ignore and a value arm carries no `option`. See {@link OverlayPick}.
+	 *
+	 * An arrow for {@link select}'s reason: both adapters hand it straight to a menu component,
+	 * unbound.
 	 */
-	choose(value: string, meta?: string): void {
+	readonly choose = (pick: OverlayPick): boolean => {
 		// No hasOverlayTrigger guard needed: match is only ever set by #probeTrigger,
 		// which requires a trigger option, so a missing trigger means match() is undefined.
 		const match = this.match()
-		if (!match) return
+		if (!match) return false
+		// `!== undefined`, not `'option' in pick`: the arms discriminate on `?: never`, which is an
+		// OPTIONAL key on both, so `in` narrows nothing.
+		if (pick.option !== undefined) {
+			if (!this.#turnRowInto(pick.option)) return false
+			this.match(undefined)
+			return true
+		}
 		const markup = match.option.markup
 		// An overlay-only option, and silent by contract: omitting `markup` is how it is spelled.
-		if (markup === undefined) return
+		if (markup === undefined) return false
 		const invalid = markupError(markup)
 		if (invalid !== undefined) {
 			reportBadProp(`${invalid}. The overlay selection was discarded — this option can insert nothing.`)
-			return
+			return false
 		}
-		this.edit.replace(match.range.anchor, match.range.head, annotate(markup, {value, meta}))
+		this.edit.replace(match.range.anchor, match.range.head, annotate(markup, {value: pick.value, meta: pick.meta}))
 		this.match(undefined)
+		return true
+	}
+
+	/**
+	 * THE ROW THE OPEN OVERLAY ACTS ON, with the trigger already taken out of its body. An EMPTY
+	 * body is the insert gesture and a non-empty one is turn-into, decided at this one read.
+	 *
+	 * `undefined` for no open overlay, for a caret in no row (a document that parses none), and
+	 * for a span the row's body does not contain, which {@link slotWithout} refuses.
+	 */
+	#target(): {row: RowNode; body: string} | undefined {
+		const match = this.match()
+		if (!match) return undefined
+		const row = this.tokens.rowOf(match.range.anchor)?.row
+		if (!row) return undefined
+		const body = this.tokens.slotWithout(row, match.range)
+		// TYPE-FORCED, not behaviour-forced, and measured: throwing here reddens nothing, because
+		// `row` is derived from the SAME anchor the span was built around, so this caller cannot
+		// hand `slotWithout` a span outside that row. The refusal is real and pinned where it is
+		// reachable — `anchors.spec.ts` calls `slotWithout` directly with a foreign span.
+		if (body === undefined) return undefined
+		return {row, body}
+	}
+
+	/**
+	 * {@link choose}'s option arm. `false` when there is no row to retype, or the verb refuses.
+	 *
+	 * AN OPTION WITH A `menu` AND NO `markup` IS THE UN-TYPING ENTRY — the row goes back to being a
+	 * plain paragraph, which is `turnInto(undefined)`. Every editor has that row: `slots.paragraph`
+	 * is core's own fallback and the one kind no option declares, so it was the one kind the block
+	 * menu could not name. A row turned into a quote or a toggle had no way back, `/text` matched
+	 * nothing, and Enter split the row instead.
+	 *
+	 * `markup === undefined` is already this API's spelling of "an overlay-only option" ({@link
+	 * choose}'s value arm reads it the same way), so the entry needs no new field and core ships no
+	 * label of its own: WHAT it is called, and where it sits, is the consumer's, exactly like every
+	 * other entry. A markup that is DECLARED and compiles to no row kind still refuses — that is a
+	 * typo, not a request, and {@link TreeCommands.turnInto} owns that refusal.
+	 */
+	#turnRowInto(option: CoreOption): boolean {
+		const target = this.#target()
+		if (!target) return false
+		const menu = option.menu
+		const kind = option.markup === undefined ? undefined : option
+		// An EMPTY body is the insert gesture: the row held nothing but the trigger, so there is
+		// nothing to keep and the entry's own seed writes it.
+		const seeded = target.body === '' && (menu?.text ?? '') !== ''
+		return target.row.turnInto(kind, {
+			text: target.body === '' ? (menu?.text ?? '') : target.body,
+			meta: menu?.meta,
+			// AND A SEED IS NOT SOMETHING TO TYPE AFTER. The window's own mapping has right
+			// affinity, so it leaves the caret past everything the splice inserted: `/table`
+			// seeded `'Task | Status | Owner | Due | Effort'` and the next character appended to
+			// `'Effort'`. The seed is content the user did not type and is there to be replaced,
+			// so the caret goes to the row's ENTRY — where every other row-opening gesture already
+			// leaves it, and which for a CARVED seed descends into the first cell, so "the start
+			// of the seed" and "its first field" are one position rather than two rules. Naming a
+			// position the seed itself carried would be a third: a marker every entry has to
+			// spell, in an API whose seeds are plain data.
+			//
+			// A row that seeds NOTHING says nothing: its caret is already the entry of the empty
+			// body it is being given, and claiming it would only be a second answer to that.
+			seeded: seeded ? true : undefined,
+		})
 	}
 
 	#wantsTrigger(type: 'change' | 'selectionChange'): boolean {
@@ -202,6 +321,13 @@ export class OverlayController {
 	 * the caret, so it only ever looks at characters immediately left of it, and those are in
 	 * the caret's own node unless the caret sits at its start — where a whole-value read would
 	 * see a preceding mark's markup, which ends in `]` or `)` and matches no `trigger(\w*)$`.
+	 *
+	 * LEFT OF THE CARET AND NOTHING ELSE, which is also the whole of what `match.value` promises
+	 * ("typed text after trigger"). The span used to be stretched over the word to the RIGHT as
+	 * well, on the theory that a trigger typed into an existing word means to complete it — but
+	 * the query is what the user TYPED, and the pick cuts the whole span out: opening the menu at
+	 * the start of `'Quote of the day'` filtered on `Quote`, and choosing emitted `'>  of the
+	 * day'`. Nothing right of the caret is the user's answer to a menu they have not seen yet.
 	 */
 	#findTrigger(): OverlayMatch | undefined {
 		const anchors = this.tokens.selection.anchors()
@@ -212,23 +338,30 @@ export class OverlayController {
 
 		const text = caret.node.text()
 		const left = text.slice(0, caret.offset)
-		const right = text.slice(caret.offset)
-		const rightWord = right.match(/^\w*/)?.[0] ?? ''
 
 		for (const option of this.props.options()) {
 			const trigger = option.overlay?.trigger
 			if (!trigger) continue
 
-			const match = left.match(new RegExp(`${escape(trigger)}(\\w*)$`))
+			const match = left.match(queryAfter(trigger))
 			if (!match) continue
 
-			const [sourceLeft, wordLeft] = match
+			// A RAW CLOSED BODY takes no trigger, the same rule `handleRowEnter` reads off the same
+			// compiled markup: what is inside a fence is CONTENT the parse never re-enters, so a `/`
+			// there is a character. It used to open the menu, and the pick then retyped the whole ROW
+			// — `'```bash⏎ls -la⏎```⏎tail'` + Divider emitted `'---ls -la⏎tail'`, fence, language and
+			// closing line all gone. Asked HERE, past the regex, so the walk costs nothing until a
+			// trigger actually matched.
+			const row = this.tokens.rowOf(caret)?.row
+			if (row && hasRawBody(row)) return
+
+			const [source, value] = match
 			return {
-				value: wordLeft + rightWord,
-				source: sourceLeft + rightWord,
+				value,
+				source,
 				range: {
-					anchor: {node: caret.node, offset: caret.offset - sourceLeft.length},
-					head: {node: caret.node, offset: caret.offset + rightWord.length},
+					anchor: {node: caret.node, offset: caret.offset - source.length},
+					head: {node: caret.node, offset: caret.offset},
 				},
 				span: text,
 				node: this.tokens.handle(caret.node.id)?.element() ?? this.host.container() ?? document.body,
@@ -236,4 +369,32 @@ export class OverlayController {
 			}
 		}
 	}
+}
+
+/**
+ * THE TRIGGER AND THE QUERY IT OPENS, as one anchored pattern: the LAST `trigger` left of the
+ * caret, and everything typed after it.
+ *
+ * THE QUERY'S ALPHABET IS WHAT A CONSUMER'S OWN LABELS HOLD. It was `\w*`, which is
+ * `[A-Za-z0-9_]` — so the first SPACE or HYPHEN ended the match, `#findTrigger` answered nothing
+ * and the overlay closed. Every multi-word entry the row menu offers was therefore untypeable:
+ * `To-do list` died at the hyphen, `Table of contents` and `Metric cards` at the space, and the
+ * only way to reach one was to stop at the first word and arrow. (Backspacing re-opened the menu,
+ * which is the same fact seen from the other side.)
+ *
+ * TEMPERED rather than `[^\n]*`, and that is what keeps the LAST trigger the one that opens: a
+ * plain run is greedy from the LEFTMOST match, so `'@bob and @al'` would query `'bob and @al'`.
+ * Refusing a second trigger inside the run puts the match back on the trigger nearest the caret,
+ * and it does so for a trigger of any length, where a character class could only do it for one
+ * character. The line break is the other bound — a flat editor's whole value is one text node.
+ *
+ * IT NEEDS NO "GIVE UP" LENGTH, which is what the narrow class was really doing. A query nothing
+ * matches produces an EMPTY list: `OverlayListModel.consumes` declines every key for one, so Enter
+ * still splits the row, and both adapters' built-in list paints nothing at all. A `/` typed inside
+ * prose is as inert as it ever was; one typed to open the menu now stays open while the user types
+ * the entry's name.
+ */
+function queryAfter(trigger: string): RegExp {
+	const pattern = escape(trigger)
+	return new RegExp(`${pattern}((?:(?!${pattern})[^\n])*)$`)
 }

@@ -7,7 +7,7 @@ const VALUE = 'Hello @[mark](1)!'
 
 describe('API: MarkputHandle', () => {
 	it('support the ref prop for accessing the component API', async () => {
-		const {handle} = await mountHandle({Mark, defaultValue: VALUE})
+		const {handle} = await mountHandle({separator: null, Mark, defaultValue: VALUE})
 
 		expect(handle()).not.toBeNull()
 		expect(handle()?.container).toBeInstanceOf(HTMLElement)
@@ -18,7 +18,7 @@ describe('API: MarkputHandle', () => {
 		// reaching `this` is worth one assertion beyond the getter above. (The native `#private`
 		// hazard this test was written for is gone with the verbs that had one; a TS-private field
 		// is a plain property and survives the proxy.)
-		const {handle, host} = await mountHandle({Mark, defaultValue: VALUE})
+		const {handle, host} = await mountHandle({separator: null, Mark, defaultValue: VALUE})
 
 		handle()?.focus()
 

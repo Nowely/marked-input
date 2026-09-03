@@ -2,6 +2,8 @@ import type {Markup} from '../types'
 import {getOrCreate} from '../utils/getOrCreate'
 import type {MarkupDescriptor} from './MarkupDescriptor'
 import {createMarkupDescriptor} from './MarkupDescriptor'
+import type {RowDeclaration} from './RowKind'
+import {orderRowKinds, rowSplitOf, splitCellKind} from './RowKind'
 import type {SegmentDefinition} from './SegmentMatcher'
 
 /**
@@ -14,18 +16,47 @@ export class MarkupRegistry {
 	readonly segments: SegmentDefinition[] = []
 	/** Map from first segment index to descriptors that start with this segment (for O(1) lookup) */
 	readonly firstSegmentIndexMap: Map<number, MarkupDescriptor[]> = new Map()
+	/**
+	 * The ROW kinds, in scan order. Compiled by the same compiler as a mark and held on the same
+	 * registry — one registry per option set, so a row kind and a mark share the option index a
+	 * component is resolved by — but deliberately OUTSIDE `segments` and `descriptors`: a row
+	 * literal must never enter the inline alternation. Registering a fence's opener and closer
+	 * there was measured to yield zero marks, because the closing literal eats the opening one.
+	 */
+	readonly rowKinds: MarkupDescriptor[]
+	/**
+	 * WHICH KINDS CARVE THEIR OWN BODY, and into what: the delimiter, and the compiled kind the
+	 * carved rows take. Keyed by the parent's descriptor because that is what the scan holds when it
+	 * has matched one.
+	 *
+	 * The cell kind is compiled ONCE per option index and shared, so two parents splitting into the
+	 * same option hand their rows the same descriptor object — adoption pairs rows on descriptor
+	 * identity, and a per-parent copy would refuse every pair.
+	 */
+	readonly rowSplits: Map<MarkupDescriptor, {at: string; as: MarkupDescriptor}> = new Map()
 
-	constructor(markups: (Markup | undefined)[]) {
+	constructor(markups: (Markup | undefined)[], rows: readonly (RowDeclaration | undefined)[] = []) {
 		const segmentIndexMap = new Map<string, number>()
+		const rowKinds: MarkupDescriptor[] = []
+		// Every row kind BY OPTION INDEX, scanned or not: what a split resolves its `as` through.
+		const byOption = new Map<number, MarkupDescriptor>()
 
 		this.descriptors = markups
 			.map((markup, index) => {
-				// Skip undefined markups but preserve original indices
 				if (markup === undefined) {
+					// An option declaring `row` with no markup is an ANONYMOUS kind: nothing scans it,
+					// and it exists only as the target of some other kind's split.
+					if (rows[index]) byOption.set(index, splitCellKind(index))
 					return null
 				}
 
 				const descriptor = createMarkupDescriptor(markup, index)
+
+				if (rows[index]) {
+					rowKinds.push(descriptor)
+					byOption.set(index, descriptor)
+					return null
+				}
 
 				// Process segments and register them
 				descriptor.segments.forEach((segment, segmentIndex) => {
@@ -37,6 +68,18 @@ export class MarkupRegistry {
 				return descriptor
 			})
 			.filter((descriptor): descriptor is MarkupDescriptor => descriptor !== null)
+
+		this.rowKinds = orderRowKinds(rowKinds)
+
+		// AFTER the pass above, because `as` may name an option that compiles later. A split whose
+		// target is not a row kind is dropped rather than guessed at — the props boundary reports it.
+		for (const [index, declaration] of rows.entries()) {
+			const split = rowSplitOf(declaration)
+			const parent = byOption.get(index)
+			const as = split && byOption.get(split.as)
+			if (!split || !parent || !as || split.at === '') continue
+			this.rowSplits.set(parent, {at: split.at, as})
+		}
 	}
 
 	/**

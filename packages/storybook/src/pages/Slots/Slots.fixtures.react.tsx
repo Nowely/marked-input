@@ -96,3 +96,13 @@ export const fixtures = {
  * default `<div>` by its tag — the container IS the editing host, so no id is needed to find it.
  */
 export const CustomContainer = ({ref, ...props}: DivProps) => <section {...props} ref={ref} />
+
+/**
+ * Spec fixture: a container component that carries a class OF ITS OWN. React merges the editor's
+ * by hand and Vue lets it fall through, so the mechanism differs and the outcome must not: both
+ * classes have to be on the element. `styles.Container` is the controls layer's containing block
+ * and carries the `white-space: pre-wrap` rule for every span, so dropping it is not cosmetic.
+ */
+export const ClassyContainer = ({ref, className, ...props}: DivProps) => (
+	<div {...props} ref={ref} className={`mine ${className ?? ''}`} />
+)

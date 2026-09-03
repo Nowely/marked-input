@@ -24,7 +24,7 @@ export default {
 		docs: {
 			description: {
 				component:
-					'Drag mode: each separator-delimited row is its own draggable block (issue 08). The separator is an editor-level setting, never part of a markup; the piece after the final separator is a row even when empty.',
+					'Drag mode: each separator-delimited row is its own draggable unit (issue 08). The separator is an editor-level setting, never part of a markup; the piece after the final separator is a row even when empty.',
 			},
 		},
 	},
@@ -35,7 +35,7 @@ export const Markdown = story({
 		Mark: fixtures.MarkdownMark,
 		options: markdownOptions,
 		defaultValue: DRAG_MARKDOWN,
-		layout: 'block',
+		separator: '\n\n',
 		draggable: true,
 	},
 })
@@ -48,9 +48,9 @@ export const Markdown = story({
  *
  * They used to carry `style: {marginLeft: '64px'}`, and the note here called it load-bearing:
  * the controls layer hangs the grip band off its row's LEFT edge
- * (`.SidePanel { margin-left: -24px }`), and core's 24px gutter was a NUMERIC `paddingLeft`
+ * (`.SidePanel { margin-left: -48px }`), and core's gutter was a NUMERIC `paddingLeft`
  * that React turned into `24px` and Vue dropped, so flush against the viewport Vue's grip was
- * outside it and unclickable. Core emits `'24px'` now, the gutter exists in both frameworks,
+ * outside it and unclickable. Core emits a CSS-ready string now, the gutter exists in both frameworks,
  * the band sits inside the container's padding box, and the margin is gone.
  */
 export const PlainTextDrag = story({
@@ -59,7 +59,7 @@ export const PlainTextDrag = story({
 		Mark: fixtures.ParagraphMark,
 		options: fixtures.paragraphOptions,
 		defaultValue: PLAIN_TEXT_VALUE,
-		layout: 'block',
+		separator: '\n\n',
 		draggable: true,
 	},
 })
@@ -70,7 +70,7 @@ export const MarkdownDrag = story({
 		Mark: fixtures.MarkdownMark,
 		options: markdownOptions,
 		defaultValue: MARKDOWN_DRAG_VALUE,
-		layout: 'block',
+		separator: '\n\n',
 		draggable: true,
 	},
 })
@@ -82,18 +82,25 @@ export const ReadOnlyDrag = story({
 		options: fixtures.paragraphOptions,
 		value: READ_ONLY_VALUE,
 		readOnly: true,
-		layout: 'block',
+		separator: '\n\n',
 		draggable: true,
 	},
 })
 
-/** A single-newline separator: each todo line is its own draggable row. */
+/**
+ * A single-newline separator: each todo line is its own draggable row.
+ *
+ * `indent: ''` because this document stores its leading tabs as CONTENT — the indented markup
+ * begins with one. At the default `'\t'` that tab is a row's lead, which is structural, so the
+ * markup would never match and the nested items would lose their checkboxes. This is the lever
+ * ADR-0010 names for exactly that consumer, and it turns off nesting for this editor.
+ */
 export const TodoList = story({
 	args: {
 		options: TODO_OPTIONS,
 		value: TODO_VALUE,
-		layout: 'block',
 		separator: '\n',
+		indent: '',
 		draggable: true,
 	},
 	parameters: {plainValue: 'right'},

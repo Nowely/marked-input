@@ -1,6 +1,6 @@
 import {untracked} from '../../../shared/signals/index.js'
 import type {Id, NodeAnchor, TreeNode} from '../tree/types'
-import {getRect, placeRangeAcrossBoundaries} from './caret'
+import {getRect, placeRangeAcrossBoundaries, revealCaret} from './caret'
 import type {CaretBoundary} from './caret'
 import {anchorFromBoundary} from './domBoundary'
 import type {AnchorContext, BoundaryAffinity, Lookup} from './domBoundary'
@@ -73,6 +73,110 @@ export class DomModel {
 		return lookup.handle
 	}
 
+	/**
+	 * The nearest bound token ABOVE a DOM node, walking PAST any control root on the way — where
+	 * {@link handleAt} stops at a control and answers `'control'`, losing whatever the control
+	 * was painted inside.
+	 *
+	 * Its one caller is the row claim, and what it needs is exactly what the stop discards: a
+	 * gesture that lands on frozen presentation still happened in a ROW, and that row is the one
+	 * the caret belongs to.
+	 */
+	tokenAbove(node: Node): TokenHandle | undefined {
+		const container = this.deps.container()
+		if (!container) return undefined
+		for (let current: Node | null = node; current && current !== container; current = current.parentNode) {
+			if (!(current instanceof HTMLElement)) continue
+			const handle = this.deps.byElement(current)
+			if (handle?.node()) return handle
+		}
+		return undefined
+	}
+
+	/**
+	 * MAY A CARET SIT HERE — did the adapter give this anchor a surface, and is that surface the
+	 * document's rather than the consumer's?
+	 *
+	 * Two refusals, each a defect this reading was written for. NO SURFACE AT ALL is what an ATOMIC
+	 * row is: its kind's component is handed the row's children and draws none of them, so the row
+	 * round-trips and holds no position a caret can take. A CONTROL ROOT is the other:
+	 * `useControlRef()` writes `contenteditable="false"`, so the browser's own caret lands inside
+	 * one and every keystroke after it is dropped with nothing said.
+	 *
+	 * NO VISIBILITY TEST HERE, and that is measured rather than tidy: `checkVisibility()` is FALSE
+	 * for an EMPTY inline box, which is what a blank row's own text surface is and what the parse
+	 * leaves after every trailing mark — so asking it here answered "unusable" for the commonest
+	 * caret position in the editor. Whether a row is on screen is a question about the ROW, and
+	 * {@link painted} is where it is asked.
+	 */
+	reachable(anchor: NodeAnchor): boolean {
+		const target = this.#targetOf(anchor)
+		if (!target) return false
+		const element = this.deps.handle(target.id)?.element()
+		return element?.isConnected === true && !this.deps.isControlRoot(element)
+	}
+
+	/**
+	 * WHAT THIS FRAME SAYS ABOUT A ROW — three answers, because a caret invariant needs two of them
+	 * apart and the single boolean this replaces could not tell them apart:
+	 *
+	 * - `'absent'` — no element, or one no longer in the document. A RACE, not a verdict: the
+	 *   framework has not reached this row yet, and the next pulse answers again.
+	 * - `'boxless'` — an element the framework HAS painted, in the document, generating no box: a
+	 *   row inside a collapsed subtree. A VERDICT, and one that does not heal by waiting, so a
+	 *   caret there is in the document and on no screen.
+	 * - `'painted'`.
+	 *
+	 * The two were one `painted()` reading until the toggle defect: closing a toggle with the caret
+	 * inside it left `'boxless'`, the caret invariant read it as `'absent'` and stood down, and the
+	 * next keystroke edited text nobody could see.
+	 */
+	rowPaint(id: Id): 'absent' | 'boxless' | 'painted' {
+		const element = this.deps.handle(id)?.element()
+		if (element?.isConnected !== true) return 'absent'
+		return element.checkVisibility() ? 'painted' : 'boxless'
+	}
+
+	/**
+	 * IS THERE ANYWHERE AT ALL for this row's child rows — the DOCUMENT half of the invariant,
+	 * where {@link nestingIsPainted} is the caret's. A kind that ignores the rows it is handed
+	 * renders no host, so rows nested under it are in the value and on no screen, and no gesture
+	 * can reach them: `turnInto` onto such a kind is how a row with children arrives there, and a
+	 * paste or a replayed edit is how it arrives without any verb naming the row at all.
+	 *
+	 * WHETHER THE HOST IS ON SCREEN IS NOT ASKED HERE, and that is the whole difference from
+	 * {@link nestingIsPainted}: a closed toggle renders its host and hides it, which is a kind
+	 * doing its job, and lifting its children out of it would destroy the document on every
+	 * collapse. No host at all is the one state nothing can recover from.
+	 */
+	nestingIsHosted(id: Id): boolean {
+		const bindings = this.deps.handle(id)?.node()
+		return !bindings || bindings.rowSequenceHost?.isConnected === true
+	}
+
+	/**
+	 * WOULD A CHILD ROW OF THIS ROW BE ON SCREEN — asked of the WOULD-BE PARENT, before anything
+	 * is written, which is what a childless one could not be asked while the question was put to
+	 * its first existing child.
+	 *
+	 * A row's child rows reach its kind's component as one host element, and a kind that ignores
+	 * them never renders it: no host, no place for a child to be painted, so a row nested there is
+	 * in the document and on no screen. The host is what the adapters register for exactly this
+	 * reason, and they file it whether or not the row has children YET — the fact is about the
+	 * KIND, and a parent with an empty list has to be able to answer it.
+	 *
+	 * A ROW THE FRAMEWORK HAS NOT PAINTED ANSWERS `true`, and that asymmetry is deliberate: no
+	 * bindings at all is a node this commit added or a document with no adapter behind it, where a
+	 * refusal would be a race rather than a verdict — the rule {@link rowPaint}'s callers already
+	 * live by.
+	 */
+	nestingIsPainted(id: Id): boolean {
+		const bindings = this.deps.handle(id)?.node()
+		if (!bindings) return true
+		const host = bindings.rowSequenceHost
+		return host?.isConnected === true && rendersContents(host)
+	}
+
 	/** Locate the live node owning a DOM node, walking up to the container. */
 	#locate(node: Node): Lookup | undefined {
 		const container = this.deps.container()
@@ -98,6 +202,10 @@ export class DomModel {
 			container: this.deps.container() ?? undefined,
 			locate: node => this.#locate(node),
 			find: id => this.deps.find(id),
+			above: node => {
+				const handle = this.tokenAbove(node)
+				return handle && this.deps.find(handle.id)
+			},
 		}
 	}
 
@@ -134,6 +242,19 @@ export class DomModel {
 		return getRect() ?? undefined
 	}
 
+	/**
+	 * Scroll the caret back onto the screen — see {@link revealCaret} for the walk.
+	 *
+	 * GATED ON FOCUS, and that is the whole of when this is the editor's business: an editor that
+	 * does not hold the caret has no claim on where the page is scrolled to, and a second editor
+	 * on the same page would otherwise fight the first for it on every commit.
+	 */
+	revealCaret(): void {
+		const container = this.deps.container()
+		if (!container?.contains(document.activeElement)) return
+		revealCaret(container, getRect)
+	}
+
 	/** Current selection serialized for clipboard use. */
 	selectedContent(): {html: string; text: string} | undefined {
 		const sel = window.getSelection()
@@ -167,6 +288,31 @@ export class DomModel {
 	}
 
 	/**
+	 * THE DOM HALF OF "THERE IS NO CARET" — `Selection.clear` is the model's, and the two are
+	 * one answer: a caret the model does not name may not stay in the document, because every
+	 * edit reads the DOM for the span it is about to change ({@link SelectionDriver.domAnchors}).
+	 *
+	 * THE FOCUS GOES WITH IT, and that is measured rather than tidy: a FOCUSED `contenteditable`
+	 * with no selection at all still takes typing, and Chromium invents the host's START for it —
+	 * so dropping the range alone left the very defect this exists to answer, one keystroke later.
+	 * The pair is already the state this editor lives by in the other direction, where `focusout`
+	 * clears the stored selection.
+	 *
+	 * ONLY OURS, checked rather than assumed: the window selection is the PAGE's, so an editor
+	 * that dropped it unconditionally would clear a selection made in a second editor — or in
+	 * ordinary page text — on a gesture of its own. And only while the HOST itself holds the
+	 * focus: a control inside it is operating, and taking its focus away is not this rule's
+	 * business.
+	 */
+	releaseCaret(): void {
+		const container = this.deps.container()
+		if (!container || document.activeElement !== container) return
+		const selection = window.getSelection()
+		if (selection?.focusNode && container.contains(selection.focusNode)) selection.removeAllRanges()
+		container.blur()
+	}
+
+	/**
 	 * Select between two node anchors. Order-insensitive: {@link placeRangeAcrossBoundaries}
 	 * normalizes the pair in DOM order, because the Range API collapses rather than spans when
 	 * its end precedes its start.
@@ -175,17 +321,53 @@ export class DomModel {
 	 * on the reading that a Range boundary inside a mark's presentation is not a document
 	 * position the model owns. True of the INSIDE, but a mark's endpoints are its PARENT
 	 * coordinates (spec S2, and what `placeCaret` has answered since the one-host flip), and
-	 * refusing them silently dropped whole selections: on a block document that ends with a
+	 * refusing them silently dropped whole selections: on a document with rows that ends with a
 	 * mark, select-all resolved `{after: mark}`, this method declined, and the DOM selection
 	 * never moved while the STORED one said all-selected — so the next keystroke replaced a
 	 * document the user could not see was selected. Both ends now go through
 	 * {@link TokenHandle.caretBoundary}, the same answer `placeCaret` places.
+	 *
+	 * AND EITHER END MAY BE A ROW, across the row's OWN ELEMENT — see {@link #rangeBoundaryAt}.
 	 */
 	selectRange(anchor: NodeAnchor, head: NodeAnchor): boolean {
-		const a = this.#boundaryAt(anchor)
-		const b = this.#boundaryAt(head)
+		const a = this.#rangeBoundaryAt(anchor)
+		const b = this.#rangeBoundaryAt(head)
 		if (!a || !b) return false
+		// BOTH ENDS CONNECTED, checked rather than assumed. `placeRangeAcrossBoundaries` normalizes
+		// the pair with `comparePoint`, which THROWS for a node in another tree, and its own
+		// docstring's premise — "both boundaries live under the one editing host" — is false for
+		// exactly one moment: a framework re-parenting a row replaces its element, and `bound`
+		// pulses per registration, so a pulse can land while one end is the element that just left
+		// the document. Measured in Vue on a two-row drag into a nested position, where the
+		// exception escaped as an unhandled rejection and no selection was applied at all.
+		// Refusing here is self-healing: the last registration of the same patch pulses `bound`
+		// again, and by then both ends are in the document.
+		if (!a.node.isConnected || !b.node.isConnected) return false
 		placeRangeAcrossBoundaries(a, b)
+		return true
+	}
+
+	/**
+	 * HOME AND END — the caret to its VISUAL line's edge, `extend` for the shifted pair. `false`
+	 * when there is no live selection to move.
+	 *
+	 * `Selection.modify` rather than an anchor this layer computes, and that is the point: which
+	 * character ends a LINE is a layout fact, not a tree one — a wrapped row has several lines and
+	 * the tree has one row — so the answer belongs to the engine that laid it out. It is the same
+	 * primitive Chromium's own `MoveToEndOfLine` runs, reached directly.
+	 *
+	 * WHY THE EDITOR OWNS A KEY THE BROWSER ALREADY BINDS: on macOS it does not bind it to this. End
+	 * is `scrollToEndOfDocument` there, so inside a page with anything left to scroll the key scrolls
+	 * and the caret does not move — MEASURED with no editor present at all: a bare `contenteditable`
+	 * in a 200vh page leaves the caret where it was and smooth-scrolls to the bottom, and so does a
+	 * `<textarea>` beside it. Pressed again with nothing left to scroll, the same key moves the
+	 * caret, which is what made it read as one press in three. The platform's own answer is
+	 * Cmd+Left/Right and it is untouched; what this takes is the key that says End.
+	 */
+	moveToLineBoundary(direction: 'backward' | 'forward', extend: boolean): boolean {
+		const selection = window.getSelection()
+		if (!selection || selection.rangeCount === 0) return false
+		selection.modify(extend ? 'extend' : 'move', direction, 'lineboundary')
 		return true
 	}
 
@@ -214,15 +396,19 @@ export class DomModel {
 	}
 
 	/**
-	 * A row's boundary descends to its edge CHILD — a row's own handle is the block
+	 * A row's boundary descends to its edge CHILD — a row's own handle is the row
 	 * wrapper, whose parent-index coordinates would put the caret between rows rather
 	 * than inside one, and the separator has no DOM to land in. Text and mark nodes
 	 * answer themselves, as before.
+	 *
+	 * RECURSIVELY, since rows nest: a row's last child is itself a row whenever it has any, so
+	 * one level down would answer with another row wrapper and `'end'` would resolve to a
+	 * handle no caret can sit in.
 	 */
 	#entryOf(node: TreeNode, side: 'start' | 'end'): {id: Id; offset: number} {
 		if (node.kind === 'row') {
 			const child = side === 'start' ? node.children().at(0) : node.children().at(-1)
-			if (child) return {id: child.id, offset: side === 'start' ? 0 : Infinity}
+			if (child) return this.#entryOf(child, side)
 		}
 		return {id: node.id, offset: side === 'start' ? 0 : Infinity}
 	}
@@ -237,4 +423,53 @@ export class DomModel {
 		if (!target) return undefined
 		return this.deps.handle(target.id)?.caretBoundary(target.offset)
 	}
+
+	/**
+	 * THE SAME BOUNDARY FOR A RANGE END, with one difference: a `{before}`/`{after}` ROW resolves
+	 * to the ROW'S OWN ELEMENT EDGE rather than descending to its edge child.
+	 *
+	 * A CARET has to descend — a row wrapper's parent-index coordinates put the caret BETWEEN rows
+	 * rather than inside one, and the separator has no DOM to land in ({@link #entryOf}). A RANGE
+	 * END does not: an element edge is exactly what a block selection is bounded by, and it is the
+	 * only pair a FROZEN row has at all. Its text is painted by nothing, so the descent finds an
+	 * unbound handle, `selectRange` declines, and the DOM selection stays wherever the click left
+	 * it — inside the frozen island, where the browser emits no `beforeinput` and `isConsumerOrigin`
+	 * declines every key. A row selected and no key reaching it is the state this avoids.
+	 *
+	 * `caretBoundary` already answers it: a row's handle binds no text surface, so any offset > 0
+	 * is the parent coordinate AFTER the row element and 0 is the one before it — the same arm a
+	 * MARK's endpoints have always taken.
+	 */
+	#rangeBoundaryAt(anchor: NodeAnchor): CaretBoundary | undefined {
+		if (typeof anchor !== 'string' && !('node' in anchor)) {
+			const row = 'before' in anchor ? anchor.before : anchor.after
+			if (row.kind === 'row') return this.deps.handle(row.id)?.caretBoundary('before' in anchor ? 0 : 1)
+		}
+		return this.#boundaryAt(anchor)
+	}
+}
+
+/**
+ * Would something painted INSIDE `element` be on screen? The question {@link DomModel.painted}
+ * asks of an element about ITSELF, asked instead about an element's contents.
+ *
+ * `checkVisibility()` CANNOT ANSWER IT, and that is measured rather than assumed. A child-sequence
+ * host is `display: contents`, and `checkVisibility`'s first step is "does this have an associated
+ * box" — which such an element never has, so it answers `false` for an open host, a closed one and
+ * an empty one alike and tells none of them apart. Asking the host's PARENT instead trades one
+ * blind spot for another: a `content-visibility: hidden` element — which is what
+ * `hidden="until-found"` is — is itself rendered and answers `true` while everything inside it is
+ * skipped.
+ *
+ * So the three properties are read directly. `visibility` INHERITS, so the host's own computed
+ * value already carries an ancestor's; the other two do not, and their effect reaches the whole
+ * subtree, so those are the walk. The caller owns `isConnected`.
+ */
+function rendersContents(element: HTMLElement): boolean {
+	if (getComputedStyle(element).visibility === 'hidden') return false
+	for (let current: HTMLElement | null = element; current; current = current.parentElement) {
+		const style = getComputedStyle(current)
+		if (style.display === 'none' || style.getPropertyValue('content-visibility') === 'hidden') return false
+	}
+	return true
 }

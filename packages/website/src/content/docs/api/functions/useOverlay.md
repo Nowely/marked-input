@@ -6,11 +6,17 @@ title: "useOverlay"
 ---
 
 ```ts
-function useOverlay(): OverlayHandler;
+function useOverlay<TElement>(): OverlayHandler<TElement>;
 ```
 
-Defined in: [react/markput/src/lib/hooks/useOverlay.tsx:18](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/lib/hooks/useOverlay.tsx#L18)
+Defined in: [react/markput/src/lib/hooks/useOverlay.tsx:50](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/lib/hooks/useOverlay.tsx#L50)
+
+## Type Parameters
+
+| Type Parameter | Default type |
+| ------ | ------ |
+| `TElement` *extends* `HTMLElement` | `HTMLElement` |
 
 ## Returns
 
-[`OverlayHandler`](/api/interfaces/overlayhandler/)
+[`OverlayHandler`](/api/interfaces/overlayhandler/)\<`TElement`\>

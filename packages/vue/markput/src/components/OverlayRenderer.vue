@@ -4,7 +4,7 @@ import {computed, type Ref} from 'vue'
 
 import {useMarkput} from '../lib/hooks/useMarkput'
 import type {Option} from '../types'
-import Suggestions from './Suggestions/Suggestions.vue'
+import OverlayList from './OverlayList/OverlayList.vue'
 
 const matchRef = useMarkput(s => s.overlay.match) as Ref<OverlayMatch<Option> | undefined>
 const overlayKey = computed(() => (matchRef.value ? key.get(matchRef.value.option) : undefined))
@@ -13,7 +13,7 @@ const resolveOverlay = useMarkput(s => s.overlay.slot)
 const resolved = computed(() => {
 	const match = matchRef.value
 	if (!match) return null
-	return resolveOverlay.value(match.option, Suggestions)
+	return resolveOverlay.value(match.option, OverlayList)
 })
 </script>
 

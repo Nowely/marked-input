@@ -1,4 +1,4 @@
-import type {Window} from './types'
+import type {Pairing, Window} from './types'
 
 /**
  * Boundary-reset window: common prefix/suffix of the two projections.
@@ -28,4 +28,34 @@ export function gapWindow(previousValue: string, nextValue: string): Window {
 	const end = previousValue.length - clampedSuffix
 	const insertedLength = nextValue.length - clampedSuffix - start
 	return {start, end, insertedLength}
+}
+
+/**
+ * The splice that takes the RESULT of `window` back to what it replaced: the same start, the two
+ * lengths exchanged, and the pairing read the other way round.
+ *
+ * An undo is not a new edit, so it must not re-derive its window from the two strings — a
+ * permutation is invisible to any such derivation ({@link Pairing}), and the rows would re-pair by
+ * index. Inverting the recorded one is the only reading that keeps every row's identity, and it is
+ * total: `pairing[j] = i` says previous row `i` became row `j`, so the reverse claim is `j` at `i`.
+ */
+export function invertWindow(window: Window): Window {
+	return {
+		start: window.start,
+		end: window.start + window.insertedLength,
+		insertedLength: window.end - window.start,
+		pairing: window.pairing && invertPairing(window.pairing),
+	}
+}
+
+/**
+ * A permutation read backwards. A pairing that is NOT one leaves holes, which `resolvePairing`
+ * refuses on its own — the claim degrades to adoption's ordinary walks rather than corrupting them.
+ */
+function invertPairing(pairing: Pairing): Pairing {
+	const inverse: number[] = []
+	pairing.forEach((previous, index) => {
+		inverse[previous] = index
+	})
+	return inverse
 }

@@ -109,3 +109,12 @@ export const fixtures = {
  * default `<div>` by its tag — the container IS the editing host, so no id is needed to find it.
  */
 export const CustomContainer = defineComponent({template: '<section><slot /></section>'})
+
+/**
+ * Spec fixture: a container component that carries a class OF ITS OWN. Vue merges the editor's
+ * through attribute fallthrough where React's twin merges it by hand, so the mechanism differs and
+ * the outcome must not: both classes have to be on the element. `styles.Container` is the controls
+ * layer's containing block and carries the `white-space: pre-wrap` rule for every span, so dropping
+ * it is not cosmetic.
+ */
+export const ClassyContainer = defineComponent({template: '<div class="mine"><slot /></div>'})

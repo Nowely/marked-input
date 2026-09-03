@@ -30,7 +30,7 @@ const NestedMark = defineComponent({
 const PlainTextInput = defineComponent({
 	components: {MarkedInput},
 	setup: () => ({Mark, value: ref('abc')}),
-	template: '<MarkedInput :Mark="Mark" :value="value" @change="value = $event" />',
+	template: '<MarkedInput :separator="null" :Mark="Mark" :value="value" @change="value = $event" />',
 })
 
 export const fixtures = {

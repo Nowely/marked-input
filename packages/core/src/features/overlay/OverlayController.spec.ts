@@ -2,7 +2,11 @@ import {describe, it, expect, afterEach, beforeEach, vi} from 'vitest'
 
 import type {CoreOption, OverlayMatch} from '../../shared/types'
 import {Store} from '../../store/Store'
-import {anchorsAt, caretAt} from '../tokens/__testing__/mountFixtures'
+import {anchorsAt, caretAt, mountNestedRowDoc} from '../tokens/__testing__/mountFixtures'
+
+/** A raw CLOSED body: `hasSlot` false and a closing literal, so its interior holds separators. */
+const FENCE: CoreOption = {markup: '```__meta__\n__value__\n```', row: {Component: 'pre'}}
+const FENCED_DOC = '```bash\nls\n```\ntail'
 
 /**
  * A store with a caret, which the shared fixture below deliberately has not: the probe is
@@ -13,6 +17,7 @@ import {anchorsAt, caretAt} from '../tokens/__testing__/mountFixtures'
 function storeWithCaret(value: string, offset: number, controlled = false) {
 	const store = new Store()
 	store.props.set({
+		separator: null,
 		[controlled ? 'value' : 'defaultValue']: value,
 		options: [{overlay: {trigger: '@'}}],
 		onChange: controlled
@@ -90,6 +95,78 @@ describe('OverlayController', () => {
 			expect(store.overlay.match()?.value).toBe('f')
 		})
 
+		it('QUERIES what was typed after the trigger, never the word the caret sits in FRONT of', () => {
+			// The trigger opened at the START of an existing word, which is where a user reaches
+			// for the menu on a row they have already written. The probe used to stretch its span
+			// over the word to the RIGHT and report it as the query — so the menu filtered on text
+			// nobody typed, and `choose` then cut that word out of the row: `'Quote of the day'`
+			// converted to a quote emitted `'>  of the day'`. `value` is "typed text after
+			// trigger", which the overlay guide documents and this asserts.
+			const store = storeWithCaret('Quote of the day', 0)
+
+			store.edit.replace(...anchorsAt(store, 0, 0), '@')
+
+			expect(store.overlay.match()?.value).toBe('')
+			expect(store.overlay.match()?.source).toBe('@')
+			// The span the pick replaces is the TRIGGER, and nothing else of the row.
+			const head = store.overlay.match()?.range.head
+			expect(typeof head === 'object' && 'offset' in head ? head.offset : undefined).toBe(1)
+		})
+
+		/**
+		 * A RAW CLOSED BODY TAKES NO TRIGGER — the same rule `handleRowEnter` reads off the same
+		 * compiled markup. What is inside a fence is CONTENT the parse never re-enters, so a `/`
+		 * there is a character, exactly as it is in Notion. It used to open the menu and the pick
+		 * then retyped the whole ROW: `'```bash⏎ls -la⏎```⏎tail'` with the caret at the end of
+		 * `ls -la`, then Divider, emitted `'---ls -la⏎tail'` — fence, language and closing line
+		 * gone, the command text now the divider's body.
+		 *
+		 * The tail row is the control: the same keystroke one row down DOES open, so the refusal is
+		 * the body's and not the option's.
+		 */
+		it('takes no trigger inside a raw closed body, and still takes one outside it', () => {
+			const options = [FENCE, {overlay: {trigger: '/'}}]
+			const inFence = mountNestedRowDoc({defaultValue: FENCED_DOC, options})
+			caretAt(inFence.store, 10)
+
+			inFence.store.edit.replace(...anchorsAt(inFence.store, 10, 10), '/')
+
+			expect(inFence.store.tokens.value()).toBe('```bash\nls/\n```\ntail')
+			expect(inFence.store.overlay.match()).toBeUndefined()
+
+			const inTail = mountNestedRowDoc({defaultValue: FENCED_DOC, options})
+			const end = FENCED_DOC.length
+			caretAt(inTail.store, end)
+
+			inTail.store.edit.replace(...anchorsAt(inTail.store, end, end), '/')
+
+			expect(inTail.store.overlay.match()?.source).toBe('/')
+		})
+
+		/**
+		 * AN OPEN MATCH IS RE-PROBED WHENEVER THE CARET MOVES, whatever `showOverlayOn` says. That
+		 * prop decides when an overlay OPENS; whether one already open still belongs to the caret is
+		 * a different question, and nothing was asking it. At the default `'change'` a click into
+		 * another row left the menu standing — the outside-click listener returns early for any
+		 * click INSIDE the container — and the next pick retyped the row the user had LEFT.
+		 */
+		it('closes a standing match once the caret has left the trigger, at the default showOverlayOn', () => {
+			const {store, container} = mountNestedRowDoc({
+				defaultValue: 'alpha\nbeta\ngamma',
+				options: [{overlay: {trigger: '/'}}],
+			})
+			container.tabIndex = 0
+			container.focus()
+			caretAt(store, 5)
+			store.edit.replace(...anchorsAt(store, 5, 5), '/')
+			expect(store.overlay.match()?.source).toBe('/')
+
+			caretAt(store, store.tokens.value().length)
+			document.dispatchEvent(new Event('selectionchange'))
+
+			expect(store.overlay.match()).toBeUndefined()
+		})
+
 		it('clear match when close is emitted', () => {
 			store.props.update({options: []})
 			store.props.update({options: [{overlay: {trigger: '@'}}]})
@@ -122,17 +199,17 @@ describe('OverlayController', () => {
 			expect(store.overlay.match()?.source).toBe('@wor')
 		})
 
-		it('stays closed when an INLINE document changes its separator', () => {
-			// BEHAVIOUR CHANGE (ticket 05), and the UI-visible half of it. This watch is one of
-			// only two production readers of `tokens.committed`, and a rowless `separator` change
-			// used to pulse that clock — so the probe re-ran, found the '@wo' the caret was still
-			// sitting on, and REOPENED an overlay the user had just dismissed. The parse tuple now
-			// carries `rowSeparator`, which an inline document never subscribes to, so no commit
-			// is spent and the dismissal holds. Measured before the switch: `"wo"` here.
+		it('stays closed when the separator prop is re-sent unchanged', () => {
+			// The UI-visible half of the case above. This watch is one of only two production
+			// readers of `tokens.committed`, and both adapters push every prop on every parent
+			// render — so an unchanged `separator` arrives again and again. If any of those
+			// arrivals pulsed the clock the probe would re-run, find the '@wo' the caret is still
+			// sitting on and REOPEN an overlay the user had just dismissed. It does not, because
+			// the `separator` SIGNAL drops an identical write before it propagates.
 			const store = storeWithCaret('hello @wo', 9)
 			store.overlay.close()
 
-			store.props.update({separator: '\n'})
+			for (let i = 0; i < 5; i++) store.props.update({separator: null})
 
 			expect(store.overlay.match()).toBeUndefined()
 		})
@@ -166,7 +243,7 @@ describe('OverlayController', () => {
 		it('a commit that finds the SAME trigger keeps the highlighted suggestion', () => {
 			// `#findTrigger` allocates, and every commit re-probes — so without a content
 			// comparison on `match`, a commit that changes nothing the overlay can see still
-			// announced a new match, and `SuggestionsModel`'s watch reset the highlight.
+			// announced a new match, and `OverlayListModel`'s watch reset the highlight.
 			//
 			// The commit here is the emptiest one there is: the same value arriving again, which
 			// moves no caret and changes no text. Measured field by field before the equality
@@ -174,6 +251,7 @@ describe('OverlayController', () => {
 			// including the anchors' own node objects — and the highlight went to NaN anyway.
 			const store = new Store()
 			store.props.set({
+				separator: null,
 				defaultValue: 'hi ',
 				options: [{overlay: {trigger: '@', data: ['alpha', 'beta', 'gamma']}}],
 			})
@@ -183,13 +261,13 @@ describe('OverlayController', () => {
 			const opened = store.overlay.match()
 			expect(opened?.value).toBe('al')
 
-			store.overlay.suggestions.active(1)
+			store.overlay.list.active(1)
 
 			store.props.update({value: store.tokens.value()})
 			store.props.update({value: undefined})
 
 			expect(store.overlay.match()).toBe(opened)
-			expect(store.overlay.suggestions.active()).toBe(1)
+			expect(store.overlay.list.active()).toBe(1)
 		})
 	})
 
@@ -226,7 +304,7 @@ describe('OverlayController', () => {
 			// A store of its own: the shared fixture is seeded EMPTY (its container attaches
 			// before any defaultValue), so it has no text node to anchor into.
 			const store = new Store()
-			store.props.set({defaultValue: 'hello @wo', options: [{overlay: {trigger: '@'}}]})
+			store.props.set({separator: null, defaultValue: 'hello @wo', options: [{overlay: {trigger: '@'}}]})
 			store.host.container(document.createElement('div'))
 			const replace = vi.spyOn(store.edit, 'replace')
 			const node = store.tokens.nodes()[0]
@@ -235,7 +313,7 @@ describe('OverlayController', () => {
 			const match: OverlayMatch = {...stubMatch, source: '@wo', range, option: {markup: '@[__value__]'}}
 			store.overlay.match(match)
 
-			store.overlay.choose('world')
+			store.overlay.choose({value: 'world'})
 
 			// The trigger span is handed back UNINSPECTED — the anchors that came in are the
 			// anchors the write verb gets (spec S2 §4.5's `OverlayMatch.range` contract).
@@ -253,7 +331,12 @@ describe('OverlayController', () => {
 		 */
 		function typedTriggerOn(option: CoreOption, withMark = true) {
 			const store = new Store()
-			store.props.set({...(withMark ? {Mark: () => null} : {}), defaultValue: 'hello ', options: [option]})
+			store.props.set({
+				separator: null,
+				...(withMark ? {Mark: () => null} : {}),
+				defaultValue: 'hello ',
+				options: [option],
+			})
 			store.host.container(document.createElement('div'))
 			caretAt(store, 6)
 			store.edit.replace(...anchorsAt(store, 6, 6), '@wo')
@@ -283,7 +366,7 @@ describe('OverlayController', () => {
 			const store = typedTriggerOn({markup: '__value__ says', overlay: {trigger: '@'}})
 			expect(store.overlay.match()?.source).toBe('@wo')
 
-			store.overlay.choose('world')
+			store.overlay.choose({value: 'world'})
 
 			expect(store.tokens.value()).toBe('hello @wo')
 			expect(store.tokens.nodes().map(node => node.kind)).toEqual(['text'])
@@ -300,7 +383,7 @@ describe('OverlayController', () => {
 			const errors = captureErrors()
 			const store = typedTriggerOn({markup: '__value__ says', overlay: {trigger: '@'}}, false)
 
-			store.overlay.choose('world')
+			store.overlay.choose({value: 'world'})
 
 			expect(store.tokens.value()).toBe('hello @wo')
 			expect(errors()).toEqual([expect.stringContaining('The overlay selection was discarded')])
@@ -318,7 +401,7 @@ describe('OverlayController', () => {
 			const store = typedTriggerOn({overlay: {trigger: '@'}})
 			expect(store.overlay.match()?.source).toBe('@wo')
 
-			store.overlay.choose('world')
+			store.overlay.choose({value: 'world'})
 
 			expect(store.tokens.value()).toBe('hello @wo')
 			expect(errors()).toEqual([])

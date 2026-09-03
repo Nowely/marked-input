@@ -11,8 +11,8 @@ import type {NodeAnchor, TokenModel} from '../tokens'
  * `caretOffset` was the one absolute offset left in any core module, and it is gone. It
  * existed for the row operations, which synthesised a whole new string from row positions and
  * computed a caret against THAT string before it was parsed, so no node existed to name it.
- * Row edits address their own nodes now, and the one whole-value site left says which ROW the
- * caret enters (`tokens.setValue`'s `enterRoot`) rather than which character.
+ * Row edits address their own nodes now, and `setValue` names no caret at all: its own
+ * post-edit anchor already resolves inside the row the replacement produced.
  */
 export class EditController {
 	constructor(
@@ -23,6 +23,10 @@ export class EditController {
 	/** Replace the span between two anchors; the pair is normalized, so `from` after `to` is legal. */
 	replace(from: NodeAnchor, to: NodeAnchor, text: string): void {
 		batch(() => {
+			// WHERE THE USER WAS is not read here: the write gate every verb passes reads it, off
+			// the DOM, right before it commits (`createTransactions`' `syncSelection`). This one
+			// used to call the sync itself, which left the row verbs — Enter, Tab, a retype —
+			// committing against the mirror.
 			const caret = this.tokens.replaceBetween(from, to, text)
 			if (!caret) return
 			// Controlled mode moves no DERIVED caret here (spec D6): the tree has not changed
@@ -40,7 +44,7 @@ export class EditController {
 	 * controlled-mode rule as {@link replace}.
 	 *
 	 * The `caretOffset` override is GONE — it was the last absolute offset in any core module,
-	 * an index into a string that had not been parsed yet. Its callers were all block row edits
+	 * an index into a string that had not been parsed yet. Its callers were all row edits
 	 * that wanted the caret inside a row of the RESULT, and they now say exactly that through
 	 * `tokens.setValue(text, rootIndex)`. Its controlled-mode exemption went with it:
 	 * the measurement that justified it had gone stale — `PlainTextDrag` stopped being

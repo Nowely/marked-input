@@ -25,6 +25,10 @@ Markput is a component library for React and Vue for building editors with **cus
 - **Dynamic Marks**: Interactive marks with editing, removing, focusing, and custom actions.
 - **Overlay System**: Built-in suggestions or fully custom overlays.
 - **Nested Marks**: Hierarchical structures - marks inside marks.
+- **Row Kinds**: The same markup language at a line's start - headings, lists, quotes, fences, tables.
+- **Nesting**: Rows nest by indentation, with Tab, drag and row selection over the tree.
+- **Row Menu**: A `/` menu assembled from the options themselves - no registry to keep in sync.
+- **Own Undo Stack**: History the editor owns, in controlled and uncontrolled mode alike.
 - **Cross Selection**: Select text across multiple marks - seamless text highlighting.
 - **Zero Dependency**: Lightweight, no external dependencies.
 - **Plain Text State**: Simple string storage - easy to save and version.

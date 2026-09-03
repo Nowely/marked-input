@@ -58,6 +58,7 @@ function boundaryOf(snapshot: SelectionSnapshot | undefined): [Node, number] {
 
 const INLINE_PROPS: CoreProps = {
 	defaultValue: 'he@[x]llo',
+	separator: null,
 	options: [{markup: '@[__value__]'}],
 	Mark: () => null,
 }
@@ -272,8 +273,9 @@ describe('TokenModel shell (seam/)', () => {
 
 	describe('handles', () => {
 		it('a control leaves the editing host the moment it registers, with no bind in between', () => {
-			// Controls do not mount on the commit clock — a menu opening off a block-store
-			// signal never sees a re-bind — so the atomic write belongs to registration.
+			// Controls do not mount on the commit clock — the row menu opens off `RowController`'s
+			// own editor-level `menu` signal and never sees a re-bind — so the atomic write
+			// belongs to registration.
 			const {model} = mountNewInline()
 			const button = document.createElement('button')
 
@@ -355,7 +357,12 @@ describe('TokenModel shell (seam/)', () => {
 
 		it('a registered child-sequence host lands on its mark handle and opens the mark for editing', () => {
 			// 'he#[ab]llo' → text 'he' [0,2], mark '#[ab]' [2,7] (child text 'ab' [4,6]), text 'llo' [7,10]
-			const setup = createNew({defaultValue: 'he#[ab]llo', options: [{markup: '#[__slot__]'}], Mark: () => null})
+			const setup = createNew({
+				separator: null,
+				defaultValue: 'he#[ab]llo',
+				options: [{markup: '#[__slot__]'}],
+				Mark: () => null,
+			})
 			const container = document.createElement('div')
 			const text1 = document.createElement('span')
 			const markEl = document.createElement('span')

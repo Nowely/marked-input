@@ -2,7 +2,7 @@ import type {MarkNode} from '@markput/core'
 import {describe, expect, it} from 'vitest'
 import {page, userEvent} from 'vitest/browser'
 
-import {childrenOf, getElement} from '../shared/lib/dom'
+import {getElement, rowsOf} from '../shared/lib/dom'
 import {focusAtEnd} from '../shared/lib/focus'
 import {countRenders, Mark as PlainMark, Span as PlainSpan} from '../shared/lib/marks'
 import {mountComponent} from '../shared/lib/page'
@@ -20,13 +20,6 @@ import {markMounts} from './renderCount.fixtures'
  */
 
 /**
- * The rows of a block layout. Under the single-host topology the editing host IS the row host,
- * so its element children are the rows — MINUS the controls layer, which is one more container
- * child and not a row.
- */
-const rowsOf = (host: HTMLElement) => childrenOf(host).filter(child => !child.matches('[class*="BlockControls"]'))
-
-/**
  * Design-spec Phase 3 headline gates (commit routing):
  * - pure text edit → 0 committed renderer invocations (the core text path patches the DOM
  *   directly; the tree keeps its reference, so neither bridge publishes)
@@ -35,7 +28,7 @@ const rowsOf = (host: HTMLElement) => childrenOf(host).filter(child => !child.ma
 describe('Render-count gates: commit routing', () => {
 	it('pure text keystroke does not re-render Span; structural edit does', async () => {
 		const [CountedSpan, spanRenders] = countRenders({tag: 'span'})
-		await mountComponent({Mark: PlainMark, Span: CountedSpan, defaultValue: 'Hello @[mark](1)!'})
+		await mountComponent({separator: null, Mark: PlainMark, Span: CountedSpan, defaultValue: 'Hello @[mark](1)!'})
 
 		await focusAtEnd(getElement(page.getByText('!')))
 
@@ -87,7 +80,7 @@ describe('Render-count gates: structural fan-out', () => {
 
 	it('a head insert at 100 marks re-renders exactly the inserted mark', async () => {
 		const [CountedMark, markRenders] = countRenders()
-		await mountComponent({Mark: CountedMark, Span: PlainSpan, defaultValue: document100})
+		await mountComponent({separator: null, Mark: CountedMark, Span: PlainSpan, defaultValue: document100})
 		await expect.element(page.getByText(`m${MARKS - 1}`)).toBeInTheDocument()
 
 		await focusAtEnd(getElement(page.getByText('HEAD ')))
@@ -111,7 +104,7 @@ describe('Render-count gates: structural fan-out', () => {
 			tag: 'mark',
 			on: {click: ({mark}) => (captured = mark)},
 		})
-		await mountComponent({Mark: CountedMark, Span: PlainSpan, defaultValue: document100})
+		await mountComponent({separator: null, Mark: CountedMark, Span: PlainSpan, defaultValue: document100})
 		await expect.element(page.getByText(`m${MARKS - 1}`)).toBeInTheDocument()
 
 		// The FIRST mark, so the write also suffix-shifts the other 99 (the replacement is a
@@ -130,21 +123,21 @@ describe('Render-count gates: structural fan-out', () => {
 })
 
 /**
- * Block-layout gate (issue 08's row world): a row is a RowNode with no markup, its text a
+ * Rows gate (issue 08's row world): a row is a RowNode with no markup, its text a
  * bare Span inside the one host. A keystroke inside a row lands on the row's child text
  * token and rides the text path — the surface is patched in place while the tree keeps
  * its reference, so no Span re-renders. A row split is structural and re-renders through
  * the framework.
  */
-describe('Render-count gates: block layout', () => {
-	it('block keystroke into a row does not re-render Mark or Span; a row split does', async () => {
+describe('Render-count gates: rows', () => {
+	it('a keystroke into a row does not re-render Mark or Span; a row split does', async () => {
 		const [CountedMark, markRenders] = countRenders({tag: 'mark'})
 		const [CountedSpan, spanRenders] = countRenders({tag: 'span'})
 		const {host} = await mountComponent({
 			Span: CountedSpan,
 			options: [{markup: '@[__value__](__meta__)', Mark: CountedMark}],
 			defaultValue: 'First @[m](1) row\n\nSecond row\n\n',
-			layout: 'block',
+			separator: '\n\n',
 			draggable: true,
 		})
 		// Two content rows plus the trailing empty row (issue 08)
@@ -165,7 +158,7 @@ describe('Render-count gates: block layout', () => {
 		expect(spanRenders()).toBe(spanBaseline)
 		expect(markRenders()).toBe(markBaseline)
 
-		// Gate: Enter splits the row (blockEdit inserts the separator) — a structural edit
+		// Gate: Enter splits the row (`rowKeys` splits the row) — a structural edit
 		// that publishes a new tree and re-renders through the framework.
 		await userEvent.keyboard('{Enter}')
 		expect(rowsOf(host)).toHaveLength(4)
@@ -179,16 +172,16 @@ describe('Render-count gates: block layout', () => {
 		// every tick re-points one editor-level signal and re-renders the layer alone.
 		//
 		// What it cannot see, measured rather than assumed: subscribing a ROW to `drop` through
-		// the object selector (react `Block.tsx`, vue `Block.vue`) leaves this green in both
+		// the object selector (react `Row.tsx`, vue `Row.vue`) leaves this green in both
 		// projects, because both bridges skip a child whose node object did not change, so the
 		// extra row renders never reach a Mark or a Span. The scalar `dragging` selector both
-		// `Block`s use is therefore a discipline this file states but does not enforce.
+		// `Row`s use is therefore a discipline this file states but does not enforce.
 		const [CountedSpan, spanRenders] = countRenders({tag: 'span'})
 		const {host} = await mountComponent({
 			Span: CountedSpan,
 			options: [],
 			defaultValue: 'r0\n\nr1\n\nr2\n\nr3\n\nr4\n\n',
-			layout: 'block',
+			separator: '\n\n',
 			draggable: true,
 			style: {marginLeft: '64px'},
 		})
@@ -227,7 +220,7 @@ describe('Render-count gates: block layout', () => {
 			Span: CountedSpan,
 			options: [],
 			defaultValue: 'First row\n\n',
-			layout: 'block',
+			separator: '\n\n',
 			draggable: true,
 		})
 		// One content row plus the trailing empty row (issue 08)
@@ -259,6 +252,7 @@ describe('Remount gates: identity keys', () => {
 	it('a structural edit before a mark does not remount the suffix marks', async () => {
 		const log = markMounts()
 		await mountComponent({
+			separator: null,
 			Mark: log.Mark,
 			Span: PlainSpan,
 			defaultValue: 'Hello @[a](1) and @[b](2)!',

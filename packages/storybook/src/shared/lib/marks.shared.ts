@@ -28,7 +28,7 @@ type Computed<T> = T | ((context: MarkContext) => T)
  * What goes INSIDE is not a choice. A generated mark renders `children ?? value`: `children` is
  * the nested-token slot in both adapters — react's JSX children, vue's default slot — falling
  * back to the `children` an option's `mark` mapper produced, which is the only other source
- * since `resolveMarkSlot` passes `value` and `meta` and nothing else. A value-only markup gets
+ * since `resolveNodeSlot` passes `value` and `meta` and nothing else. A value-only markup gets
  * no slot at all, so the fallback IS the value. A mark that needs to drop one of the two is
  * hand-written on its page.
  */

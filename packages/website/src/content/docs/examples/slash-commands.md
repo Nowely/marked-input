@@ -6,6 +6,25 @@ keywords: [slash commands, command menu, Notion, text transformation, command pa
 
 This example demonstrates how to build a slash command system like Notion, Slack, or Linear. Type `/` to trigger a menu of commands that transform text or insert content.
 
+:::tip[There is a shipped one]
+If your `/` menu is meant to change what the caret's ROW IS — a heading, a list item, a quote, a code
+fence — you do not need any of the code below. An option that declares a `menu` is already in the row
+menu, each adapter ships the paint as the default `OverlayList`, and choosing an entry — by click or
+by ↑↓ and Enter — retypes the row in one splice:
+
+```tsx uses=Heading,Bullet
+const options = [
+    {overlay: {trigger: '/'}},
+    {markup: '# __slot__', row: {Component: Heading}, menu: {label: 'Heading 1', keywords: ['h1']}},
+    {markup: '- __slot__', row: {Component: Bullet, continues: true, indents: true}, menu: {label: 'Bulleted list'}},
+]
+```
+
+See [Row Kinds](/guides/row-kinds) and
+[The Row Menu](/guides/overlay-customization#the-row-menu). The page below is the other kind of `/`
+menu: one that inserts an inline MARK, and one that carries a custom overlay component of its own.
+:::
+
 ## Use Case
 
 **What we're building:**
@@ -28,7 +47,7 @@ This example demonstrates how to build a slash command system like Notion, Slack
 
 ### Step 1: Define Command Types
 
-```tsx
+```tsx fragment
 // types.ts
 export type CommandType =
     | 'heading1'
@@ -66,7 +85,7 @@ export interface CommandMarkProps {
 
 ````tsx
 // commands.ts
-import type {Command} from './types'
+import type {Command, EditorContext} from './types'
 
 export const COMMANDS: Command[] = [
     {
@@ -75,7 +94,7 @@ export const COMMANDS: Command[] = [
         description: 'Large section heading',
         icon: 'H1',
         aliases: ['h1', 'title'],
-        execute: ctx => {
+        execute: (ctx: EditorContext) => {
             ctx.replaceSelection('# ')
         },
     },
@@ -85,7 +104,7 @@ export const COMMANDS: Command[] = [
         description: 'Medium section heading',
         icon: 'H2',
         aliases: ['h2', 'subtitle'],
-        execute: ctx => {
+        execute: (ctx: EditorContext) => {
             ctx.replaceSelection('## ')
         },
     },
@@ -95,7 +114,7 @@ export const COMMANDS: Command[] = [
         description: 'Small section heading',
         icon: 'H3',
         aliases: ['h3'],
-        execute: ctx => {
+        execute: (ctx: EditorContext) => {
             ctx.replaceSelection('### ')
         },
     },
@@ -105,7 +124,7 @@ export const COMMANDS: Command[] = [
         description: 'Create a simple bullet list',
         icon: '•',
         aliases: ['ul', 'list', 'bullet'],
-        execute: ctx => {
+        execute: (ctx: EditorContext) => {
             ctx.replaceSelection('- ')
         },
     },
@@ -115,7 +134,7 @@ export const COMMANDS: Command[] = [
         description: 'Create a numbered list',
         icon: '1.',
         aliases: ['ol', 'ordered'],
-        execute: ctx => {
+        execute: (ctx: EditorContext) => {
             ctx.replaceSelection('1. ')
         },
     },
@@ -125,7 +144,7 @@ export const COMMANDS: Command[] = [
         description: 'Insert a blockquote',
         icon: '"',
         aliases: ['blockquote', 'citation'],
-        execute: ctx => {
+        execute: (ctx: EditorContext) => {
             ctx.replaceSelection('> ')
         },
     },
@@ -135,7 +154,7 @@ export const COMMANDS: Command[] = [
         description: 'Insert a code block',
         icon: '<>',
         aliases: ['codeblock', 'pre'],
-        execute: ctx => {
+        execute: (ctx: EditorContext) => {
             ctx.insertText('\n```\n\n```\n')
         },
     },
@@ -145,7 +164,7 @@ export const COMMANDS: Command[] = [
         description: 'Insert a horizontal divider',
         icon: '―',
         aliases: ['hr', 'line', 'separator'],
-        execute: ctx => {
+        execute: (ctx: EditorContext) => {
             ctx.insertText('\n---\n')
         },
     },
@@ -155,7 +174,7 @@ export const COMMANDS: Command[] = [
         description: 'Create a checklist',
         icon: '☑',
         aliases: ['checkbox', 'task', 'checklist'],
-        execute: ctx => {
+        execute: (ctx: EditorContext) => {
             ctx.replaceSelection('- [ ] ')
         },
     },
@@ -165,10 +184,10 @@ export function searchCommands(query: string): Command[] {
     const lowerQuery = query.toLowerCase()
 
     return COMMANDS.filter(
-        cmd =>
+        (cmd: Command) =>
             cmd.label.toLowerCase().includes(lowerQuery) ||
             cmd.description.toLowerCase().includes(lowerQuery) ||
-            cmd.aliases.some(alias => alias.includes(lowerQuery))
+            cmd.aliases.some((alias: string) => alias.includes(lowerQuery))
     )
 }
 ````
@@ -216,17 +235,20 @@ import type {Command} from './types'
 import './CommandOverlay.css'
 
 export const CommandOverlay: FC = () => {
-    const {style, match, select, close, ref} = useOverlay()
+    const {style, match, select, close, ref} = useOverlay<HTMLDivElement>()
     const [selectedIndex, setSelectedIndex] = useState(0)
     const selectedRef = useRef<HTMLButtonElement>(null)
 
+    // `match` is undefined while no trigger is open
+    const query = match?.value ?? ''
+
     // Filter commands based on search
-    const filteredCommands = searchCommands(match.value)
+    const filteredCommands = searchCommands(query)
 
     // Reset selection when results change
     useEffect(() => {
         setSelectedIndex(0)
-    }, [match.value])
+    }, [query])
 
     // Scroll selected item into view
     useEffect(() => {
@@ -284,7 +306,7 @@ export const CommandOverlay: FC = () => {
                     top: style.top,
                 }}
             >
-                <div className="command-overlay-empty">No commands found for "/{match.value}"</div>
+                <div className="command-overlay-empty">No commands found for "/{query}"</div>
             </div>
         )
     }
@@ -307,7 +329,7 @@ export const CommandOverlay: FC = () => {
             </div>
 
             <div className="command-overlay-list">
-                {filteredCommands.map((command, index) => (
+                {filteredCommands.map((command: Command, index: number) => (
                     <button
                         key={command.id}
                         ref={index === selectedIndex ? selectedRef : null}
@@ -471,7 +493,7 @@ export const CommandOverlay: FC = () => {
 
 ### Step 6: Editor Component
 
-```tsx
+```tsx fragment uses=Command
 // SlashCommandEditor.tsx
 import {FC, useState, useRef} from 'react'
 import {MarkedInput} from '@markput/react'
@@ -492,7 +514,7 @@ export const SlashCommandEditor: FC = () => {
 
         if (commandMatch) {
             const commandId = commandMatch[1] as CommandType
-            const command = COMMANDS.find(cmd => cmd.id === commandId)
+            const command = COMMANDS.find((cmd: Command) => cmd.id === commandId)
 
             if (command) {
                 // Remove the command mark from the text
@@ -523,16 +545,12 @@ export const SlashCommandEditor: FC = () => {
 
     const commandOption: Option<CommandMarkProps> = {
         markup: '/[__value__](__meta__)',
-        slots: {
-            mark: CommandMark,
-            overlay: CommandOverlay,
-        },
-        slotProps: {
-            mark: ({value, meta}) => ({
-                command: value as CommandType,
-                label: meta || value || '',
-            }),
-        },
+        Mark: CommandMark,
+        Overlay: CommandOverlay,
+        mark: ({value, meta}: MarkProps) => ({
+            command: value as CommandType,
+            label: meta || value || '',
+        }),
     }
 
     return (
@@ -712,7 +730,7 @@ Full keyboard support:
 
 ### Variation 1: Commands with Parameters
 
-```tsx
+```tsx fragment uses=Command,EditorContext
 interface ParameterizedCommand extends Command {
     parameters?: {
         name: string
@@ -731,7 +749,7 @@ const linkCommand: ParameterizedCommand = {
         {name: 'url', type: 'text'},
         {name: 'text', type: 'text'},
     ],
-    execute: (ctx, params) => {
+    execute: (ctx: EditorContext, params: Record<string, string>) => {
         const {url, text} = params
         ctx.insertText(`[${text}](${url})`)
     },
@@ -740,7 +758,7 @@ const linkCommand: ParameterizedCommand = {
 
 ### Variation 2: Recent Commands
 
-```tsx
+```tsx fragment uses=filteredCommands,recent,Command
 const useRecentCommands = () => {
     const [recent, setRecent] = useState<string[]>([])
 
@@ -756,14 +774,14 @@ const useRecentCommands = () => {
 
 // Show recent commands first in overlay
 const sortedCommands = [
-    ...filteredCommands.filter(cmd => recent.includes(cmd.id)),
-    ...filteredCommands.filter(cmd => !recent.includes(cmd.id)),
+    ...filteredCommands.filter((cmd: Command) => recent.includes(cmd.id)),
+    ...filteredCommands.filter((cmd: Command) => !recent.includes(cmd.id)),
 ]
 ```
 
 ### Variation 3: Command Categories
 
-```tsx
+```tsx fragment uses=Command,CommandItem
 interface CommandCategory {
     id: string
     label: string
@@ -816,7 +834,7 @@ const CATEGORIES: CommandCategory[] = [
 
 ### Variation 4: Custom Command Registration
 
-```tsx
+```tsx fragment uses=Command,COMMANDS,SlashCommandEditor,EditorContext
 const useCustomCommands = () => {
     const [customCommands, setCustomCommands] = useState<Command[]>([])
 
@@ -841,7 +859,7 @@ const MyEditor: FC = () => {
             description: 'Insert current date and time',
             icon: '🕐',
             aliases: ['time', 'date', 'now'],
-            execute: ctx => {
+            execute: (ctx: EditorContext) => {
                 const timestamp = new Date().toLocaleString()
                 ctx.insertText(timestamp)
             },
@@ -854,7 +872,7 @@ const MyEditor: FC = () => {
 
 ### Variation 5: AI-Powered Commands
 
-```tsx
+```tsx fragment uses=Command,fetchAICompletion,fetchAISummary,EditorContext
 const aiCommands: Command[] = [
     {
         id: 'ai-continue',
@@ -862,7 +880,7 @@ const aiCommands: Command[] = [
         description: 'Let AI continue your text',
         icon: '✨',
         aliases: ['ai', 'continue', 'complete'],
-        execute: async ctx => {
+        execute: async (ctx: EditorContext) => {
             const currentText = ctx.getCurrentLine()
             const completion = await fetchAICompletion(currentText)
             ctx.insertText(completion)
@@ -874,7 +892,7 @@ const aiCommands: Command[] = [
         description: 'Summarize selected text',
         icon: '📝',
         aliases: ['summary', 'tldr'],
-        execute: async ctx => {
+        execute: async (ctx: EditorContext) => {
             const selection = ctx.getSelection()
             const summary = await fetchAISummary(selection)
             ctx.replaceSelection(summary)
@@ -928,7 +946,7 @@ const aiCommands: Command[] = [
 
 ### Command History and Undo
 
-```tsx
+```tsx fragment
 interface CommandHistory {
     commandId: string
     timestamp: number
@@ -957,7 +975,7 @@ const useCommandHistory = () => {
 
 ### Command Shortcuts
 
-```tsx
+```tsx fragment uses=COMMANDS,editorContext,Command
 const COMMAND_SHORTCUTS: Record<string, string> = {
     'Mod-1': 'heading1',
     'Mod-2': 'heading2',
@@ -976,7 +994,7 @@ const handleKeyDown = (e: React.KeyboardEvent) => {
 
     if (commandId) {
         e.preventDefault()
-        const command = COMMANDS.find(cmd => cmd.id === commandId)
+        const command = COMMANDS.find((cmd: Command) => cmd.id === commandId)
         if (command) {
             command.execute(editorContext)
         }

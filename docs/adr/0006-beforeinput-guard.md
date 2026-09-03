@@ -4,4 +4,6 @@ Editors built on one contenteditable host usually reconcile the DOM the browser 
 
 What it deliberately does not cover: IME, because `insertCompositionText` is not cancelable — composition stays unhandled by design. Native undo/redo are swallowed by the guard; they were already dead in both topologies, measured, so this removes nothing that worked.
 
+**Amended by [ADR-0012](0012-the-editor-owns-undo.md):** the guard still cancels `historyUndo` and `historyRedo`, but they are now answered by the editor's own stack before they reach the drop path — expressed rather than dropped.
+
 Full record: [`docs/records/one-host-migration.md`](../records/one-host-migration.md).

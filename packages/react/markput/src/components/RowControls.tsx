@@ -1,0 +1,201 @@
+import {ROW_MENU_ITEMS, cx, getAlwaysShowHandle} from '@markput/core'
+import type {RowBox} from '@markput/core'
+import {memo, useCallback, useEffect, useLayoutEffect, useMemo, useState} from 'react'
+
+import {useMarkput} from '../lib/hooks/useMarkput'
+import {List} from './Popup/List'
+import {ListItem} from './Popup/ListItem'
+import {Popup} from './Popup/Popup'
+
+import styles from '@markput/core/styles.module.css'
+
+/**
+ * ONE absolutely positioned row-controls layer per editor: it paints the grip, the drop indicator
+ * and the row menu at row boxes it MEASURES, where `.Row { position: relative }` used to make
+ * them free inside every row.
+ *
+ * `RowControls`, not `RowLayer`: `Row.tsx` is the row WRAPPER, and two near-identical names
+ * beside each other is the ambiguity this one is named to avoid.
+ *
+ * It lives INSIDE the container — the alternative, a new wrapper element in `MarkedInput`, would
+ * impose a published DOM change on every consumer for internal convenience. That puts it inside
+ * the editing host, so it registers as a `control()` root: one registration for the whole editor,
+ * where the per-row controls filed up to four PER ROW, and everything painted inside it inherits
+ * `isContentEditable === false` from it.
+ */
+const iconGrip = `${styles.Icon} ${styles.IconGrip}`
+const iconAdd = `${styles.Icon} ${styles.IconAdd}`
+
+export const RowControls = memo(() => {
+	const {
+		controller,
+		tokens,
+		readOnly,
+		draggable,
+		rows,
+		hovered,
+		dragging,
+		drop,
+		menu,
+		menuActive,
+		menuPosition,
+		geometry,
+		refused,
+	} = useMarkput(s => ({
+		controller: s.rows,
+		tokens: s.tokens,
+		readOnly: s.props.readOnly,
+		draggable: s.props.draggable,
+		rows: s.tokens.nodes,
+		hovered: s.rows.state.hovered,
+		dragging: s.rows.state.dragging,
+		drop: s.rows.state.drop,
+		menu: s.rows.state.menu,
+		menuActive: s.rows.state.menuActive,
+		menuPosition: s.rows.menuPosition,
+		geometry: s.rows.state.geometry,
+		refused: s.rows.state.refused,
+	}))
+	const controlRef = useMemo(() => tokens.control(), [tokens])
+	// STABLE, and it is load-bearing now that something READS `menuElement`: React calls a
+	// callback ref whose identity changed on every render — first with `null`, then with the
+	// element — so an inline arrow here made the menu's own position signal flip twice per
+	// render and re-render the layer for it. "Maximum update depth exceeded", measured.
+	const menuRef = useCallback(
+		(el: HTMLElement | null) => {
+			controller.menuElement(el)
+		},
+		[controller]
+	)
+	const alwaysShowHandle = useMemo(() => getAlwaysShowHandle(draggable), [draggable])
+
+	// The row the grip decorates: the dragged row while a drag is live, else the hovered one.
+	// The fallback is what `alwaysShowHandle` now means — one layer cannot paint a grip on every
+	// row, so the option is "one grip, on the row nearest the pointer", resting on the first row
+	// while the pointer is away. DECLARED BEHAVIOUR CHANGE on a published option.
+	const gripRow = dragging ?? hovered ?? (alwaysShowHandle ? (rows[0]?.id ?? null) : null)
+
+	// Geometry is MEASURED, not inherited from a `position: relative` ancestor. In a layout
+	// effect, so it sees the painted DOM of this very commit, and re-run on `geometry` — the
+	// container's own resize/scroll clock.
+	//
+	// The GRIP alone: the drop indicator's line arrives already resolved on `state.drop`, measured
+	// by the `dragover` that resolved the placement it will perform, so the layer cannot paint an
+	// indicator anywhere but where the drop will land.
+	const [gripBox, setGripBox] = useState<RowBox | null>(null)
+	useLayoutEffect(() => {
+		setGripBox(gripRow === null ? null : (controller.boxOf(gripRow) ?? null))
+	}, [controller, gripRow, geometry])
+
+	// A row that GROWS as the user types moves the grip with it, and the container's own observer
+	// says nothing when the container's size is fixed. Observing the ONE decorated row is the
+	// cheapest correct trigger.
+	useEffect(() => {
+		if (gripRow === null) return
+		const element = tokens.handle(gripRow)?.element()
+		if (!element) return
+		const observer = new ResizeObserver(() => setGripBox(controller.boxOf(gripRow) ?? null))
+		observer.observe(element)
+		return () => observer.disconnect()
+	}, [controller, tokens, gripRow])
+
+	// THE REFUSED ROW'S BOX, measured the same way and on the same clock as the grip's — a refusal
+	// writes nothing, so the row is where it was, but the layer's own origin still moves under it.
+	const [refusedBox, setRefusedBox] = useState<RowBox | null>(null)
+	useLayoutEffect(() => {
+		setRefusedBox(refused === null ? null : (controller.boxOf(refused.id) ?? null))
+	}, [controller, refused, geometry])
+
+	return (
+		<div ref={controlRef} className={styles.RowControls}>
+			{/* KEYED BY THE PRESS COUNT, which is what restarts the animation: React keeps one
+			    element across two refusals of the same key on the same row, and an element already
+			    carrying an animation does not replay it. */}
+			{refused !== null && refusedBox !== null && (
+				<div key={refused.at} className={styles.RowRefused} style={refusedBox} />
+			)}
+
+			{!readOnly && gripRow !== null && gripBox !== null && (
+				<div
+					className={cx(
+						styles.SidePanel,
+						// Painted but INVISIBLE while its row is being dragged, as the per-row
+						// panel was: the grip stays mounted so its own `dragend` still fires
+						// (Chromium sends no mouseup for a drag), and the pointer is away with
+						// the drag image anyway.
+						alwaysShowHandle ? styles.SidePanelAlways : dragging === null && styles.SidePanelVisible
+					)}
+					// `left` is the ROW's left edge; `.SidePanel`'s negative margin hangs the
+					// band off it. The layer's own origin would put it on top of the text
+					// wherever core reserves no gutter — `draggable: false`.
+					style={{top: gripBox.top, left: gripBox.left, height: gripBox.height}}
+				>
+					{/* THE GUTTER'S `+`, left of the grip, where the reference page puts it. It runs the
+					    menu's own first entry on the row the pointer is on, so the two affordances cannot
+					    come to mean different things — what it saves is the click and the pick between
+					    them. Not behind `draggable`: adding a row is a row feature, and only the grip's
+					    drag is drag UI. */}
+					<button
+						type="button"
+						className={cx(styles.GripButton, styles.GripButtonAdd)}
+						aria-label="Add a row below"
+						onMouseDown={controller.pinHover}
+						onClick={e => {
+							e.preventDefault()
+							controller.addRowBelow(gripRow)
+						}}
+					>
+						<span className={iconAdd} />
+					</button>
+					<button
+						type="button"
+						// The grip is also the menu trigger, so it renders whether or not the rows drag;
+						// `draggable` gates only the drag affordance it carries.
+						draggable={!!draggable}
+						className={cx(styles.GripButton, dragging !== null && styles.GripButtonDragging)}
+						aria-label={draggable ? 'Drag to reorder or click for options' : 'Row options'}
+						onMouseDown={controller.pinHover}
+						onDragStart={e => controller.beginDrag(gripRow, e.nativeEvent)}
+						onDragEnd={() => controller.endDrag()}
+						onClick={e => {
+							e.preventDefault()
+							controller.openMenu(gripRow, e.currentTarget.getBoundingClientRect())
+						}}
+					>
+						<span className={iconGrip} />
+					</button>
+				</div>
+			)}
+
+			{drop && (
+				<div
+					className={styles.DropIndicator}
+					// `left` says the DEPTH the drop will land at: core indents the line by the
+					// measured indent unit, so the indicator answers "where" and "how deep" at once.
+					style={{top: drop.line.top - 1, left: drop.line.left, width: drop.line.width}}
+				/>
+			)}
+
+			{menu && (
+				<Popup ref={menuRef} style={{top: menuPosition.top, left: menuPosition.left, pointerEvents: 'auto'}}>
+					<List>
+						{ROW_MENU_ITEMS.map((item, index) => (
+							// `active` is the same prop and the same class the `/` list paints its
+							// highlight with — one list, one keyboard, one look.
+							<ListItem
+								key={item.label}
+								active={index === menuActive}
+								onClick={() => item.run(controller)}
+							>
+								<span className={item.iconClass} />
+								<span>{item.label}</span>
+							</ListItem>
+						))}
+					</List>
+				</Popup>
+			)}
+		</div>
+	)
+})
+
+RowControls.displayName = 'RowControls'

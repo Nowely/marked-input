@@ -1,6 +1,7 @@
 import type {MarkToken, RowToken, TextToken, Token} from '../../parser/types'
 import {annotate} from '../../parser/utils/annotate'
-import type {TreeNode} from '../types'
+import {hasCells} from '../rows'
+import type {RowNode, TreeNode} from '../types'
 
 /**
  * TEST-ONLY, and it earns that: this is S1 §7.1's output-equivalence ORACLE — after every
@@ -19,24 +20,51 @@ import type {TreeNode} from '../types'
  * Ids are included; {@link stripIds} takes them off for the comparison against a parse,
  * which carries none.
  */
-export function snapshot(nodes: readonly TreeNode[]): (Token | RowToken)[] {
-	return nodes.map(materializeNode)
+export function snapshot(nodes: readonly TreeNode[], separator?: string): (Token | RowToken)[] {
+	const lastRow = nodes.findLastIndex(node => node.kind === 'row')
+	return nodes.map((node, index) =>
+		node.kind === 'row' ? materializeRow(node, separator ?? '', index < lastRow) : materializeInline(node)
+	)
 }
 
-function materializeNode(node: TreeNode): Token | RowToken {
-	if (node.kind === 'row') {
-		const children = node.children().map(materializeInline)
-		const token: RowToken = {
-			type: 'row',
-			content: children.map(child => child.content).join('') + node.terminator,
-			position: {...node.position},
-			id: node.id,
-			children,
-			terminated: node.terminator !== '',
-		}
-		return token
+/**
+ * One row and its subtree. `followed` says whether another row comes after this whole subtree,
+ * which is the only thing that decides whether its last line carries a separator — the same
+ * pre-order rule the projection joins by.
+ */
+function materializeRow(node: RowNode, separator: string, followed: boolean): RowToken {
+	const descriptor = node.descriptor()
+	const childRows = node.rows()
+	// A CARVED row's children are its BODY: they carry no separator between them and the row's own
+	// line covers them, where a nesting row's line ends before its first child.
+	const carved = hasCells(node)
+	const children = node.inline().map(materializeInline)
+	const rows = childRows.map((child, index) =>
+		carved
+			? materializeRow(child, '', false)
+			: materializeRow(child, separator, index < childRows.length - 1 || followed)
+	)
+	const edges = carved ? rows : children
+	const body = edges.map(part => part.content).join('')
+	const slotStart = edges[0]?.position.start ?? node.position.start
+	// Same rule as `joinNodes`' row arm: the lead, the kind's markup wrapped around the body,
+	// then a separator when any row follows, then the subtree.
+	const line =
+		node.lead() +
+		(descriptor ? annotate(descriptor.markup, {value: body, slot: body, meta: node.meta()}) : body) +
+		((!carved && childRows.length > 0) || followed ? separator : '')
+	return {
+		type: 'row',
+		content: carved ? line : line + rows.map(row => row.content).join(''),
+		position: {...node.position},
+		id: node.id,
+		descriptor,
+		meta: node.meta(),
+		lead: node.lead(),
+		slot: {content: body, start: slotStart, end: edges[edges.length - 1]?.position.end ?? slotStart},
+		children,
+		rows,
 	}
-	return materializeInline(node)
 }
 
 /** A Row is never an inline child, so everything below a root materializes to `Token`. */
@@ -86,9 +114,18 @@ function materializeInline(node: TreeNode): Token {
 export function stripIds(tokens: readonly Token[]): Token[]
 export function stripIds(tokens: readonly (Token | RowToken)[]): (Token | RowToken)[]
 export function stripIds(tokens: readonly (Token | RowToken)[]): (Token | RowToken)[] {
-	// A mark's and a row's children are both `Token[]`, so the recursion takes the
-	// narrow overload and the rebuilt token keeps its children type without a cast.
-	return tokens.map(({id: _id, ...rest}) =>
-		rest.type === 'text' ? rest : {...rest, children: stripIds(rest.children)}
-	)
+	return tokens.map(token => (token.type === 'row' ? stripRowIds(token) : stripInlineIds(token)))
+}
+
+/**
+ * A row's CHILD ROWS carry ids of their own, so the walk has to keep its own arm — flat documents
+ * hid that, since the list is empty there.
+ */
+function stripRowIds({id: _id, ...rest}: RowToken): RowToken {
+	return {...rest, children: stripIds(rest.children), rows: rest.rows.map(stripRowIds)}
+}
+
+/** A mark's children are `Token[]`, so the recursion takes the narrow overload and needs no cast. */
+function stripInlineIds({id: _id, ...rest}: Token): Token {
+	return rest.type === 'text' ? rest : {...rest, children: stripIds(rest.children)}
 }

@@ -1,6 +1,6 @@
 import {afterEach, describe, expect, it} from 'vitest'
 
-import {domModelOf, mountBlock, mountWithMark} from '../__testing__/mountFixtures'
+import {domModelOf, mountRowDoc, mountNestedRowDoc, mountWithMark} from '../__testing__/mountFixtures'
 import {joinNodes} from '../tree/tree'
 
 describe('TokenModel facade selection reads', () => {
@@ -11,7 +11,7 @@ describe('TokenModel facade selection reads', () => {
 
 	for (const [name, mount] of [
 		['inline with mark', mountWithMark],
-		['block layout', mountBlock],
+		['with rows', mountRowDoc],
 	] as const) {
 		it(`reads the live selection as node anchors — ${name}`, () => {
 			const {store, container} = mount()
@@ -25,7 +25,7 @@ describe('TokenModel facade selection reads', () => {
 			sel?.addRange(range)
 
 			// Resolved through the DOM rather than named: the inline fixture opens with a
-			// ROOT text node and the block one with a mark's slot CHILD, and the anchor is
+			// ROOT text node and the row one with a mark's slot CHILD, and the anchor is
 			// local to whichever it is — which is the point (the deleted numeric read
 			// answered 0 and 1 for both only because both start the document).
 			const handle = store.tokens.handleAt(firstText)
@@ -75,6 +75,22 @@ describe('DomModel placement commands', () => {
 
 		expect(dom.placeCaret('start')).toBe(true)
 		expect(store.tokens.domAnchors()?.anchor).toEqual({node: roots[0], offset: 0})
+	})
+
+	it("places the document end inside the DEEPEST last row's own surface", () => {
+		// A row carries no text surface of its own, so its handle answers in PARENT-INDEX
+		// coordinates — a boundary BETWEEN row elements, which is no position a caret may type
+		// at. That is why a row's edge descends to its edge child, and it has to descend all the
+		// way: with rows nested, one level down lands on another row wrapper and answers with
+		// exactly the boundary the descent exists to avoid.
+		const {store, container} = mountNestedRowDoc()
+		const dom = domModelOf(store.tokens, container)
+		const root = store.tokens.nodes()[0]
+		if (root.kind !== 'row') throw new Error('expected a row root')
+		const nested = root.rows()[0]
+
+		expect(dom.placeCaret('end')).toBe(true)
+		expect(store.tokens.domAnchors()?.anchor).toEqual({node: nested.children()[0], offset: 1})
 	})
 
 	it('places two anchors sharing one offset in their own surfaces', () => {

@@ -8,15 +8,30 @@ function escapeString(str: string): string {
 }
 
 export function rowsToDebugTree(rows: RowToken[]): string {
-	return rows
-		.map((row, index) => {
-			const paddedPrefix = index > 0 ? ` ${index}` : `${index}`
-			const terminated = row.terminated ? '' : ' unterminated'
-			const header = `${paddedPrefix}: ROW "${escapeString(row.content)}" [${row.position.start}-${row.position.end}]${terminated}`
-			const children = tokensToDebugTree(row.children, 1, String(index))
-			return children ? `${header}\n${children}` : header
-		})
-		.join('\n')
+	return rows.map((row, index) => rowToDebugTree(row, 0, index > 0 ? ` ${index}` : `${index}`)).join('\n')
+}
+
+/**
+ * One row and everything under it. CHILD ROWS print after the inline children and continue their
+ * numbering, because that is the one list the tree holds — inline first, rows second — so the
+ * snapshot shows the shape a walk actually sees.
+ */
+function rowToDebugTree(row: RowToken, level: number, prefix: string): string {
+	const indent = '\t'.repeat(level)
+	// The lead, the kind and its meta, each only when the row has one: a plain root paragraph
+	// prints none of them, so the snapshots stay readable and depth is visible where it matters.
+	const lead = row.lead ? ` lead="${escapeString(row.lead)}"` : ''
+	const kind = row.descriptor ? ` kind=${row.descriptor.index}` : ''
+	const meta = row.meta === undefined ? '' : ` meta="${escapeString(row.meta)}"`
+	const header = `${indent}${prefix}: ROW "${escapeString(row.content)}" [${row.position.start}-${row.position.end}]${lead}${kind}${meta}`
+	const own = prefix.trim()
+	const lines = [header]
+	const children = tokensToDebugTree(row.children, level + 1, own)
+	if (children) lines.push(children)
+	for (const [index, child] of row.rows.entries()) {
+		lines.push(rowToDebugTree(child, level + 1, `${own}.${row.children.length + index}`))
+	}
+	return lines.join('\n')
 }
 
 export function tokensToDebugTree(tokens: Token[], level = 0, prefix = ''): string {

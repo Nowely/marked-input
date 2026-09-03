@@ -30,6 +30,7 @@ const markAtDepth = (host: Element, depth: number) => {
 describe('Nested Marks Rendering', () => {
 	it('render simple nested marks', async () => {
 		const {host} = await mountComponent({
+			separator: null,
 			Mark: marks.Info,
 			value: '@[outer @[inner]]',
 			options: [{markup: SLOT_MARKUP}],
@@ -42,6 +43,7 @@ describe('Nested Marks Rendering', () => {
 
 	it('render multiple nesting levels', async () => {
 		const {host} = await mountComponent({
+			separator: null,
 			Mark: marks.Info,
 			value: '@[level0 @[level1 @[level2]]]',
 			options: [{markup: SLOT_MARKUP}],
@@ -52,6 +54,7 @@ describe('Nested Marks Rendering', () => {
 
 	it('render multiple nested marks at same level', async () => {
 		const {host} = await mountComponent({
+			separator: null,
 			Mark: marks.Info,
 			value: '@[outer @[first] and @[second]]',
 			options: [{markup: SLOT_MARKUP}],
@@ -62,6 +65,7 @@ describe('Nested Marks Rendering', () => {
 
 	it('routes each nested markup to the Mark of its own option', async () => {
 		const {host} = await mountComponent({
+			separator: null,
 			value: '#[tag with @[mention]]',
 			options: [
 				{markup: TAG_MARKUP, Mark: defineMark({tag: 'b'}), overlay: {trigger: '#'}},
@@ -81,13 +85,19 @@ describe('Nested Marks Rendering', () => {
 	})
 
 	it('handle empty nested marks', async () => {
-		const {host} = await mountComponent({Mark: marks.Info, value: '@[@[]]', options: [{markup: SLOT_MARKUP}]})
+		const {host} = await mountComponent({
+			separator: null,
+			Mark: marks.Info,
+			value: '@[@[]]',
+			options: [{markup: SLOT_MARKUP}],
+		})
 
 		expect(depthsOf(host)).toHaveLength(2)
 	})
 
 	it('renders the text on both sides of a nested mark', async () => {
 		const {host} = await mountComponent({
+			separator: null,
 			Mark: marks.Info,
 			value: '@[before @[nested] after]',
 			options: [{markup: SLOT_MARKUP}],
@@ -100,6 +110,7 @@ describe('Nested Marks Rendering', () => {
 
 	it('puts exactly one markput element between a mark root and a nested one', async () => {
 		const {host} = await mountComponent({
+			separator: null,
 			Mark,
 			defaultValue: '@[before @[nested] after]',
 			options: [{markup: SLOT_MARKUP}],
@@ -130,6 +141,7 @@ describe('Nested Marks Rendering', () => {
 describe('Nested Marks Tree Navigation', () => {
 	it('provide correct depth information', async () => {
 		const {host} = await mountComponent({
+			separator: null,
 			Mark: marks.Info,
 			value: '@[d0 @[d1 @[d2]]]',
 			options: [{markup: SLOT_MARKUP}],
@@ -142,6 +154,7 @@ describe('Nested Marks Tree Navigation', () => {
 
 	it('provide hasChildren information', async () => {
 		const {host} = await mountComponent({
+			separator: null,
 			Mark: marks.Info,
 			value: '@[parent @[child]]',
 			options: [{markup: SLOT_MARKUP}],
@@ -155,6 +168,7 @@ describe('Nested Marks Tree Navigation', () => {
 
 	it('provide hasChildren information with more than one nested mark', async () => {
 		const {host} = await mountComponent({
+			separator: null,
 			Mark: marks.Info,
 			value: '@[parent @[child1] text @[child2]]',
 			options: [{markup: SLOT_MARKUP}],
@@ -168,7 +182,7 @@ describe('Nested Marks Tree Navigation', () => {
 
 describe('Backward Compatibility', () => {
 	it('work with flat marks (no nesting)', async () => {
-		await mountComponent({Mark, value: '@[test](meta)', options: [{markup: VALUE_META_MARKUP}]})
+		await mountComponent({separator: null, Mark, value: '@[test](meta)', options: [{markup: VALUE_META_MARKUP}]})
 
 		const mark = page.getByRole('mark')
 		await expect.element(mark).toBeInTheDocument()
@@ -176,7 +190,7 @@ describe('Backward Compatibility', () => {
 	})
 
 	it('ignore children prop in flat marks', async () => {
-		await mountComponent({Mark, value: '@[test]', options: [{markup: VALUE_MARKUP}]})
+		await mountComponent({separator: null, Mark, value: '@[test]', options: [{markup: VALUE_MARKUP}]})
 
 		const mark = page.getByRole('mark')
 		await expect.element(mark).toBeInTheDocument()
@@ -184,7 +198,12 @@ describe('Backward Compatibility', () => {
 	})
 
 	it('not parse nested content in __value__ placeholders', async () => {
-		await mountComponent({Mark, value: '@[text with @[nested]]', options: [{markup: VALUE_MARKUP}]})
+		await mountComponent({
+			separator: null,
+			Mark,
+			value: '@[text with @[nested]]',
+			options: [{markup: VALUE_MARKUP}],
+		})
 
 		// Only one mark: `__value__` does not support nesting, so the inner `@[nested]` stays
 		// plain text inside the value.
@@ -196,7 +215,7 @@ describe('Backward Compatibility', () => {
 
 describe('Complex Nesting Scenarios', () => {
 	it('handle adjacent nested marks', async () => {
-		await mountComponent({Mark, value: '@[first]@[second]', options: [{markup: SLOT_MARKUP}]})
+		await mountComponent({separator: null, Mark, value: '@[first]@[second]', options: [{markup: SLOT_MARKUP}]})
 
 		const found = page.getByRole('mark').all()
 		expect(found).toHaveLength(2)
@@ -204,6 +223,7 @@ describe('Complex Nesting Scenarios', () => {
 
 	it('handle deeply nested structure', async () => {
 		const {host} = await mountComponent({
+			separator: null,
 			Mark: marks.Info,
 			value: '@[@[@[@[@[deep]]]]]',
 			options: [{markup: SLOT_MARKUP}],
@@ -219,6 +239,7 @@ describe('Complex Nesting Scenarios', () => {
 
 	it('handle mixed nested and flat marks', async () => {
 		await mountComponent({
+			separator: null,
 			Mark,
 			value: '@[nested @[child]] @[another]',
 			options: [{markup: SLOT_MARKUP}],
@@ -231,6 +252,7 @@ describe('Complex Nesting Scenarios', () => {
 
 	it('render nested structure when Mark component renders children', async () => {
 		const {host} = await mountComponent({
+			separator: null,
 			Mark: marks.Rendering,
 			value: '@[Hello @[World] from @[Nested] marks]',
 			options: [{markup: SLOT_MARKUP}],
@@ -246,13 +268,14 @@ describe('Complex Nesting Scenarios', () => {
 
 describe('Edge Cases', () => {
 	it('handle empty input', async () => {
-		const {host} = await mountComponent({Mark: Span, value: '', options: [{markup: SLOT_MARKUP}]})
+		const {host} = await mountComponent({separator: null, Mark: Span, value: '', options: [{markup: SLOT_MARKUP}]})
 
 		expect(host.textContent).toBe('')
 	})
 
 	it('handle input with no marks', async () => {
 		const {host} = await mountComponent({
+			separator: null,
 			Mark: Span,
 			value: 'Just plain text',
 			options: [{markup: SLOT_MARKUP}],
@@ -263,6 +286,7 @@ describe('Edge Cases', () => {
 
 	it('handle malformed nested marks gracefully', async () => {
 		const {host} = await mountComponent({
+			separator: null,
 			Mark,
 			value: '@[unclosed @[nested',
 			options: [{markup: SLOT_MARKUP}],

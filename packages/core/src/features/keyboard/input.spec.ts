@@ -43,6 +43,7 @@ function mountStructuralMarkWithDescendant(value = '@[world]', editableSpelling 
 function mountNestedSlot() {
 	const store = new Store()
 	store.props.set({
+		separator: null,
 		defaultValue: '@[a @[b] c]',
 		options: [{markup: '@[__slot__]'}],
 		Mark: () => null,
@@ -76,10 +77,46 @@ function mountNestedSlot() {
 	return {store, container, leading, host, before}
 }
 
-/** A registered control root (block menu, custom control) holding its own `<input>`. */
+/**
+ * A NESTED document as an adapter paints it: the parent row's own element is both its token
+ * element and its INLINE child-sequence host, and a separate `display: contents` span hosts its
+ * child rows — the two named parts `TokenModel.children(id, part)` registers.
+ */
+function mountNestedRows() {
+	const store = new Store()
+	store.props.set({separator: '\n', indent: '\t', defaultValue: 'a\n\tb', options: [], Mark: () => null})
+	const container = document.createElement('div')
+	const parent = document.createElement('div')
+	const parentText = document.createElement('span')
+	const rowsHost = document.createElement('span')
+	const child = document.createElement('div')
+	const childText = document.createElement('span')
+	rowsHost.style.display = 'contents'
+	child.append(childText)
+	rowsHost.append(child)
+	parent.append(parentText, rowsHost)
+	container.append(parent)
+	document.body.append(container)
+	store.host.container(container)
+	const roots = store.tokens.nodes()
+	const row = roots[0]
+	if (row.kind !== 'row') throw new Error('expected a row root')
+	const nested = row.rows()[0]
+	const consign = (id: number, element: HTMLElement) => store.tokens.consign(id)(element)
+	consign(row.id, parent)
+	store.tokens.children(row.id)(parent)
+	store.tokens.children(row.id, 'rows')(rowsHost)
+	consign(row.inline()[0].id, parentText)
+	consign(nested.id, child)
+	store.tokens.children(nested.id)(child)
+	consign(nested.inline()[0].id, childText)
+	return {store, container, rowsHost, nested}
+}
+
+/** A registered control root (row menu, custom control) holding its own `<input>`. */
 function mountInlineWithControl(value = 'hello') {
 	const store = new Store()
-	store.props.set({defaultValue: value})
+	store.props.set({separator: null, defaultValue: value})
 	const container = document.createElement('div')
 	const textSurface = document.createElement('span')
 	const control = document.createElement('div')
@@ -124,6 +161,7 @@ function mountControlledAdjacentMarks() {
 	const store = new Store()
 	const echoed = {value: 'a@[m1](1)@[m2](2)b'}
 	store.props.set({
+		separator: null,
 		value: echoed.value,
 		onChange: (next: string) => {
 			echoed.value = next
@@ -148,20 +186,20 @@ function liveCaretRange(): Range {
 }
 
 /**
- * A BLOCK document with a MARK at one edge — the shape the select-all defect lived in, kept as
- * its regression gate. The premise that made it reachable is gone: block layout no longer
- * filters the empty text tokens a mark is bracketed with, because a row's children open and
- * close with one (`RowBuilder.groupRows`).
+ * A document with ROWS and a MARK at one edge — the shape the select-all defect lived in, kept as
+ * its regression gate. The premise that made it reachable is gone: a document with rows no longer
+ * filters the empty text tokens a mark is bracketed with, because a row's body is built by
+ * `TreeBuilder` and opens and closes with one.
  *
  * One `<div>` per ROOT holding exactly one token element — the row wrapper and the token
  * element are consigned separately, which is how `bind` tells them apart; a mark with children
  * gets one element per child, a markless one gets the presentation text an adapter would render.
  */
-function mountBlockWithMarkEdge(value: string) {
+function mountRowWithMarkEdge(value: string) {
 	const store = new Store()
 	store.props.set({
 		defaultValue: value,
-		layout: 'block',
+		separator: '\n\n',
 		Mark: () => null,
 		options: [{markup: '@[__value__](__meta__)'}],
 	})
@@ -317,6 +355,23 @@ describe('handleBeforeInput()', () => {
 		const {store, container, host} = mountNestedSlot()
 
 		container.dispatchEvent(inputEvent('insertText', selectBoundary(host, offset), {data: 'X'}))
+
+		expect(store.tokens.value()).toBe(expected)
+		container.remove()
+	})
+
+	it.each([
+		['leading', 0, 'a\n\tXb'],
+		['trailing', 1, 'a\n\tbX'],
+	])('types INTO a nested row at its %s ROW-host edge', (_label, offset, expected) => {
+		// The row twin of the slot-host pin above. A row's child-rows host holds its `rows()`, so
+		// its edges are the FIRST child row's start and the LAST child row's end — not the parent
+		// row's own boundary, which sits outside the whole subtree and would type into the parent
+		// instead. Named parts are what make the answer decidable: a row's own element is its
+		// INLINE host, so an unnamed second registration would be indistinguishable from it.
+		const {store, container, rowsHost} = mountNestedRows()
+
+		container.dispatchEvent(inputEvent('insertText', selectBoundary(rowsHost, offset), {data: 'X'}))
 
 		expect(store.tokens.value()).toBe(expected)
 		container.remove()
@@ -500,11 +555,14 @@ describe('handleBeforeInput()', () => {
 		container.remove()
 	})
 
-	it('ignores a RANGED live selection on a collapsed target range', () => {
-		// CONSTRUCTED, and it says so: Chromium sets the live selection to the caret the event
-		// describes, so this disagreement is not one it produces. The guard is the cheap half
-		// of the precedence rule — a collapsed event must never resolve to an extent — and
-		// without a case the whole `anchorEquals` test can be deleted with the suite green.
+	it('takes the RANGED live selection over a collapsed target range', () => {
+		// DECLARED BEHAVIOUR CHANGE, and the pin it replaces had it backwards on a premise that
+		// has since been measured false. It read "Chromium sets the live selection to the caret
+		// the event describes, so this disagreement is not one it produces" — a row selection
+		// across a FROZEN row produces exactly it. That selection is not an editable extent, so
+		// Chromium canonicalizes the target range to the nearest position it can name, which is
+		// in the row ABOVE: on the showcase's bookmark the row painted as selected and the typed
+		// character appended to the quote above it. The selection the user can SEE is the answer.
 		const {store, container, textNode} = mountStructuralInline('ab')
 		const selection = window.getSelection()
 		if (!selection) throw new Error('no window selection')
@@ -519,7 +577,37 @@ describe('handleBeforeInput()', () => {
 
 		textNode.dispatchEvent(inputEvent('insertText', caret, {data: 'X'}))
 
-		expect(store.tokens.value()).toBe('aXb')
+		expect(store.tokens.value()).toBe('X')
+		container.remove()
+	})
+
+	/**
+	 * AND A TARGET RANGE THAT RESOLVES TO NOTHING FALLS BACK ON THE LIVE SELECTION rather than
+	 * swallowing the key. A consumer's own decoration inside a row is DOM this layer can name no
+	 * anchor in, and Chromium ends a target range there whenever the selection stops at that row's
+	 * entry — measured on the showcase's to-do tick box. The read used to fail closed and the
+	 * keystroke did NOTHING AT ALL, with the row still painted as selected.
+	 */
+	it('falls back on the live selection when the target range resolves to nothing', () => {
+		const {store, container, textNode} = mountStructuralInline('ab')
+		const selection = window.getSelection()
+		if (!selection) throw new Error('no window selection')
+		const spread = document.createRange()
+		spread.setStart(textNode, 0)
+		spread.setEnd(textNode, 2)
+		selection.removeAllRanges()
+		selection.addRange(spread)
+		// An element the editor knows nothing about — the shape a consumer's control has.
+		const stranger = document.createElement('span')
+		document.body.append(stranger)
+		const foreign = document.createRange()
+		foreign.setStart(textNode, 0)
+		foreign.setEnd(stranger, 0)
+
+		textNode.dispatchEvent(inputEvent('insertText', foreign, {data: 'X'}))
+
+		expect(store.tokens.value()).toBe('X')
+		stranger.remove()
 		container.remove()
 	})
 
@@ -756,18 +844,18 @@ describe('handleBeforeInput()', () => {
 	 * character where the user expected a replacement.
 	 *
 	 * The first root was closed by a `side` parameter and is now closed by the parser: a row's
-	 * children open with a text token (`RowBuilder.groupRows`), so offset 0 resolves inside it
-	 * and never reaches the fallback. THIS is the case that would catch that invariant
+	 * body opens with a text token, so offset 0 resolves inside it and never reaches the
+	 * fallback. THIS is the case that would catch that invariant
 	 * breaking — `tree/anchors.spec` pins it directly.
 	 */
-	describe('select-all over mark-edge block documents', () => {
+	describe('select-all over mark-edge row documents', () => {
 		const ctrlA = () => new KeyboardEvent('keydown', {code: 'KeyA', ctrlKey: true, bubbles: true, cancelable: true})
 
 		it.each([
 			['LAST', 'plain\n\n@[m](1)'],
 			['FIRST', '@[m](1)\n\nplain\n\n'],
 		])('selects the whole document when the mark is %s', (_label, value) => {
-			const {store, container} = mountBlockWithMarkEdge(value)
+			const {store, container} = mountRowWithMarkEdge(value)
 			const length = store.tokens.value().length
 
 			container.dispatchEvent(ctrlA())
@@ -787,7 +875,7 @@ describe('handleBeforeInput()', () => {
 		])('typing after select-all replaces the whole document (mark %s)', (_label, value) => {
 			// The intended semantics, now VISIBLE: the same keystroke did this before the fix
 			// on the mark-LAST document while the DOM showed no selection at all.
-			const {store, container} = mountBlockWithMarkEdge(value)
+			const {store, container} = mountRowWithMarkEdge(value)
 
 			container.dispatchEvent(ctrlA())
 			container.dispatchEvent(
@@ -834,6 +922,89 @@ describe('handleBeforeInput()', () => {
 
 			expect(event.defaultPrevented).toBe(true)
 			expect(store.tokens.value()).toBe('')
+			container.remove()
+		})
+
+		it('undoes and redoes on Mod+Z, and on Shift+Mod+Z', () => {
+			const {store, container, textNode} = mountStructuralInline('hello')
+			selectBoundary(textNode, 5)
+			store.edit.replace(store.tokens.anchorAt(5), store.tokens.anchorAt(5), '!')
+			expect(store.tokens.value()).toBe('hello!')
+
+			const undo = new KeyboardEvent('keydown', {code: 'KeyZ', ctrlKey: true, bubbles: true, cancelable: true})
+			container.dispatchEvent(undo)
+			expect(undo.defaultPrevented).toBe(true)
+			expect(store.tokens.value()).toBe('hello')
+
+			const redo = new KeyboardEvent('keydown', {
+				code: 'KeyZ',
+				ctrlKey: true,
+				shiftKey: true,
+				bubbles: true,
+				cancelable: true,
+			})
+			container.dispatchEvent(redo)
+			expect(redo.defaultPrevented).toBe(true)
+			expect(store.tokens.value()).toBe('hello!')
+			container.remove()
+		})
+
+		it('leaves Mod+Z to a consumer editable island', () => {
+			// The keydown tier's one consumer-origin test covers this arm too: an island runs the
+			// browser's own undo over its own DOM, and the model must neither act nor cancel.
+			const {store, container, descendantText} = mountStructuralMarkWithDescendant()
+			const event = new KeyboardEvent('keydown', {code: 'KeyZ', ctrlKey: true, bubbles: true, cancelable: true})
+
+			descendantText.parentElement?.dispatchEvent(event)
+
+			expect(event.defaultPrevented).toBe(false)
+			expect(store.tokens.value()).toBe('@[world]')
+			container.remove()
+		})
+
+		it('EXPRESSES a historyUndo beforeinput instead of dropping it', () => {
+			// ADR-0012's structural claim, stated the only way it can be observed: the value moved.
+			// `dropUnexpressedInput` cancels and nothing else, so a document that came back cannot
+			// have gone through it.
+			const {store, container} = mountStructuralInline('hello')
+			store.edit.replace(store.tokens.anchorAt(5), store.tokens.anchorAt(5), '!')
+
+			const event = new InputEvent('beforeinput', {inputType: 'historyUndo', bubbles: true, cancelable: true})
+			container.dispatchEvent(event)
+
+			expect(event.defaultPrevented).toBe(true)
+			expect(store.tokens.value()).toBe('hello')
+
+			const redo = new InputEvent('beforeinput', {inputType: 'historyRedo', bubbles: true, cancelable: true})
+			container.dispatchEvent(redo)
+			expect(store.tokens.value()).toBe('hello!')
+			container.remove()
+		})
+
+		it('undoes on a historyUndo with everything selected, rather than replacing the value', () => {
+			// The arm has to sit AHEAD of the all-selected branch: that branch keys on the stored
+			// selection and would read an undo as "replace the document with nothing".
+			const {store, container} = mountStructuralInline('hello')
+			store.edit.replace(store.tokens.anchorAt(5), store.tokens.anchorAt(5), '!')
+			store.tokens.selection.selectAll()
+
+			const event = new InputEvent('beforeinput', {inputType: 'historyUndo', bubbles: true, cancelable: true})
+			container.dispatchEvent(event)
+
+			expect(store.tokens.value()).toBe('hello')
+			container.remove()
+		})
+
+		it('still cancels a historyUndo with nothing to undo', () => {
+			// The guard stays fail-closed (ADR-0006): the browser's own stack is empty, and an
+			// uncancelled default would edit DOM the model owns.
+			const {store, container} = mountStructuralInline('hello')
+
+			const event = new InputEvent('beforeinput', {inputType: 'historyUndo', bubbles: true, cancelable: true})
+			container.dispatchEvent(event)
+
+			expect(event.defaultPrevented).toBe(true)
+			expect(store.tokens.value()).toBe('hello')
 			container.remove()
 		})
 

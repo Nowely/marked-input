@@ -4,7 +4,7 @@ import {effect, watch} from '../../../shared/signals'
 import {Store} from '../../../store/Store'
 import {anchorsAt, selectionRange} from '../__testing__/mountFixtures'
 import type {Markup} from '../parser/types'
-import type {MarkNode} from './types'
+import type {MarkNode, RowNode, RowPlacement} from './types'
 
 /**
  * Ported from the deleted `MarkController.spec.ts` at S1.7 (plan decision D-d): the class
@@ -26,7 +26,7 @@ function firstMark(store: Store): MarkNode {
  */
 function setup(value = 'hello @[world]', markup: Markup = '@[__value__]') {
 	const store = new Store()
-	store.props.set({defaultValue: value, Mark: () => null, options: [{markup}]})
+	store.props.set({separator: null, defaultValue: value, Mark: () => null, options: [{markup}]})
 	const container = document.createElement('div')
 	document.body.append(container)
 	store.host.container(container)
@@ -41,11 +41,7 @@ function setup(value = 'hello @[world]', markup: Markup = '@[__value__]') {
  */
 function mountedSetup() {
 	const store = new Store()
-	store.props.set({
-		defaultValue: 'he@[x]llo',
-		options: [{markup: '@[__value__]'}],
-		Mark: () => null,
-	})
+	store.props.set({separator: null, defaultValue: 'he@[x]llo', options: [{markup: '@[__value__]'}], Mark: () => null})
 	const container = document.createElement('div')
 	const text1 = document.createElement('span')
 	const mark = document.createElement('span')
@@ -170,7 +166,7 @@ describe('MarkNode verbs', () => {
 
 	it('does not mutate in read-only mode', () => {
 		const {store, node} = setup()
-		store.props.set({readOnly: true})
+		store.props.set({separator: null, readOnly: true})
 
 		node.remove()
 		expect(store.tokens.value()).toBe('hello @[world]')
@@ -335,6 +331,7 @@ describe('MarkNode live-read parity', () => {
 	it('meta and slot are live reads (parity table)', () => {
 		const store = new Store()
 		store.props.set({
+			separator: null,
 			defaultValue: 'a @[v](m)',
 			options: [{markup: '@[__value__](__meta__)'}],
 			Mark: () => null,
@@ -355,7 +352,7 @@ describe('MarkNode live-read parity', () => {
 		// `readOnly` LEFT the mark surface at S1.7 (§2.3 does not put editor state on a node),
 		// so what is left to pin is the gating itself, which lives in the transaction layer.
 		const {store, node} = mountedSetup()
-		store.props.set({readOnly: true})
+		store.props.set({separator: null, readOnly: true})
 		expect(node.update({value: 'bad'})).toBe(false)
 		expect(node.remove()).toBe(false)
 		expect(store.tokens.value()).toBe('he@[x]llo')
@@ -431,14 +428,14 @@ describe('MarkNode live-read parity', () => {
 })
 
 /**
- * Block rows (issue 08): paragraph rows need no markup at all — the separator is
+ * Rows (issue 08): paragraph rows need no markup at all — the separator is
  * structural, every root is a RowNode, and the boundary `mergeWith` removes is the
  * first row's own separator. The trailing empty piece is a row too, so a value
  * ending in a separator carries one more root than it used to.
  */
 function rowSetup(value: string) {
 	const store = new Store()
-	store.props.set({defaultValue: value, layout: 'block', Mark: () => null, options: []})
+	store.props.set({defaultValue: value, separator: '\n\n', Mark: () => null, options: []})
 	store.host.container(document.createElement('div'))
 	return store
 }
@@ -492,7 +489,12 @@ describe('mergeWith', () => {
 
 	it('answers false when the pair has no boundary to remove', () => {
 		const store = new Store()
-		store.props.set({defaultValue: 'he@[x]llo', Mark: () => null, options: [{markup: '@[__value__]'}]})
+		store.props.set({
+			separator: null,
+			defaultValue: 'he@[x]llo',
+			Mark: () => null,
+			options: [{markup: '@[__value__]'}],
+		})
 		store.host.container(document.createElement('div'))
 		const rows = store.tokens.nodes()
 
@@ -614,11 +616,18 @@ describe('row identity across the structural verbs', () => {
 })
 
 describe('moveTo', () => {
+	/** The root rows, narrowed: `moveTo` is a ROW verb, and `nodes()` answers `TreeNode`. */
+	const rootRows = (store: Store): RowNode[] =>
+		store.tokens.nodes().filter((node): node is RowNode => node.kind === 'row')
+
+	/** A root-level placement, which is every placement a flat document has. */
+	const atRoot = (index: number): RowPlacement => ({parent: null, index})
+
 	it('carries the row identity to its new index', () => {
 		const store = rowSetup('alpha\n\nbeta\n\ngamma\n\n')
 		const [a, b, c, tail] = store.tokens.nodes().map(node => node.id)
 
-		expect(store.tokens.nodes()[0].moveTo(2)).toBe(true)
+		expect(rootRows(store)[0].moveTo(atRoot(2))).toBe(true)
 
 		expect(store.tokens.value()).toBe('beta\n\ngamma\n\nalpha\n\n')
 		expect(store.tokens.nodes().map(node => node.id)).toEqual([b, c, a, tail])
@@ -631,7 +640,7 @@ describe('moveTo', () => {
 		const store = rowSetup('First\n\nFirst\n\nSecond\n\n')
 		const [a, b, c, tail] = store.tokens.nodes().map(node => node.id)
 
-		expect(store.tokens.nodes()[0].moveTo(1)).toBe(true)
+		expect(rootRows(store)[0].moveTo(atRoot(1))).toBe(true)
 
 		expect(store.tokens.value()).toBe('First\n\nFirst\n\nSecond\n\n')
 		expect(store.tokens.nodes().map(node => node.id)).toEqual([b, a, c, tail])
@@ -649,20 +658,19 @@ describe('moveTo', () => {
 		watch(store.tokens.committed, () => committed++)
 		watch(store.tokens.bound, () => bound++)
 
-		expect(store.tokens.nodes()[0].moveTo(1)).toBe(true)
+		expect(rootRows(store)[0].moveTo(atRoot(1))).toBe(true)
 
 		expect([committed, bound]).toEqual([1, 1])
 	})
 
 	it('keeps the selection anchored to the character it was on', () => {
 		const store = rowSetup('alpha\n\nbeta\n\n')
-		const first = store.tokens.nodes()[0]
-		if (first.kind !== 'row') throw new Error('expected a row')
+		const first = rootRows(store)[0]
 		const slot = first.children()[0]
 		if (slot.kind !== 'text') throw new Error('expected a row text child')
 		store.tokens.selection.select({node: slot, offset: 2})
 
-		expect(first.moveTo(1)).toBe(true)
+		expect(first.moveTo(atRoot(1))).toBe(true)
 
 		// The anchor is node-relative and the node travelled, so the caret is still inside
 		// 'alpha' at 2 — now at a different document offset.
@@ -681,9 +689,10 @@ describe('moveTo', () => {
 		const before = store.tokens.nodes()
 		expect(before.map(node => node.kind)).toEqual(['row', 'row', 'row'])
 
-		expect(before[2].moveTo(0)).toBe(true)
+		expect(rootRows(store)[2].moveTo(atRoot(0))).toBe(true)
 
-		// movePlan re-emits the span separator-normalized, so no pair of rows fuses.
+		// The join puts one separator between every adjacent pair and none after the last, so no
+		// pair of rows fuses and the row landing document-final drops the one it arrived with.
 		expect(store.tokens.value()).toBe('gamma\n\nalpha\n\nbeta')
 		const after = store.tokens.nodes()
 		expect(after[0]).toBe(before[2])
@@ -691,28 +700,24 @@ describe('moveTo', () => {
 		expect(after[2]).toBe(before[1])
 	})
 
-	it('refuses a no-op, an out-of-range index, a non-root and read-only', () => {
+	it('refuses a no-op, an out-of-range index and read-only', () => {
 		const store = rowSetup('alpha\n\nbeta\n\n')
-		const rows = store.tokens.nodes()
-		const first = rows[0]
-		if (first.kind !== 'row') throw new Error('expected a row')
+		const first = rootRows(store)[0]
 
-		expect(first.moveTo(0)).toBe(false)
-		expect(first.moveTo(3)).toBe(false)
-		expect(first.moveTo(-1)).toBe(false)
-		// A row child is not a root, so `indexOf` answers -1 — the liveness check and the
-		// index in one read.
-		expect(first.children()[0].moveTo(1)).toBe(false)
+		expect(first.moveTo(atRoot(0))).toBe(false)
+		// Three root rows, so the moved one has two siblings and index 3 is past the append slot.
+		expect(first.moveTo(atRoot(3))).toBe(false)
+		expect(first.moveTo(atRoot(-1))).toBe(false)
 		expect(store.tokens.value()).toBe('alpha\n\nbeta\n\n')
 
 		store.props.set({
 			defaultValue: 'alpha\n\nbeta\n\n',
-			layout: 'block',
+			separator: '\n\n',
 			readOnly: true,
 			Mark: () => null,
 			options: [],
 		})
-		expect(store.tokens.nodes()[0].moveTo(1)).toBe(false)
+		expect(rootRows(store)[0].moveTo(atRoot(1))).toBe(false)
 	})
 })
 describe('entering a fresh row', () => {
@@ -723,7 +728,12 @@ describe('entering a fresh row', () => {
 	 */
 	function headingSetup(value: string) {
 		const store = new Store()
-		store.props.set({defaultValue: value, layout: 'block', Mark: () => null, options: [{markup: '# __slot__'}]})
+		store.props.set({
+			defaultValue: value,
+			separator: '\n\n',
+			Mark: () => null,
+			options: [{markup: '# __slot__', row: {Component: 'h1'}}],
+		})
 		store.host.container(document.createElement('div'))
 		return store
 	}
@@ -739,11 +749,51 @@ describe('entering a fresh row', () => {
 		expect(selectionRange(store)).toEqual({start: 7, end: 7})
 	})
 
-	it('lands inside the slot of a whole-value replacement too', () => {
-		const store = headingSetup('# a\n\n')
+	/**
+	 * The SAME caret rule in a document that parses no rows at all, which is what `separator: null`
+	 * is: the sequence an insert names a position in falls back to the ROOTS, and what follows a
+	 * root is the next root rather than the row after its subtree. Both arms are P4's, both are
+	 * load-bearing, and nothing else in the suite calls an insert verb on a non-row document —
+	 * deleting the fallback leaves the caret unmoved and no other spec notices.
+	 */
+	it('names the position after a MARK when the document has no rows', () => {
+		const {store} = setup('a@[m]b')
 
-		expect(store.tokens.setValue('# \n\n', 0)).toBe(true)
+		expect(store.tokens.nodes()[1].insertAfter('@[n]')).toBe(true)
 
-		expect(selectionRange(store)).toEqual({start: 2, end: 2})
+		expect(store.tokens.value()).toBe('a@[m]@[n]b')
+		expect(selectionRange(store)).toEqual({start: 5, end: 5})
+	})
+
+	it('names it for a duplicate too', () => {
+		const {store} = setup('a@[m]b')
+
+		expect(store.tokens.nodes()[1].duplicate()).toBe(true)
+
+		expect(store.tokens.value()).toBe('a@[m]@[m]b')
+		expect(selectionRange(store)).toEqual({start: 5, end: 5})
+	})
+
+	/**
+	 * THE CARET IS AN ANCHOR AND NOT AN OFFSET, which is the whole of `#enterRow`'s zero fork and
+	 * the one thing an offset assertion cannot state. `entryAnchor` names the position INSIDE the
+	 * mark the insert landed on; the offset arm beside it names `position.start`, which is the text
+	 * before the mark's opener. In a document that parses no rows those two are the same NUMBER —
+	 * the mark's own start — so every existing case here stayed green with the fork deleted, and
+	 * only the next character typed says which position the caret actually held.
+	 *
+	 * A SLOT markup, for the reason `headingSetup` above spells out at the row: a `__value__` mark
+	 * has no interior position at all, so both arms answer the same anchor there and the case
+	 * cannot express its own claim.
+	 */
+	it('names a position INSIDE the mark an insert lands on, not one before its opener', () => {
+		const {store} = setup('a@[m]b', '@[__slot__]')
+
+		expect(store.tokens.nodes()[0].insertAfter('Q')).toBe(true)
+
+		const anchors = store.tokens.selection.anchors()
+		if (!anchors) throw new Error('the insert named no caret')
+		store.edit.replace(anchors.anchor, anchors.head, 'X')
+		expect(store.tokens.value()).toBe('aQ@[Xm]b')
 	})
 })

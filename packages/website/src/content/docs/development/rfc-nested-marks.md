@@ -6,9 +6,9 @@ description: Historical nested-mark design notes and current implementation stat
 This RFC is historical. Nested marks now use the core editor engine primitives implemented in `@markput/core`:
 
 - `__slot__` descriptors parse nested token trees.
-- `ParseController` owns token paths, token addresses, and parse generations.
+- `TokenModel` owns the token parse, the live node map, and the one anchor space.
 - React and Vue render adapter-owned token shells and slot roots.
-- `DomController` registers those structures and maps DOM selections to raw value ranges.
+- The same model registers those structures and maps DOM selections to node anchors.
 - `useMark()` returns the live `MarkNode`, which carries the commands.
 - `useMarkInfo()` returns structural metadata (`depth`, `hasNestedMarks`).
 

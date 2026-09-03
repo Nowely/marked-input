@@ -1,0 +1,117 @@
+/* What a ROW KIND needs and the theme does not already carry.
+ *
+ * Every class here reads a theme token — no hex, no `rgb()`, no colour keyword, exactly as
+ * `../theme/README.md` requires of a component class. A kind that only needs a theme class wears
+ * it directly, so nothing below is an alias.
+ *
+ * Two of these exist because a row is recognised by its OWN first bytes and can therefore be told
+ * nothing about its neighbours: `.numbered` restarts its count at the first item of a run, and
+ * `.paragraph` shows its placeholder only while the row is empty. Both are readings of the
+ * painted document, taken in CSS, because no component can ask them.
+ */
+
+/* An empty row is one whose own text surface holds no text — `:empty` on the FIRST span the
+   adapter consigns. `:first-child` is load-bearing: a row's element also carries the adapter's
+   child-rows host, an empty `display: contents` span that is there whether or not the row has
+   children, so a bare `> span:empty` matched every paragraph and kept the placeholder over the
+   text the user had just typed. The theme's `.block`, which the row also wears, is the containing
+   block the absolutely positioned placeholder needs. */
+.paragraph:has(> span:first-child:empty)::before {
+	position: absolute;
+	color: var(--notion-text-placeholder);
+	content: attr(data-placeholder);
+	pointer-events: none;
+	user-select: none;
+}
+
+/*
+ * The ordinal, counted by CSS. This is the WORKED EXAMPLE both adapters' `RowProps.depth` points
+ * at: a row is told its depth and never its place among its siblings (ADR-0013), so a run numbers
+ * itself. It was written this way before the prop was removed, for its own reason — a position
+ * among siblings of EVERY kind is not an ordinal, and the third item of a list that starts after
+ * two paragraphs would have read "5.".
+ *
+ * The reset sits on the FIRST item of a run — `:not(.numbered + .numbered)` — and a counter's
+ * scope covers the element that reset it and its following siblings, so each run counts from one
+ * without anything outside the run being asked.
+ */
+.numbered:not(.numbered + .numbered) {
+	counter-reset: notion-ordinal 0;
+}
+
+/* Furniture: it never holds editable text, which is what allows generated content here. */
+.ordinal {
+	display: inline-block;
+	width: var(--notion-indent-step);
+	margin-left: calc(var(--notion-indent-step) * -1);
+	color: var(--notion-text-secondary);
+	counter-increment: notion-ordinal;
+	user-select: none;
+}
+
+.ordinal::before {
+	content: counter(notion-ordinal) '.';
+}
+
+.todoBox {
+	width: 14px;
+	height: 14px;
+	margin-right: var(--notion-space-2);
+	margin-left: calc(var(--notion-space-2) - var(--notion-indent-step));
+	accent-color: var(--notion-accent-strong);
+	vertical-align: -0.1em;
+	cursor: pointer;
+}
+
+.todoDone {
+	color: var(--notion-text-muted);
+	text-decoration: line-through;
+}
+
+/*
+ * THE DATABASE LINE, as a grid rather than as `display: table-row`.
+ *
+ * The same column template on every line is what aligns a run of them, and no wrapper element
+ * exists in the tree to hang a real table off. A `display: table-row` line would align too — CSS
+ * wraps consecutive table-row siblings in one anonymous table box — and either is available: a
+ * caret the browser's own hit test puts inside a row is the caret the editor keeps and edits at,
+ * whatever the row's display, which `storybook/src/pages/Base/caret.spec.ts` pins per display by
+ * clicking. What a display DOES change is where a click lands — a shrink-to-fit box puts one
+ * mid-text where a stretched box puts it at the end — and that is a fact about the box, not about
+ * the caret.
+ *
+ * The template is the SHOWCASE's, the way its chip tones are: five columns, the first one wide.
+ */
+.tableLine {
+	display: grid;
+	grid-template-columns: 2.4fr 1.1fr 1fr 1fr 1fr;
+	border-bottom: 1px solid var(--notion-border-subtle);
+	margin: 0;
+	font-size: var(--notion-font-size-small);
+	white-space: normal;
+}
+
+.tableHeadLine {
+	background: var(--notion-surface-table-header);
+}
+
+.tableCell {
+	padding: var(--notion-space-3) var(--notion-space-4);
+	color: var(--notion-text-primary);
+	text-align: left;
+}
+
+.tableHeadCell {
+	color: var(--notion-text-muted);
+	font-size: var(--notion-font-size-tiny);
+	font-weight: var(--notion-font-weight-medium);
+}
+
+/* The fence's language picker, which wears the theme's label and drops the control chrome. */
+.codeLanguage {
+	border: 0;
+	background: none;
+	color: var(--notion-text-muted);
+	font-family: var(--notion-font-family-sans);
+	cursor: pointer;
+}

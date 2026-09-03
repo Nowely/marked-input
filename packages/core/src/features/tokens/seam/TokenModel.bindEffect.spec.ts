@@ -22,7 +22,7 @@ import {anchorsAt, consignRendered} from '../__testing__/mountFixtures'
  */
 function mounted(value = 'he@[x]llo') {
 	const store = new Store()
-	store.props.set({defaultValue: value, options: [{markup: '@[__value__]'}], Mark: () => null})
+	store.props.set({separator: null, defaultValue: value, options: [{markup: '@[__value__]'}], Mark: () => null})
 	const container = document.createElement('div')
 	const text1 = document.createElement('span')
 	const mark = document.createElement('span')

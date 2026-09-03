@@ -1,8 +1,9 @@
 import type {CoreOption, Slot} from '../../shared/types'
 import type {TreeNode} from '../tokens'
+import type {RowRender} from './resolveSlot'
 
-export interface MarkSlot {
-	(): (node: TreeNode) => readonly [Slot, Record<string, unknown>]
+export interface NodeSlot {
+	(): (node: TreeNode, row?: RowRender) => readonly [Slot, Record<string, unknown>]
 }
 
 export interface OverlaySlot {

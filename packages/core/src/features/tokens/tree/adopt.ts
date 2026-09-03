@@ -1,10 +1,10 @@
 import {batch, untracked} from '../../../shared/signals'
 import {Parser} from '../parser/Parser'
-import type {MarkToken, RowToken, TextToken, Token} from '../parser/types'
+import type {MarkToken, RowConfig, RowToken, TextToken, Token} from '../parser/types'
 import {createTextToken} from '../parser/utils/createTextToken'
 import {anchorAt, offsetOfAnchor} from './anchors'
+import {preorderRows, tokenHasCells} from './rows'
 import type {TokenTree} from './tree'
-import {rowTokenTerminator} from './tree'
 import type {
 	Anchors,
 	MarkNode,
@@ -27,13 +27,13 @@ export function parseValue(parser: Parser | undefined, value: string): Token[] {
 }
 
 /**
- * Block layout's parse: rows exist with or without markups — a paragraph-only
- * block editor is legal (issue 08), so a missing parser falls back to a bare
+ * The row parse: rows exist with or without markups — a paragraph-only
+ * document is legal (issue 08), so a missing parser falls back to a bare
  * one that finds no marks and still splits rows.
  */
 const bareParser = new Parser([])
-export function parseRowsValue(parser: Parser | undefined, value: string, separator: string): RowToken[] {
-	return (parser ?? bareParser).parseRows(value, separator)
+export function parseRowsValue(parser: Parser | undefined, value: string, config: RowConfig): RowToken[] {
+	return (parser ?? bareParser).parseRows(value, config)
 }
 
 /**
@@ -65,19 +65,79 @@ export function adopt(
 			head: offsetOfAnchor(prev, selectionBefore.head),
 		}
 
-		const out: TreeNode[] = []
-
 		/**
-		 * Same-index pairing over one sibling list (spec §4.2 step 3). Pairing on the
-		 * descriptor is not decoration: `descriptor` is readonly, so adopting across
-		 * descriptors would leave a node whose markup disagrees with the parse and
-		 * `snapshot` would re-annotate with the old one, breaking output equivalence.
+		 * ONE SIBLING LIST, at any depth: the nodes entirely before the window, the nodes entirely
+		 * after it, and index pairing for what is left between them.
+		 *
+		 * The two bounds are load-bearing rather than an economy. Content that repeats with the
+		 * edited span's own period keeps comparing equal past the edit, so equality alone walks
+		 * THROUGH the changed nodes and pushes the removals onto untouched ones instead — deleting
+		 * the middle of `'@[a](m)'` ×3 removed the third mark, and the mirrored walk deleting
+		 * `{1,8}` killed the first instead of the second (both in `adopt.spec.ts`).
+		 *
+		 * It runs at EVERY depth, which is what the root list used to have to itself. A slot's or a
+		 * row's children were paired by index alone, so an insertion in the middle of one re-labelled
+		 * every sibling after it: typing a cell delimiter into column 2 of a five-column row handed
+		 * columns 3–5 the node objects of the columns before them, and everything a consumer keys by
+		 * node identity moved with them.
 		 */
 		function adoptSiblings(candidates: readonly TreeNode[], tokens: readonly (Token | RowToken)[]): TreeNode[] {
+			// A verified permutation REPLACES the walks rather than composing with them: every
+			// hinted pair is already proven byte-equal under its own shift, so a positional bound
+			// has nothing left to claim.
+			if (rowPairs) return pairByIndex(candidates, tokens)
+
+			let head = 0
+			while (
+				head < candidates.length &&
+				head < tokens.length &&
+				candidates[head].position.end <= window.start &&
+				snapshotNodeEquals(candidates[head], tokens[head], 0)
+			) {
+				head++
+			}
+
+			let candidateTail = candidates.length - 1
+			let tokenTail = tokens.length - 1
+			const tail: TreeNode[] = []
+			while (
+				candidateTail >= head &&
+				tokenTail >= head &&
+				candidates[candidateTail].position.start >= window.end &&
+				snapshotNodeEquals(candidates[candidateTail], tokens[tokenTail], delta)
+			) {
+				if (delta !== 0) shiftPositions(candidates[candidateTail], delta)
+				tail.unshift(candidates[candidateTail])
+				candidateTail--
+				tokenTail--
+			}
+
+			return [
+				...candidates.slice(0, head),
+				...pairByIndex(candidates.slice(head, candidateTail + 1), tokens.slice(head, tokenTail + 1)),
+				...tail,
+			]
+		}
+
+		/**
+		 * Same-index pairing over one sibling list (spec §4.2 step 3), which is what the window
+		 * bounds above leave undecided: a merged or unrelated token landing at the same index
+		 * inherits the id, and §7.1 permits that because it gates identity only OUTSIDE the window.
+		 *
+		 * Pairing on the descriptor is not decoration: `descriptor` is readonly, so adopting across
+		 * descriptors would leave a node whose markup disagrees with the parse and `snapshot` would
+		 * re-annotate with the old one, breaking output equivalence.
+		 */
+		function pairByIndex(candidates: readonly TreeNode[], tokens: readonly (Token | RowToken)[]): TreeNode[] {
 			const result: TreeNode[] = []
 			for (let index = 0; index < tokens.length; index++) {
 				const token = tokens[index]
-				const candidate = index < candidates.length ? candidates[index] : undefined
+				// The KEYED lookup, beside the positional walk: a verified pairing names which
+				// previous row each parsed row continues, at any depth and in any order, so it
+				// overrides the index for a row token and leaves every other token to the walk.
+				const candidate =
+					(token.type === 'row' ? rowPairs?.get(token) : undefined) ??
+					(index < candidates.length ? candidates[index] : undefined)
 				if (candidate?.kind === 'text' && token.type === 'text') {
 					adoptText(candidate, token)
 					result.push(candidate)
@@ -89,9 +149,10 @@ export function adopt(
 					adoptMark(candidate, token)
 					result.push(candidate)
 				} else if (candidate?.kind === 'row' && token.type === 'row') {
-					// KIND match only: a row carries no descriptor, so any row candidate can
-					// adopt any row token — this is what keeps the row object (and the block
-					// state keyed on it) alive when its content changes shape.
+					// KIND match only, and deliberately NOT on the row's own kind: a row HAS a
+					// descriptor rather than being one, so any row candidate adopts any row
+					// token. That is what keeps the row object — and the row state keyed on
+					// it — alive across a retype (ADR-0007).
 					adoptRow(candidate, token)
 					result.push(candidate)
 				} else {
@@ -109,9 +170,13 @@ export function adopt(
 
 		function adoptRow(node: RowNode, token: RowToken): void {
 			adoptPosition(node, token)
-			node.terminator = rowTokenTerminator(token)
+			node.descriptor(token.descriptor)
+			node.meta(token.meta)
+			// A SIGNAL write: the projection emits the lead, so a re-indent that keeps every
+			// child object in place has nothing else to notify `value` with.
+			node.lead(token.lead)
 			const children = node.children()
-			const next = adoptSiblings(children, token.children)
+			const next = adoptSiblings(children, rowTokenChildren(token))
 			if (!sameNodes(next, children)) node.children(next)
 		}
 
@@ -139,79 +204,15 @@ export function adopt(
 			if (!sameNodes(next, children)) node.children(next)
 		}
 
-		// A verified permutation REPLACES the three walks rather than composing with them, and
-		// that is forced rather than chosen: all three pair by INDEX — prefix `prev[p]↔parsed[p]`,
-		// suffix decrementing both tails together, middle slicing both arrays from the same `p` —
-		// which is exactly why today's reorder outcome does not depend on the window at all. Once
-		// every hinted pair is proven byte-equal under its own shift, the walks have nothing left
-		// to claim.
-		const order = window.pairing && resolvePairing(prev, parsed, window.pairing)
+		const rowPairs = window.pairing && resolvePairing(prev, parsed, window.pairing)
 
+		let out: readonly TreeNode[] = prev
 		batch(() => {
-			if (order) {
-				// `adoptSiblings` over the PERMUTED candidates: it writes each node's new position
-				// from its token, recurses into slots, and — because a verified pair is equal in
-				// content — writes no signal.
-				out.push(...adoptSiblings(order, parsed))
-				if (!sameNodes(out, prev)) tree.roots(out)
-				return
-			}
-			// 1. Prefix: byte/position-equal AND entirely before the window. The window
-			// bound is load-bearing: content that repeats with the deleted span's own period
-			// keeps matching past the edit, so equality alone walks THROUGH the deleted nodes
-			// and pushes the removals onto nodes outside the window instead (deleting the
-			// middle of '@[a](m)' x3 removes the third mark — AC-3.1; see adopt.spec.ts).
-			let p = 0
-			while (
-				p < prev.length &&
-				p < parsed.length &&
-				prev[p].position.end <= window.start &&
-				snapshotNodeEquals(prev[p], parsed[p], 0)
-			) {
-				out.push(prev[p])
-				p++
-			}
-
-			// 2. Suffix: equal under +delta AND entirely after the window. Mirrored bound and
-			// mirrored consequence: on repeated content the walk otherwise runs THROUGH the
-			// edit, pairing prev[tail] with a token it did not come from, so the removal lands
-			// on the wrong repeat (deleting {1,8} of '@[a](m)' x3 kills the first mark instead
-			// of the second — see adopt.spec.ts). Same-index pairing below cannot undo that:
-			// what the suffix walk claims is out of the middle's reach.
-			let prevTail = prev.length - 1
-			let nextTail = parsed.length - 1
-			const suffix: TreeNode[] = []
-			while (
-				prevTail >= p &&
-				nextTail >= p &&
-				prev[prevTail].position.start >= window.end &&
-				snapshotNodeEquals(prev[prevTail], parsed[nextTail], delta)
-			) {
-				if (delta !== 0) shiftPositions(prev[prevTail], delta)
-				suffix.unshift(prev[prevTail])
-				prevTail--
-				nextTail--
-			}
-
-			// 3. Middle: same-index pairing, recursing into slots. At THIS level pairing is
-			// best-effort continuity — a merged or unrelated token landing at the same index
-			// inherits the id — and §7.1 permits that because it gates identity only OUTSIDE
-			// the window, which is exactly what the two walks already claimed.
-			//
-			// The slot recursion carries no such bound: §4.2's gap-derived slot-local window
-			// is deliberately NOT implemented in this phase, so in-slot pairing is unbounded
-			// index pairing. Measured cost — '#[@[a](m) @[a](m) tail]' with the FIRST inner
-			// mark deleted (window {2,9}) retains that mark and drops the SECOND one
-			// instead, taking ' tail' at [17,22] — a node entirely past window.end — out of
-			// the tree with it (pinned in adopt.spec.ts). Diffing this file against §4.2
-			// must read that as a scoped omission, not an oversight.
-			out.push(...adoptSiblings(prev.slice(p, prevTail + 1), parsed.slice(p, nextTail + 1)))
-
-			out.push(...suffix)
+			out = adoptSiblings(prev, parsed)
 			if (!sameNodes(out, prev)) tree.roots(out)
 		})
 
-		const moved = order !== undefined
+		const moved = rowPairs !== undefined
 		const map = (offset: number): NodeAnchor => resolveMappedAnchor(out, offset, window, delta)
 
 		// A verified move carries the selection through UNCHANGED, and coordinate-free: every
@@ -273,10 +274,16 @@ function snapshotNodeEquals(node: TreeNode, token: Token | RowToken, delta: numb
 	if (node.kind === 'text') return token.type === 'text' && node.text() === token.content
 	if (node.kind === 'row') {
 		if (token.type !== 'row') return false
-		if (node.terminator !== rowTokenTerminator(token)) return false
+		// The row's own kind, so a same-length retype can never be accepted by the prefix or
+		// suffix walk and keep the old markup in the projection. Same for the LEAD: re-indenting
+		// a row leaves its content untouched, so nothing else here would notice.
+		if (node.descriptor() !== token.descriptor) return false
+		if (node.meta() !== token.meta) return false
+		if (node.lead() !== token.lead) return false
 		const rowChildren = node.children()
-		if (rowChildren.length !== token.children.length) return false
-		return rowChildren.every((child, index) => snapshotNodeEquals(child, token.children[index], delta))
+		const tokenChildren = rowTokenChildren(token)
+		if (rowChildren.length !== tokenChildren.length) return false
+		return rowChildren.every((child, index) => snapshotNodeEquals(child, tokenChildren[index], delta))
 	}
 	if (token.type !== 'mark') return false
 	if (node.descriptor !== token.descriptor) return false
@@ -292,6 +299,11 @@ function snapshotNodeEquals(node: TreeNode, token: Token | RowToken, delta: numb
 	return children.every((child, index) => snapshotNodeEquals(child, token.children[index], delta))
 }
 
+/** A row token's children as the tree holds them: INLINE first, then the child rows. */
+function rowTokenChildren(token: RowToken): (Token | RowToken)[] {
+	return [...token.children, ...token.rows]
+}
+
 /** Recursive position shift for retained suffix nodes (plain field writes). */
 function shiftPositions(node: TreeNode, delta: number): void {
 	node.position.start += delta
@@ -305,16 +317,20 @@ function shiftPositions(node: TreeNode, delta: number): void {
 }
 
 /**
- * A {@link Pairing} resolved against the parse, or `undefined` — in which case adoption runs
- * its ordinary walks and the hint changes nothing. FAIL CLOSED by construction: the caller can
- * only ever confirm a permutation the string already permits, never invent a change it does
- * not have.
+ * A {@link Pairing} resolved against the parse, as the row token → row node map adoption looks
+ * every row up in — or `undefined`, in which case adoption runs its ordinary walks and the hint
+ * changes nothing. FAIL CLOSED by construction: the caller can only ever confirm a permutation
+ * the string already permits, never invent a change it does not have.
+ *
+ * PRE-ORDER ROWS on both sides, not roots. A row's subtree is contiguous in document order, so
+ * pre-order is the one enumeration a move, a re-parent and a re-indent all speak; a root index
+ * stops naming a row the moment rows nest.
  *
  * Three gates, and the BIJECTION one is not implied by the others. Counter-example, on the very
  * shape this channel exists for: two byte-identical rows `A@[0,7]`, `B@[7,14]` with
  * `pairing = [0, 0]`. Both pairs pass the equality check — pair 0 at delta 0, pair 1 at delta
  * +7, same content — so a range-only gate accepts it. Adoption would then adopt the SAME node
- * object into both root slots: `B` leaves the tree silently while `A`'s id appears twice, so
+ * object into both row slots: `B` leaves the tree silently while `A`'s id appears twice, so
  * every consumer keyed by node identity is corrupted.
  *
  * Equality is checked under EACH PAIR'S OWN delta rather than one window delta: in a
@@ -325,37 +341,60 @@ function resolvePairing(
 	prev: readonly TreeNode[],
 	parsed: readonly (Token | RowToken)[],
 	pairing: Pairing
-): readonly TreeNode[] | undefined {
-	if (pairing.length !== prev.length || pairing.length !== parsed.length) return undefined
+): Map<RowToken, RowNode> | undefined {
+	const rows = preorderRows(prev).map(({row}) => row)
+	const tokens = preorderRowTokens(parsed)
+	if (pairing.length !== rows.length || pairing.length !== tokens.length) return undefined
 
 	const claimed = new Set<number>()
-	const order: TreeNode[] = []
+	const pairs = new Map<RowToken, RowNode>()
 	for (const [index, previous] of pairing.entries()) {
-		if (!Number.isInteger(previous) || previous < 0 || previous >= prev.length) return undefined
+		if (!Number.isInteger(previous) || previous < 0 || previous >= rows.length) return undefined
 		if (claimed.has(previous)) return undefined
 		claimed.add(previous)
 
-		const node = prev[previous]
-		const token = parsed[index]
+		const node = rows[previous]
+		const token = tokens[index]
 		if (!pairEquals(node, token)) return undefined
-		order.push(node)
+		pairs.set(token, node)
 	}
-	return order
+	return pairs
+}
+
+/** The parse's rows in the same pre-order the tree's {@link preorderRows} walks — carved rows excluded on both sides. */
+function preorderRowTokens(tokens: readonly (Token | RowToken)[]): RowToken[] {
+	const out: RowToken[] = []
+	for (const token of tokens) {
+		if (token.type !== 'row') continue
+		out.push(token)
+		if (!tokenHasCells(token)) out.push(...preorderRowTokens(token.rows))
+	}
+	return out
 }
 
 /**
- * The pairing gate's equality — {@link snapshotNodeEquals} under the pair's own delta,
- * except for a ROW pair: a permutation legally flips `terminated` on the rows entering
- * and leaving the document-final position, so a row pair matches on CHILDREN alone and
- * `adoptRow` writes the new terminator. Strict equality here silently rejected the
- * pairing and dropped identity to index pairing — the exact ADR-0007 failure mode.
+ * The pairing gate's equality — {@link snapshotNodeEquals} under the pair's own delta, except
+ * for a ROW pair, which is compared on its kind, its meta and its INLINE children under the
+ * pair's own CONTENT delta.
+ *
+ * The row arm is load-bearing rather than lenient, and for TWO reasons now. A permutation moves
+ * which row sits document-final, and only that row carries no separator, so the rows entering
+ * and leaving that position change SPAN LENGTH while their content is untouched. And a
+ * re-indent changes a row's own start delta by zero while its children's is the indent's
+ * length, so a position-delta comparison fails every pair and identity degrades to index
+ * pairing — the exact ADR-0007 failure mode, measured. Comparing the children under the delta
+ * between the two BODIES is the reading that survives a row's structural bytes changing size.
  */
 function pairEquals(node: TreeNode, token: Token | RowToken): boolean {
-	const delta = token.position.start - node.position.start
 	if (node.kind === 'row' && token.type === 'row') {
-		const children = node.children()
+		if (node.descriptor() !== token.descriptor) return false
+		if (node.meta() !== token.meta) return false
+		// The INLINE children only, never `children()`: dragging a paired child row into this
+		// comparison would make a pair's verdict depend on rows the pairing itself claims.
+		const delta = token.slot.start - node.slotRange().start
+		const children = node.inline()
 		if (children.length !== token.children.length) return false
 		return children.every((child, index) => snapshotNodeEquals(child, token.children[index], delta))
 	}
-	return snapshotNodeEquals(node, token, delta)
+	return snapshotNodeEquals(node, token, token.position.start - node.position.start)
 }

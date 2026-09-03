@@ -71,23 +71,23 @@ function mountNestedSlot({extra = false, control = true} = {}) {
 }
 
 /**
- * Block layout: mark "one\n\n" [0,5] with child text "one" [0,3], mark "two\n\n" [5,10] with
+ * With rows: mark "one\n\n" [0,5] with child text "one" [0,3], mark "two\n\n" [5,10] with
  * child text "two" [5,8]. One row div per mark, the mark element holding one text surface.
  *
  * The row and the token element are DIFFERENT elements of the same token and are consigned
- * separately, which is how the adapters register them (`Block` consigns the row, `Token` its own
+ * separately, which is how the adapters register them (`Row` consigns the row, `Token` its own
  * element) and the only way a handle gets a `rowElement`. Local rather than the shared
- * `mountBlock` because `consignRendered` knows only about token elements: it files the row
+ * `mountRowDoc` because `consignRendered` knows only about token elements: it files the row
  * wrapper as the mark's element, so no row is ever registered and the mark's element becomes its
  * child's text surface.
  *
- * `grip` puts a registered control BEFORE the token inside the row. The block controls no longer
- * renders there — it is one layer beside the rows — but a consumer's own `slots.block` may still
+ * `grip` puts a registered control BEFORE the token inside the row. The row controls no longer
+ * renders there — it is one layer beside the rows — but a consumer's own `slots.paragraph` may still
  * put a control inside a row, and this is the shape that asks whether a boundary can escape it.
  */
-function mountBlockRows({grip = false} = {}) {
+function mountRows({grip = false} = {}) {
 	const store = enableStructuralStore('one\n\ntwo\n\n', {
-		layout: 'block',
+		separator: '\n\n',
 		options: [],
 	})
 	const container = document.createElement('div')
@@ -125,10 +125,10 @@ describe('anchorFor', () => {
 		expect(store.tokens.anchorFor(orphan, 0)).toBeUndefined()
 	})
 
-	it('anchors an empty block document to its single empty row', () => {
-		// Rootless documents no longer exist (issue 08): an empty block value IS one
+	it('anchors an empty row document to its single empty row', () => {
+		// Rootless documents no longer exist (issue 08): an empty value with rows IS one
 		// empty unterminated row, and the container boundary resolves to it.
-		const {store, container} = mountValue('', {layout: 'block'})
+		const {store, container} = mountValue('', {separator: '\n\n'})
 		expect(store.tokens.anchorFor(container, 0)).toEqual({before: store.tokens.nodes()[0]})
 	})
 
@@ -413,7 +413,7 @@ describe('anchorFor', () => {
 	})
 
 	it('anchors a row boundary to its owner by side', () => {
-		const {store, rows} = mountBlockRows()
+		const {store, rows} = mountRows()
 		const second = store.tokens.nodes()[1]
 		expect(store.tokens.anchorFor(rows[1], 0)).toEqual({before: second})
 		expect(store.tokens.anchorFor(rows[1], 1)).toEqual({after: second})
@@ -425,9 +425,9 @@ describe('anchorFor', () => {
 		// and each of those has its own arm above. What is left is a node under a ROW but
 		// outside that row's token element. Once a row was pairing-relevant that took a
 		// contrived shape; now nothing pairs a row's children with anything, so it is the
-		// ordinary case — the drop indicators, grip and menu the `Block` renderers put in
+		// ordinary case — the drop indicators, grip and menu the `Row` renderers put in
 		// every row all land here, and the bare Text node below stands in for them.
-		const {store, rows} = mountBlockRows()
+		const {store, rows} = mountRows()
 		const stray = rows[1].appendChild(document.createTextNode(' '))
 
 		expect(store.tokens.handleAt(stray)).toBe(store.tokens.handle(store.tokens.nodes()[1].id))
@@ -435,8 +435,8 @@ describe('anchorFor', () => {
 	})
 })
 
-function mountStructuralBlockWithControl(value: string) {
-	const store = enableStructuralStore(value, {layout: 'block'})
+function mountStructuralRowWithControl(value: string) {
+	const store = enableStructuralStore(value, {separator: '\n\n'})
 	const container = document.createElement('div')
 	const row = document.createElement('div')
 	const control = document.createElement('button')
@@ -454,17 +454,17 @@ function mountStructuralBlockWithControl(value: string) {
 	}
 	const textNode = textSurface.firstChild
 	const controlText = control.firstChild
-	if (!(textNode instanceof Text)) throw new Error('Structural block text surface did not render a text node')
+	if (!(textNode instanceof Text)) throw new Error('Structural row text surface did not render a text node')
 	if (!(controlText instanceof Text)) throw new Error('Structural control did not render a text node')
 	return {store, container, row, control, controlText, textSurface, textNode}
 }
 
 /**
- * Block layout with a drag grip before each row's token — the shape the React and Vue
- * `Block` renderers produce (the drop indicator and the handle precede the token).
+ * A document with rows and a drag grip before each row's token — the shape the React and Vue
+ * `Row` renderers produce (the drop indicator and the handle precede the token).
  */
-function mountBlockWithGrip() {
-	return mountBlockRows({grip: true})
+function mountRowWithGrip() {
+	return mountRows({grip: true})
 }
 
 /**
@@ -512,7 +512,7 @@ describe('anchorFor across elements the tree does not own', () => {
 		// `[grip, token]`: the boundary before the token is index 1, and 2 — not 1 — is the
 		// first one past it. Reading `offset <= 0` as "before" made every real boundary in a
 		// gripped row answer the row's END.
-		const {store, rows} = mountBlockWithGrip()
+		const {store, rows} = mountRowWithGrip()
 		const first = store.tokens.nodes()[0]
 
 		expect(store.tokens.anchorFor(rows[0], 0)).toEqual({before: first})
@@ -524,7 +524,7 @@ describe('anchorFor across elements the tree does not own', () => {
 		// END-TO-END, and the regression the parent-coordinate write introduced: a mark row
 		// has no text surface, so `placeCaret(0)` lands on the ROW at the token's own index,
 		// which the raw-index read answered as "past the token".
-		const {store} = mountBlockWithGrip()
+		const {store} = mountRowWithGrip()
 		const first = store.tokens.nodes()[0]
 		const handle = store.tokens.handle(first.id)
 		if (!handle) throw new Error('expected a bound row handle')
@@ -581,8 +581,17 @@ describe('anchorFor across elements the tree does not own', () => {
 })
 
 describe('anchorFor across a control', () => {
-	it('returns undefined for selections crossing controls', () => {
-		const {store, container, textNode, controlText} = mountStructuralBlockWithControl('hello')
+	/**
+	 * A COLLAPSED caret inside a control root still declines, and that is the half kept
+	 * deliberately: a caret has no extent, so "which row did this land in" is a question about the
+	 * GESTURE — `TokenModel.#claimRow` answers it, and it is the only reading that can tell a row
+	 * the caret may enter from one it may not.
+	 *
+	 * The range below COLLAPSES: `controlText` precedes `textNode` in document order, so `setEnd`
+	 * before the start collapses to the end point, which is the boundary inside the control.
+	 */
+	it('returns undefined for a caret that lands inside a control', () => {
+		const {store, container, textNode, controlText} = mountStructuralRowWithControl('hello')
 		const selection = window.getSelection()!
 		const range = document.createRange()
 		range.setStart(textNode, 0)
@@ -590,8 +599,124 @@ describe('anchorFor across a control', () => {
 		selection.removeAllRanges()
 		selection.addRange(range)
 
-		// `locate` answers `'control'` for the end boundary, so the pair never forms.
+		expect(range.collapsed).toBe(true)
 		expect(store.tokens.domAnchors()).toBeUndefined()
 		container.remove()
+	})
+
+	/**
+	 * A RANGE EDGE ON FROZEN PRESENTATION NAMES ITS ROW'S ENTRY rather than declining, and the
+	 * refusal it replaces was not neutral: it failed the whole PAIR closed, and `SelectionDriver`'s
+	 * control arm then read the gesture as a landing and collapsed the caret into that row.
+	 *
+	 * MEASURED on the showcase, `'one⏎- [ ] todo item⏎> [!warning] boom'`: Chromium ends a
+	 * triple-click of the to-do at `(the callout's icon span, 0)` — the one neighbour of twelve
+	 * whose entry decoration is neither a row element nor a cell nor a text node. The selection was
+	 * discarded, the caret was claimed into the callout, and the two characters typed next landed
+	 * there: `'> [!warning] ZZboom'`, with the row the user had selected untouched.
+	 *
+	 * The ENTRY at BOTH ranged affinities, so the high edge stops BEFORE the row (its opener is
+	 * kept) and the low edge starts AT it. There is no near/far half to read: no offset inside
+	 * frozen presentation is nameable at all.
+	 */
+	it('answers a RANGE edge inside a control with the row it is painted in', () => {
+		const {store, rows} = mountTypedRows()
+		const dot = rows[1].firstChild!
+		const surface = rows[0].children[1].firstChild!
+		const selection = window.getSelection()!
+		const range = document.createRange()
+		range.setStart(surface, 0)
+		range.setEnd(dot, 0)
+		selection.removeAllRanges()
+		selection.addRange(range)
+
+		// The door, pinned rather than assumed: the dot the range ends on is a control root.
+		expect(store.tokens.handleAt(dot)).toBe('control')
+
+		const anchors = store.tokens.domAnchors()!
+		const roots = store.tokens.nodes()
+
+		// '- one\n- two': row 0's body starts at 2, row 1's ENTRY is 8 — past the separator and past
+		// the `'- '` opener, which is where the second row's own content begins.
+		expect(offsetOfAnchor(roots, anchors.anchor)).toBe(2)
+		expect(offsetOfAnchor(roots, anchors.head)).toBe(8)
+	})
+})
+/**
+ * A ROW ELEMENT IS ITS OWN INLINE HOST — `Row.tsx` and `Row.vue` both hand the same element to
+ * `consign` and to `children(id)` — so a boundary on it takes {@link fromHostAnchor}'s arm, with
+ * an empty child list because a row's inline children are not a MARK's. That is the shape this
+ * fixture reproduces: a typed row whose first DOM child is a registered control (the showcase's
+ * bullet dot, a to-do's box), which is what makes `(row, 0)` a boundary the browser can pick.
+ */
+function mountTypedRows() {
+	const store = enableStructuralStore('- one\n- two', {
+		separator: '\n',
+		options: [{markup: '- __slot__', row: {Component: 'li', indents: true}}],
+	})
+	const container = document.createElement('div')
+	document.body.append(container)
+	store.host.container(container)
+	const rows: HTMLElement[] = []
+	store.tokens.nodes().forEach(node => {
+		const row = document.createElement('div')
+		const dot = document.createElement('span')
+		row.append(dot)
+		store.tokens.control()(dot)
+		const surface = document.createElement('span')
+		row.append(surface)
+		container.append(row)
+		rows.push(row)
+		// Both registrations, as the adapters make them: the row IS its token element and its
+		// inline child-sequence host.
+		store.tokens.consign(node.id)(row)
+		store.tokens.children(node.id)(row)
+		if (node.kind === 'row' && node.children()[0]?.kind === 'text') {
+			store.tokens.consign(node.children()[0].id)(surface)
+		}
+	})
+	return {store, container, rows}
+}
+
+describe('anchorFor at a row element', () => {
+	afterEach(() => {
+		document.body.replaceChildren()
+	})
+
+	/**
+	 * THE ROW'S ENTRY, never `{before: row}`. A row's lead and its opener are structural bytes, so
+	 * `{before}` names the position AHEAD of them — outside the row a caret is visibly inside.
+	 *
+	 * The rule was already written for an edge CHILD of a rows host and was not asked of the OWNER,
+	 * where the empty child list sends the read to the fallback. Reachable from the keyboard:
+	 * Chromium answers a Home keypress in a row whose first inline box is a `contenteditable=false`
+	 * control with `(rowElement, 0)`, and the next character then landed before the row's own
+	 * markup — `'- the slash menu⏎⇥- dragging rows'` became `'- the slash menu⏎Y⇥- dragging rows'`,
+	 * one keystroke to lose both the kind and the nesting.
+	 */
+	it('answers a row element boundary at offset 0 with the row ENTRY', () => {
+		const {store, rows} = mountTypedRows()
+		const second = store.tokens.nodes()[1]
+
+		const anchor = store.tokens.anchorFor(rows[1], 0)
+
+		// The entry is past `'\n'` and past the `'- '` opener: offset 8 of '- one\n- two'.
+		expect(offsetOfAnchor(store.tokens.nodes(), anchor!)).toBe(8)
+		expect(anchor).not.toEqual({before: second})
+	})
+
+	/** The same boundary reached as a collapsed DOM caret, which is how a keystroke reaches it. */
+	it('reads the same through domAnchors, which is what an edit is addressed from', () => {
+		const {store, rows} = mountTypedRows()
+		const range = document.createRange()
+		range.setStart(rows[1], 0)
+		range.collapse(true)
+		const selection = window.getSelection()!
+		selection.removeAllRanges()
+		selection.addRange(range)
+
+		const anchors = store.tokens.domAnchors()!
+
+		expect(offsetOfAnchor(store.tokens.nodes(), anchors.anchor)).toBe(8)
 	})
 })

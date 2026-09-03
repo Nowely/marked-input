@@ -1,7 +1,7 @@
 .Container {
 	min-height: 1.4em;
 	/* The controls layer's containing block: it is `position: absolute; inset: 0` inside the
-	   container, and its origin is the container's PADDING box — where the 24px drag gutter
+	   container, and its origin is the container's PADDING box — where the 48px row gutter
 	   already lives. Always applied via `cx(styles.Container, …)`, so `slots.container` cannot
 	   drop it; a consumer inline `style={{position: 'static'}}` still would. */
 	position: relative;
@@ -40,17 +40,25 @@
 	mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill-rule='evenodd' clip-rule='evenodd' d='M7 5V4C7 3.17477 7.40255 2.43324 7.91789 1.91789C8.43324 1.40255 9.17477 1 10 1H14C14.8252 1 15.5668 1.40255 16.0821 1.91789C16.5975 2.43324 17 3.17477 17 4V5H21C21.5523 5 22 5.44772 22 6C22 6.55228 21.5523 7 21 7H20V20C20 20.8252 19.5975 21.5668 19.0821 22.0821C18.5668 22.5975 17.8252 23 17 23H7C6.17477 23 5.43324 22.5975 4.91789 22.0821C4.40255 21.5668 4 20.8252 4 20V7H3C2.44772 7 2 6.55228 2 6C2 5.44772 2.44772 5 3 5H7ZM9 4C9 3.82523 9.09745 3.56676 9.33211 3.33211C9.56676 3.09745 9.82523 3 10 3H14C14.1748 3 14.4332 3.09745 14.6679 3.33211C14.9025 3.56676 15 3.82523 15 4V5H9V4ZM6 7V20C6 20.1748 6.09745 20.4332 6.33211 20.6679C6.56676 20.9025 6.82523 21 7 21H17C17.1748 21 17.4332 20.9025 17.6679 20.6679C17.9025 20.4332 18 20.1748 18 20V7H6Z'/%3E%3C/svg%3E");
 }
 
+/* THE SHIPPED LOOK IS A DEFAULT, NOT A DECISION. Every colour a consumer can see is read through
+   a custom property whose fallback is what this file has always painted, so an editor nobody
+   themes looks exactly as it did — and an editor inside a dark page can be themed by declaring
+   these eight names on any ancestor, without overriding a CSS-module class whose hashed name is
+   not a contract.
+
+   The popups used to be white-on-light with no door at all, which read as browser chrome rather
+   than as part of the document wherever the page was not white. */
 .Popup {
 	position: fixed;
-	background: white;
-	border: 1px solid #ccc;
+	background: var(--markput-popup-background, white);
+	border: 1px solid var(--markput-popup-border, #ccc);
 	border-radius: 4px;
-	box-shadow: 0 3px 6px -2px rgba(0, 0, 0, 0.6);
+	box-shadow: var(--markput-popup-shadow, 0 3px 6px -2px rgba(0, 0, 0, 0.6));
 	z-index: 9999;
 	min-width: 100px;
 	width: fit-content;
 	font-size: 14px;
-	color: #000;
+	color: var(--markput-popup-text, #000);
 	padding: 4px;
 }
 
@@ -74,14 +82,15 @@
 
 .PopupItem:hover,
 .PopupItemActive {
-	background-color: #cce9ff;
-	color: #2589f5;
+	background-color: var(--markput-popup-item-background, #cce9ff);
+	color: var(--markput-popup-item-text, #2589f5);
 }
 
-.Block {
+.Row {
 	/* Kept after the controls left the row: markput positions nothing inside a row any more,
 	   but the rule is also a CONSUMER's containing block, and dropping it would silently
-	   re-parent their absolutely-positioned row content to the container. */
+	   re-parent their absolutely-positioned row content to the container. Also the containing
+	   block `.RowSelected`'s overlay needs. */
 	position: relative;
 	margin-left: 0;
 	transition: opacity 0.2s ease;
@@ -91,6 +100,64 @@
 	outline: none;
 }
 
+/* AN EMPTY ROW IS UNREACHABLE BY KEYBOARD WITHOUT THIS, and the rule it works around is the
+   PLATFORM's rather than this editor's: measured with no editor in the page at all, Chromium's own
+   vertical caret movement steps over a block that generates no LINE BOX, and an empty row's text
+   surface generates none. A blank line a user has just made with two Enters could be clicked into
+   but never arrowed into — with rows `one`, ``, `three`, ``, `# head`, ``, `six`, `end`, ArrowUp
+   visited 7, 6, 4, 2, 0.
+
+   A `<br>` is what a browser puts inside its OWN empty block, and it is the only DOM shape measured
+   to work; the same line box falls out of an empty inline-block WITH A HEIGHT, which costs no node
+   and no reading. `min-height` is load-bearing and measured: an empty inline-block at the line's own
+   height is still stepped over, and so are `::after` content, a ZWSP and `min-height` on the row.
+
+   THE SURFACE HAS TO STAY CHILDLESS FOR ANY OF THIS TO HOLD, which is a constraint on the caret
+   layer rather than on this file: a zero-length `Text` inside the box defeats the walk in BOTH
+   directions, measured with no editor in the page, though the box itself is unchanged at 0x16 and
+   `:empty` still matches. `findTextBoundary` therefore answers an empty surface with the surface
+   itself rather than appending one to it.
+
+   THE SELECTOR IS "THIS ROW PAINTS NOTHING BUT ITS OWN EMPTY TEXT", and every looser spelling was
+   measured wrong on the showcase's 75 rows:
+
+   - `> span:first-child:empty` alone matched a DIVIDER's own rule span and four bullets' dot spans
+     — furniture a consumer paints BEFORE the body — and turned the divider's 668x1 hairline into a
+     0x17 inline-block, destroying the kind.
+   - `:not([contenteditable])` is what excludes them, and it is an invariant rather than a
+     coincidence: a text surface is BARE by policy (`bind.ts`'s editable state), and frozen
+     furniture is `contenteditable="false"` because a consumer registered it.
+   - the last clause is the row's own shape: the surface is the last child, or the one right before
+     the adapter's child-rows host, which is itself last and empty. A row with painted content of
+     its own already has a line box and matches neither.
+
+   WHAT IT STILL DOES NOT REACH, flagged rather than forced: a kind whose component paints furniture
+   AHEAD of an empty body — the showcase's divider — keeps the platform's answer and is arrowed over.
+   The divider already pays for the CLICK by hand (its own comment: "a row with no line box is a row
+   the caret cannot stand on"); giving it the caret's line here would grow a shipped kind by a whole
+   line without its consumer asking. */
+.Row > span:first-child:empty:not([contenteditable]):is(:last-child, :has(+ span:last-child:empty)) {
+	display: inline-block;
+	min-height: 1em;
+}
+
+/* THE ROW SELECTION, PAINTED BY THE EDITOR. The browser's own highlight was the only thing that
+   said a block was selected, and a kind that paints its own backgrounds covers it: clicking one
+   board card selected all ELEVEN lines of the board, and the only thing on screen that changed was
+   a faint tint on three column headers — with Backspace one key away. An overlay says it for every
+   kind, frozen or not, because it does not depend on what the kind paints.
+
+   `::after` rather than a `background`, and that is the whole of why it is legible: a background
+   sits UNDER the consumer's own, which is exactly how the board hid it. */
+.RowSelected::after {
+	position: absolute;
+	inset: 0;
+	content: '';
+	pointer-events: none;
+	border-radius: 3px;
+	background: var(--markput-row-selected, rgb(35 131 226 / 28%));
+}
+
 /* ONE row-controls layer per editor, inside the container: it paints the grip, the drop
    indicator and the row menu at row boxes it measures. It is therefore a container child that
    is NOT a row.
@@ -98,8 +165,8 @@
    NO `z-index`, deliberately. It is the container's LAST child and it is positioned, so it
    already paints above every row; a `z-index` here would make it a stacking context and clamp
    the row menu's `.Popup { z-index: 9999 }` inside it, where the deleted per-row controls hung
-   off `.Block` (positioned, `z-index: auto`) and the popup competed at the page level. */
-.BlockControls {
+   off `.Row` (positioned, `z-index: auto`) and the popup competed at the page level. */
+.RowControls {
 	position: absolute;
 	inset: 0;
 	/* The layer must not eat the pointer; the grip and the menu turn it back on for themselves. */
@@ -108,15 +175,18 @@
 
 /* Painted by the controls layer, which supplies `top`/`height`/`left` from the row box it
    measured — `left` is the row's own left edge and the negative margin puts the band's right
-   edge on it, exactly where the deleted per-row panel's `left: -24px` sat. Anchoring to the
-   ROW and not to the layer's origin is what keeps the band off the text: core reserves the
-   24px gutter only for `draggable` block layout, and without it a band at the layer's origin
-   covers the first 24px of every hovered row and swallows the click that should place a
-   caret. */
+   edge on it. Anchoring to the ROW and not to the layer's origin is what keeps the band off the
+   text: core reserves the gutter only for `draggable` rows, and without it a band at the layer's
+   origin covers the start of every hovered row and swallows the click that should place a caret.
+
+   TWO CONTROLS WIDE — the insert button and the grip, 24px each — and the width here is the same
+   fact `SlotsFeature`'s `ROW_GUTTER_WIDTH` reserves as the container's `padding-left`. The two
+   must agree: a band wider than the reservation hangs outside the container, over whatever the
+   page has to its left. */
 .SidePanel {
 	position: absolute;
-	margin-left: -24px;
-	width: 24px;
+	margin-left: -48px;
+	width: 48px;
 	display: flex;
 	align-items: center;
 	opacity: 0;
@@ -146,7 +216,7 @@
 	align-items: center;
 	justify-content: center;
 	border-radius: 4px;
-	color: #9ca3af;
+	color: var(--markput-grip-color, #9ca3af);
 	background: none;
 	border: none;
 	padding: 0;
@@ -162,12 +232,53 @@
 	cursor: grabbing;
 }
 
+/* The gutter's other control: a fresh row under the one the pointer is on. A VARIANT of the grip
+   button rather than a second box — the adapters apply both classes, as they already do for
+   `.GripButtonDragging` — so the two share a band and differ only in the cursor, because this one
+   is a click and not a drag. */
+.GripButtonAdd {
+	cursor: pointer;
+}
+
+/* THE REFUSAL CHANNEL'S ONE PAINT — a gesture the editor took and answered with nothing, said at
+   the row it was refused at. Every rule behind it is correct; what was missing is that a correct
+   refusal and a hung editor look identical from the user's chair.
+
+   ONE FADE, not a flash: the tint is at full strength on the first frame and goes out, so the row
+   is never made to blink at a reader who asked the platform for less motion. It is the same
+   `::after`-shaped overlay `.RowSelected` paints for the same reason — a row's own background
+   would sit under whatever the consumer's kind paints — except that here it IS the element, laid
+   out by the controls layer at a measured box, because the layer is what re-mounts it: a class
+   toggled on a row cannot restart an animation the row is already carrying, so a second refused
+   press would say less than the first.
+
+   The colour is a custom property like every other colour in this file, so an editor inside a dark
+   page themes it without touching a hashed class name. */
+.RowRefused {
+	position: absolute;
+	pointer-events: none;
+	border-radius: 3px;
+	background: var(--markput-row-refused, rgb(235 87 87 / 26%));
+	opacity: 0;
+	animation: markput-refused 420ms ease-out;
+}
+
+@keyframes markput-refused {
+	from {
+		opacity: 1;
+	}
+
+	to {
+		opacity: 0;
+	}
+}
+
 /* `left`/`width` come from the controls layer, which measured the row this marks the edge of;
    the deleted per-row indicator spanned its own row with `left: 0; right: 0`. */
 .DropIndicator {
 	position: absolute;
 	height: 2px;
-	background-color: #3b82f6;
+	background-color: var(--markput-drop-indicator, #3b82f6);
 	border-radius: 1px;
 	pointer-events: none;
 	z-index: 10;

@@ -74,7 +74,7 @@ export function selectionRange(store: Store): {start: number; end: number} | und
  * own element children. It CANNOT follow a child-sequence host, because the registry that knows
  * about hosts is private to the model — and a fixture whose slot children live inside a host must
  * name them itself, or the first child is consigned the host and the per-Surface writer replaces
- * the host's contents with that child's text. `mountNested` and `mountBlock` below do exactly
+ * the host's contents with that child's text. `mountNested` and `mountRowDoc` below do exactly
  * that; so does any spec with a bespoke shape.
  */
 export function consignRendered(store: Store, container: HTMLElement): void {
@@ -97,7 +97,7 @@ export function consignRendered(store: Store, container: HTMLElement): void {
 /** A store seeded from props alone: a tree, no container, so nothing below is mounted. */
 export function enableStructuralStore(value: string, props: Parameters<Store['props']['set']>[0] = {}) {
 	const store = new Store()
-	store.props.set({defaultValue: value, ...props})
+	store.props.set({separator: null, defaultValue: value, ...props})
 	return store
 }
 
@@ -152,6 +152,7 @@ export function mountStructuralInlineMark(value = 'hello @[world]') {
 export function mountWithMark() {
 	const store = new Store()
 	store.props.set({
+		separator: null,
 		defaultValue: 'he@[x]llo',
 		options: [{markup: '@[__value__]'}],
 		Mark: () => null,
@@ -172,7 +173,7 @@ export function mountWithMark() {
  * Mounted fixture for an arbitrary value: one bare span per top-level token,
  * the shape `bind` expects an adapter to have rendered. Sibling of
  * {@link mountWithMark} for the cases that need a different value or props (a
- * rootless block document, a value with an astral char).
+ * rootless document with rows, a value with an astral char).
  *
  * The surfaces are appended AFTER `host.container` because their count comes
  * from the parse, which only runs once the container is set; binding happens at
@@ -180,7 +181,7 @@ export function mountWithMark() {
  */
 export function mountValue(value: string, props: Parameters<Store['props']['set']>[0] = {}) {
 	const store = new Store()
-	store.props.set({defaultValue: value, ...props})
+	store.props.set({separator: null, defaultValue: value, ...props})
 	const container = document.createElement('div')
 	document.body.append(container)
 	store.host.container(container)
@@ -206,6 +207,7 @@ export function mountValue(value: string, props: Parameters<Store['props']['set'
 export function mountNested() {
 	const store = new Store()
 	store.props.set({
+		separator: null,
 		defaultValue: '@[a @[b] c]',
 		options: [{markup: '@[__slot__]'}],
 		Mark: () => null,
@@ -238,19 +240,24 @@ export function mountNested() {
 }
 
 /**
- * Mounted block fixture (issue 08's row world): paragraph rows need no markup, so
+ * Mounted row fixture (issue 08's row world): paragraph rows need no markup, so
  * 'one\n\ntwo\n\n' parses to THREE RowNodes — "one\n\n" [0,5], "two\n\n" [5,10] and
  * the empty document-final row [10,10]. One row div per RowNode, consigned as the
- * row's own token element (the Block wrapper's role), holding one text surface per
+ * row's own token element (the `Row` component's role), holding one text surface per
  * row text child; the rows are returned because they are the only handle on the
  * row binding.
+ *
+ * The separator is SPELLED OUT rather than defaulted, and `props` overrides it: a case about
+ * the shipped `'\n'` default needs a row whose separator is one newline, and every case here
+ * needs one where a newline inside a row is not a boundary.
  */
-export function mountBlock() {
+export function mountRowDoc(props: Parameters<Store['props']['set']>[0] = {}) {
 	const store = new Store()
 	store.props.set({
 		defaultValue: 'one\n\ntwo\n\n',
-		layout: 'block',
+		separator: '\n\n',
 		options: [],
+		...props,
 	})
 	const container = document.createElement('div')
 	document.body.append(container)
@@ -265,5 +272,46 @@ export function mountBlock() {
 		store.tokens.consign(node.id)(row)
 		if (node.kind === 'row') store.tokens.consign(node.children()[0].id)(text)
 	})
+	return {store, container, rows}
+}
+
+/**
+ * {@link mountRowDoc} with NESTED rows: every row is painted inside its parent, off the parent's
+ * own `'rows'` child-sequence host — the shape both adapters paint. The default `'a\n\tb'` is one
+ * root with one child; `props` overrides the value and everything else, which is what the keymap
+ * cases need — one document per rule, at the depth the rule is about.
+ *
+ * Its own fixture rather than a flag on `mountRowDoc`: the row elements nest, so the flat
+ * one-div-per-root loop cannot express it.
+ */
+export function mountNestedRowDoc(props: Parameters<Store['props']['set']>[0] = {}) {
+	const store = new Store()
+	store.props.set({defaultValue: 'a\n\tb', separator: '\n', indent: '\t', options: [], ...props})
+	const container = document.createElement('div')
+	document.body.append(container)
+	store.host.container(container)
+
+	const paint = (row: TreeNode, parent: HTMLElement): HTMLElement => {
+		const element = document.createElement('div')
+		parent.append(element)
+		store.tokens.consign(row.id)(element)
+		store.tokens.children(row.id)(element)
+		if (row.kind !== 'row') return element
+		for (const child of row.inline()) {
+			const surface = document.createElement('span')
+			element.append(surface)
+			store.tokens.consign(child.id)(surface)
+		}
+		// The host goes in WHETHER OR NOT the row has children, which is what both adapters do and
+		// what `DomModel.nestingIsPainted` reads off a would-be parent.
+		const host = document.createElement('span')
+		host.style.display = 'contents'
+		element.append(host)
+		store.tokens.children(row.id, 'rows')(host)
+		for (const child of row.rows()) paint(child, host)
+		return element
+	}
+
+	const rows = store.tokens.nodes().map(node => paint(node, container))
 	return {store, container, rows}
 }

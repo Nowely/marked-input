@@ -1,12 +1,21 @@
 import {describe, it, expect, vi} from 'vitest'
 
+import {watch} from '../../shared/signals'
 import {Store} from '../../store/Store'
-import {anchorsAt, caretAt, selectionRange} from '../tokens/__testing__/mountFixtures'
+import type {EditRecord} from '../tokens'
+import {
+	anchorsAt,
+	caretAt,
+	enableStructuralStore,
+	mountInline,
+	mountStructuralInline,
+	selectionRange,
+} from '../tokens/__testing__/mountFixtures'
 
 describe('EditController', () => {
 	it('replaces value and places caret after replacement', () => {
 		const store = new Store()
-		store.props.set({defaultValue: 'hello world'})
+		store.props.set({separator: null, defaultValue: 'hello world'})
 		store.edit.replace(...anchorsAt(store, 6, 11), 'markput')
 
 		expect(store.tokens.value()).toBe('hello markput')
@@ -15,7 +24,7 @@ describe('EditController', () => {
 
 	it('places caret at range start when deleting', () => {
 		const store = new Store()
-		store.props.set({defaultValue: 'hello world'})
+		store.props.set({separator: null, defaultValue: 'hello world'})
 		store.edit.replace(...anchorsAt(store, 5, 11), '')
 
 		expect(store.tokens.value()).toBe('hello')
@@ -28,7 +37,7 @@ describe('EditController', () => {
 		// `MarkputHandle.replaceRange` already documented.
 		const store = new Store()
 		const onChange = vi.fn()
-		store.props.set({defaultValue: 'hello', onChange})
+		store.props.set({separator: null, defaultValue: 'hello', onChange})
 
 		store.edit.replace(...anchorsAt(store, 4, 2), 'x')
 
@@ -38,16 +47,22 @@ describe('EditController', () => {
 	})
 
 	it('does not move caret or change value when readOnly', () => {
-		const store = new Store()
+		// MOUNTED, with the DOM caret somewhere else on purpose: the gate brings the stored
+		// anchors up to DOM truth before it commits, so a refusal that ran the sync anyway would
+		// move the selection on an edit that never happened. Unmounted, the sync declines for
+		// want of a DOM and the case cannot tell the two apart.
 		const onChange = vi.fn()
-		store.props.set({defaultValue: 'hello', readOnly: true, onChange})
+		const store = enableStructuralStore('hello', {readOnly: true, onChange})
+		const {container, textNode} = mountInline(store)
 		caretAt(store, 1)
+		window.getSelection()?.collapse(textNode, 4)
 
 		store.edit.replace(...anchorsAt(store, 1, 4), 'i')
 
 		expect(onChange).not.toHaveBeenCalled()
 		expect(store.tokens.value()).toBe('hello')
 		expect(selectionRange(store)).toEqual({start: 1, end: 1})
+		container.remove()
 	})
 
 	it('emits without moving the caret in controlled mode — the echo repairs it', () => {
@@ -56,7 +71,7 @@ describe('EditController', () => {
 		// repaired once, at the echo's adoption, through selectionBefore + map.
 		const store = new Store()
 		const onChange = vi.fn()
-		store.props.set({value: 'hello', onChange})
+		store.props.set({separator: null, value: 'hello', onChange})
 		caretAt(store, 1)
 
 		store.edit.replace(...anchorsAt(store, 0, 5), 'world')
@@ -67,12 +82,12 @@ describe('EditController', () => {
 	})
 
 	it('moves no caret on a controlled setValue', () => {
-		// The D-e exemption went with `caretOffset`. Its callers were block row edits that
-		// wanted the caret inside a row of the RESULT, and they now say so directly through
-		// `tokens.setValue`'s `enterRoot`; the measurement that justified the exemption had gone
-		// stale, so nothing is left asking `setValue` to write a caret the echo will re-map.
+		// The D-e exemption went with `caretOffset`. Its callers were row edits that
+		// wanted the caret inside a row of the RESULT, and they address their own nodes now;
+		// the measurement that justified the exemption had gone stale, so nothing is left
+		// asking `setValue` to write a caret the echo will re-map.
 		const store = new Store()
-		store.props.set({value: 'hello', onChange: vi.fn()})
+		store.props.set({separator: null, value: 'hello', onChange: vi.fn()})
 		caretAt(store, 0)
 
 		store.edit.setValue('world')
@@ -82,7 +97,7 @@ describe('EditController', () => {
 
 	it('setValue replaces the whole value and lands the caret at its end', () => {
 		const store = new Store()
-		store.props.set({defaultValue: 'hello world'})
+		store.props.set({separator: null, defaultValue: 'hello world'})
 		store.edit.setValue('replaced')
 
 		expect(store.tokens.value()).toBe('replaced')
@@ -95,5 +110,25 @@ describe('EditController', () => {
 
 		expect(store.tokens.value()).toBe('first')
 		expect(selectionRange(store)).toEqual({start: 5, end: 5})
+	})
+
+	it('records the caret the DOM holds, not the reading a selectionchange has yet to deliver', () => {
+		// The gap is REAL and it is the browser's: `selectionchange` arrives on a task, so a
+		// caret that has moved since the last one leaves the stored anchors naming where it was.
+		// The edit itself is addressed from DOM truth — `beforeinput` names its own span — so
+		// the two readings disagree exactly here, and the record is what carries the difference
+		// forward: an undo goes back to the caret its edit was made from.
+		const {store, textNode, container} = mountStructuralInline('Undo me')
+		caretAt(store, 0)
+		window.getSelection()?.collapse(textNode, 4)
+
+		const records: EditRecord[] = []
+		const stop = watch(store.tokens.edits, record => records.push(record))
+		store.edit.replace(...anchorsAt(store, 4, 4), 'X')
+		stop()
+
+		expect(store.tokens.value()).toBe('UndoX me')
+		expect(records.at(-1)?.selectionBefore).toEqual({anchor: 4, head: 4})
+		container.remove()
 	})
 })

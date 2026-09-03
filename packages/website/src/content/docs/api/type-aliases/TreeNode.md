@@ -12,7 +12,7 @@ type TreeNode =
   | RowNode;
 ```
 
-Defined in: [core/src/features/tokens/tree/types.ts:49](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L49)
+Defined in: [core/src/features/tokens/tree/types.ts:84](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L84)
 
 One structure: the same objects flow through adoption and out of the public
 reads. ADOPTION IS THE ONLY WRITER, for every mutable member — the writable

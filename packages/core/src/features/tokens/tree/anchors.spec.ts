@@ -1,7 +1,7 @@
 import {describe, expect, it} from 'vitest'
 
 import {Parser} from '../parser/Parser'
-import {adjacentMark, anchorAt, anchorEquals, offsetOfAnchor, stepAnchor} from './anchors'
+import {adjacentMark, anchorAt, anchorEquals, offsetOfAnchor, slotWithout, stepAnchor} from './anchors'
 import {createTokenTree} from './tree'
 
 const parser = new Parser(['@[__value__]'])
@@ -52,10 +52,11 @@ describe('offsetOfAnchor', () => {
 describe('anchorAt', () => {
 	/**
 	 * THE invariant that leaves `anchorAt` one reading and no `side` parameter: a node's own
-	 * START is always covered by a text node, so the mark/row fallback can only answer for an
-	 * INTERIOR or an END, where no second reading exists. Both halves are the parser's:
-	 * `TreeBuilder.buildSinglePass` emits a text token immediately before every match at every
-	 * nesting level, and `RowBuilder.groupRows` opens a row's children with one.
+	 * START is covered by a text node, so the mark fallback can only answer for an INTERIOR or an
+	 * END, where no second reading exists. It is the parser's: `TreeBuilder.buildSinglePass`
+	 * emits a text token immediately before every match at every nesting level, and a row's body
+	 * is built by that same pass. A TYPED row is the one exception, and it has its own arm —
+	 * see `tree/rowNode.spec`.
 	 *
 	 * `Selection.selectAll`'s START seed is what rides it — it used to ask for a `'left'`
 	 * reading, and the branch that served it was reachable only from hand-assembled roots.
@@ -71,13 +72,12 @@ describe('anchorAt', () => {
 		expect(offsetOfAnchor(roots, anchorAt(roots, 0))).toBe(0)
 	})
 
-	it("answers a block row's own start with a text anchor when the row opens with a mark", () => {
-		// '@[x]\n\n@[y]' is the shape that separates the two halves. Row 0 [0,6] opens on
-		// `TreeBuilder`'s zero-length pre-match token; row 1 [6,10] has NO parser text token
-		// inside it at all, so its leading text child can only come from `groupRows`'s unshift.
-		// A fixture whose second row is plain text pins that half by accident and stays green
-		// when the unshift is removed.
-		const roots = createTokenTree(nestedParser.parseRows('@[x]\n\n@[y]', '\n\n')).roots()
+	it("answers a row's own start with a text anchor when the row opens with a mark", () => {
+		// '@[x]\n\n@[y]' is the shape that separates the two halves: each row's body is parsed on
+		// its own, so both rows open on `TreeBuilder`'s zero-length pre-match token rather than on
+		// a token the whole-document pass happened to leave there. A fixture whose second row is
+		// plain text pins that half by accident.
+		const roots = createTokenTree(nestedParser.parseRows('@[x]\n\n@[y]', {separator: '\n\n', indent: '\t'})).roots()
 		const firstChild = (index: number) => {
 			const row = roots[index]
 			if (row.kind !== 'row') throw new Error('expected a row root')
@@ -225,5 +225,56 @@ describe('stepAnchor', () => {
 		expect(anchorAt(roots, 3)).toEqual({after: mark})
 		expect(stepAnchor(roots, {node: ab, offset: 2}, 1)).toBeUndefined()
 		expect(stepAnchor(roots, {node: cd, offset: 0}, -1)).toBeUndefined()
+	})
+})
+
+describe('slotWithout', () => {
+	const rowParser = new Parser(['# __slot__'], [true])
+	const rows = (source: string) =>
+		createTokenTree(rowParser.parseRows(source, {separator: '\n', indent: '\t'})).roots()
+
+	it('cuts the span out of the row it sits in', () => {
+		const roots = rows('plain row/')
+		const row = roots[0]
+		if (row.kind !== 'row') throw new Error('expected a row')
+		const text = row.inline()[0]
+		if (text.kind !== 'text') throw new Error('expected a row text child')
+
+		expect(slotWithout(roots, row, {anchor: {node: text, offset: 9}, head: {node: text, offset: 10}})).toBe(
+			'plain row'
+		)
+	})
+
+	it("answers the whole body for an empty span, and '' for the whole body", () => {
+		const roots = rows('# heading')
+		const row = roots[0]
+		if (row.kind !== 'row') throw new Error('expected a row')
+		const text = row.inline()[0]
+		if (text.kind !== 'text') throw new Error('expected a row text child')
+
+		expect(slotWithout(roots, row, {anchor: {node: text, offset: 3}, head: {node: text, offset: 3}})).toBe(
+			'heading'
+		)
+		expect(slotWithout(roots, row, {anchor: {node: text, offset: 0}, head: {node: text, offset: 7}})).toBe('')
+	})
+
+	/**
+	 * FAIL CLOSED, which is {@link splitPlan}'s rule at the other end: a caret in another row
+	 * cannot address this one's content, and a span reaching past the body would otherwise slice
+	 * with an offset the body does not have.
+	 */
+	it('refuses a span that is not inside this row', () => {
+		const roots = rows('one\ntwo')
+		const first = roots[0]
+		if (first.kind !== 'row') throw new Error('expected a row')
+		const other = roots[1]
+		if (other.kind !== 'row') throw new Error('expected a row')
+		const otherText = other.inline()[0]
+		if (otherText.kind !== 'text') throw new Error('expected a row text child')
+
+		expect(slotWithout(roots, first, {anchor: 'start', head: 'end'})).toBeUndefined()
+		expect(
+			slotWithout(roots, first, {anchor: {node: otherText, offset: 0}, head: {node: otherText, offset: 1}})
+		).toBeUndefined()
 	})
 })

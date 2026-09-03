@@ -3,7 +3,7 @@ import {page, userEvent} from 'vitest/browser'
 
 import {caretIsInside, editingHost, getElement} from '../../shared/lib/dom'
 import {focusAtEnd, focusAtStart} from '../../shared/lib/focus'
-import {composePage, mount} from '../../shared/lib/page'
+import {composePage, mount, mountEcho} from '../../shared/lib/page'
 import * as BaseStories from './Base.stories'
 
 const KEYBOARD_DEFAULT_VALUE = 'Hello @[mark](1)!'
@@ -120,6 +120,37 @@ describe('API: keyboard', () => {
 
 		expect(host.contains(document.activeElement)).toBe(false)
 		expect(document.activeElement).not.toBe(host)
+	})
+
+	/**
+	 * HOME AND END MOVE THE CARET, on the FIRST press, in a page that can still scroll.
+	 *
+	 * The scroller is the whole point of the fixture. On macOS the browser binds these two keys to
+	 * scrolling the document, not to the caret — so in any page with room left below, the first End
+	 * scrolled and the caret stayed where it was, and the next character was typed where the user
+	 * had clicked rather than at the end of the line. It read as one press in three because it
+	 * depends on how far the page is already scrolled. Measured with no editor in the page at all:
+	 * a bare `contenteditable` in a tall page does the same, and so does a `<textarea>` — so this is
+	 * the editor OVERRIDING the platform rather than repairing itself.
+	 */
+	it('moves the caret to the line edge on the first Home and End', async () => {
+		const {value} = await mountEcho(Default, {value: 'alpha beta'})
+		const tall = document.createElement('div')
+		tall.style.height = '300vh'
+		document.body.append(tall)
+
+		try {
+			await focusAtStart(getElement(page.getByText('alpha beta')))
+			await userEvent.keyboard('{End}')
+			await userEvent.keyboard('!')
+			expect(value()).toBe('alpha beta!')
+
+			await userEvent.keyboard('{Home}')
+			await userEvent.keyboard('>')
+			expect(value()).toBe('>alpha beta!')
+		} finally {
+			tall.remove()
+		}
 	})
 
 	it('select all text with keyboard shortcut "Ctrl+A"', async () => {

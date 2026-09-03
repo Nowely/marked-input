@@ -5,15 +5,18 @@ import {describe, expect, it} from 'vitest'
  *
  * The ADR states the rule as "a grep with a fixed allowlist", but no such grep existed
  * anywhere — not in CI, not in `oxlint.config.ts`, not in a script, and there is no
- * `scripts/` directory. The rule was enforced by review alone, which is how
- * `keyboard/blockEdit.ts` stayed on the allowlist after its last real read had become a
- * comment.
+ * `scripts/` directory. The rule was enforced by review alone, which is how the row keymap
+ * stayed on the allowlist after its last real read had become a comment.
  *
- * The rule: only `features/tokens/` may read a node's `position` or `slotRange`. Everything
- * above it names positions with a `NodeAnchor`. Inside that directory both `tree/` (which owns
- * the coordinate space) and `parser/` (whose `Token.position` is a different, parse-local
- * record) read them freely, so the directory boundary IS the allowlist — there is nothing left
- * to enumerate.
+ * The rule: only `features/tokens/` may read a node's `position`, `slotRange` or `lead`.
+ * Everything above it names positions with a `NodeAnchor`. Inside that directory both `tree/`
+ * (which owns the coordinate space) and `parser/` (whose `Token.position` is a different,
+ * parse-local record) read them freely, so the directory boundary IS the allowlist — there is
+ * nothing left to enumerate.
+ *
+ * `lead` joined the list when rows began to nest: it is a row's structural bytes, so reading it
+ * outside is the same escape as reading a raw offset — a caller could measure a depth from it and
+ * disagree with the tree's own.
  *
  * Sources are read through `import.meta.glob`, not `node:fs`: the core project runs in
  * Chromium, so there is no filesystem at test time.
@@ -25,9 +28,10 @@ const sources: Record<string, string> = import.meta.glob('./**/*.ts', {
 })
 
 /**
- * Comments are stripped before scanning, and that is not cosmetic: `keyboard/blockEdit.ts`
- * carries `row.position.end` inside a comment explaining why it does NOT form that offset.
- * A check that failed on prose would be a check nobody could keep green honestly.
+ * Comments are stripped before scanning, and that is not cosmetic — MEASURED, not assumed:
+ * without the strip this check fails on `features/rows/RowController.ts:9`, whose comment
+ * explains why its `drop.position` field is NOT one of these reads. A check that failed on prose
+ * would be a check nobody could keep green honestly.
  */
 function stripComments(source: string): string {
 	return source.replaceAll(/\/\*[\s\S]*?\*\//g, '').replaceAll(/\/\/[^\n]*/g, '')
@@ -43,14 +47,14 @@ function isGoverned(path: string): boolean {
 }
 
 describe('one address space (ADR-0003)', () => {
-	it('forms no node position outside features/tokens/', () => {
+	it('forms no node position and reads no lead outside features/tokens/', () => {
 		const offenders = Object.entries(sources)
 			.filter(([path]) => isGoverned(path))
 			.flatMap(([path, source]) =>
 				stripComments(source)
 					.split('\n')
 					.map((line, index) => ({path, line: index + 1, text: line}))
-					.filter(entry => /\.(?:position|slotRange)\b/.test(entry.text))
+					.filter(entry => /\.(?:position|slotRange|lead)\b/.test(entry.text))
 					.map(entry => `${entry.path}:${entry.line} ${entry.text.trim()}`)
 			)
 

@@ -3,7 +3,7 @@ import {component, story, type PageMeta} from '../../shared/lib/stories'
 import {fixtures} from './Clipboard.fixtures'
 
 const INLINE_VALUE = 'hello @[world](1) foo'
-const BLOCK_VALUE = 'hello\n@[world](1)\nfoo'
+const ROWS_VALUE = 'hello\n@[world](1)\nfoo'
 
 /**
  * Every named export of a CSF file is indexed as a story, so this file exports stories and
@@ -15,7 +15,7 @@ export default {
 } satisfies PageMeta
 
 export const Inline = story({
-	args: {Mark, defaultValue: INLINE_VALUE},
+	args: {separator: null, Mark, defaultValue: INLINE_VALUE},
 })
 
 /** The one story with a `render`: React returns an element, Vue a component. */
@@ -24,9 +24,9 @@ export const PlainText = story({
 })
 
 export const Drag = story({
-	args: {layout: 'block', separator: '\n', draggable: true, Mark, defaultValue: BLOCK_VALUE},
+	args: {separator: '\n', draggable: true, Mark, defaultValue: ROWS_VALUE},
 })
 
 export const NestedMarkStory = story({
-	args: {Mark: fixtures.NestedMark, defaultValue: INLINE_VALUE},
+	args: {separator: null, Mark: fixtures.NestedMark, defaultValue: INLINE_VALUE},
 })

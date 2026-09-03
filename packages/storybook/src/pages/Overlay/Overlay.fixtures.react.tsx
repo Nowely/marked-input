@@ -12,15 +12,9 @@ export const fixtures = {
 		return <div style={{position: 'absolute', ...style}}>I am the overlay</div>
 	},
 	List: () => {
-		const {select, ref} = useOverlay()
+		const {select, ref} = useOverlay<HTMLUListElement>()
 		return (
-			// A callback ref, not the handler's own object: `RefObject<HTMLElement | null>` is not
-			// assignable to `Ref<HTMLUListElement>`, and this keeps the assertion out of the fixture.
-			<ul
-				ref={element => {
-					ref.current = element
-				}}
-			>
+			<ul ref={ref}>
 				<li onClick={() => select({value: 'First'})}>Clickable First</li>
 				<li onClick={() => select({value: 'Second'})}>Clickable Second</li>
 			</ul>

@@ -10,15 +10,15 @@ Markput uses the **slots pattern** (popularized by Material-UI) to give you fine
 
 Slots are a component customization pattern that separates structure from styling and behavior. Instead of wrapping or forking components, you customize them through props:
 
-```tsx
+```tsx markup uses=CustomContainer,CustomParagraph
 <MarkedInput
     slots={{
         container: CustomContainer, // Replace component
-        span: CustomSpan, // Replace component
+        paragraph: CustomParagraph, // Replace component
     }}
     slotProps={{
-        container: {className: 'my-editor'}, // Pass props to default
-        span: {style: {color: 'red'}}, // Pass props to default
+        container: {className: 'my-editor'}, // Pass props to the container
+        row: {className: 'my-row'}, // Pass props to every row
     }}
 />
 ```
@@ -30,17 +30,31 @@ Slots are a component customization pattern that separates structure from stylin
 
 ## Available Slots
 
-Markput exposes two slots:
+| Slot        | Default Component | Purpose                                              |
+| ----------- | ----------------- | ---------------------------------------------------- |
+| `container` | `<div>`           | Root editable container — the one `contenteditable`  |
+| `paragraph` | `<div>`           | The component a [row](/guides/rows) with NO kind renders through |
 
-| Slot        | Default Component | Purpose                 |
-| ----------- | ----------------- | ----------------------- |
-| `container` | `<div>`           | Root editable container |
-| `span`      | `<span>`          | Plain text segments     |
+| `slotProps` key | Reaches                       |
+| --------------- | ----------------------------- |
+| `container`     | The container element         |
+| `row`           | Every row's wrapper           |
+
+`slots` and `slotProps` do not take the same keys, and the names say why: `slots.paragraph` is
+consulted only for a row with NO kind, while `slotProps.row` is merged onto EVERY row's wrapper —
+kind and paragraph alike.
 
 **What's NOT a slot:**
 
-- Mark components (use `Mark` prop)
-- Overlay components (use `Overlay` prop)
+- Mark components (use the `Mark` prop, or `option.Mark`)
+- Overlay components (use the `Overlay` prop, or `option.Overlay`)
+- Plain text segments (use the `Span` prop)
+- A row kind's component (use `option.row.Component` — see [Row Kinds](/guides/row-kinds))
+
+Both key sets are declared on the published types, in both adapters: [`Slots`](/api/interfaces/slots/)
+and [`SlotProps`](/api/interfaces/slotprops/) each extend the core contract, so a key core resolves
+is a key TypeScript accepts. A slot value may be a component or an intrinsic tag name —
+`slots={{container: 'article'}}` mounts the editor on an `<article>`.
 
 ## Using slotProps (Customize Defaults)
 
@@ -48,7 +62,7 @@ The simplest way to customize slots is through `slotProps`. This passes props to
 
 ### Basic Styling
 
-```tsx
+```tsx fragment uses=MyMark
 import {MarkedInput} from '@markput/react'
 
 function StyledEditor() {
@@ -70,7 +84,7 @@ function StyledEditor() {
                         lineHeight: '1.6',
                     },
                 },
-                span: {
+                row: {
                     style: {
                         whiteSpace: 'pre-wrap', // Preserve whitespace
                     },
@@ -83,15 +97,15 @@ function StyledEditor() {
 
 ### CSS Classes
 
-```tsx
+```tsx markup uses=MyMark
 <MarkedInput
     Mark={MyMark}
     slotProps={{
         container: {
             className: 'editor-container',
         },
-        span: {
-            className: 'editor-text',
+        row: {
+            className: 'editor-row',
         },
     }}
 />
@@ -111,7 +125,7 @@ function StyledEditor() {
     border-color: transparent;
 }
 
-.editor-text {
+.editor-row {
     color: #333;
     letter-spacing: 0.01em;
 }
@@ -121,7 +135,7 @@ function StyledEditor() {
 
 Add event handlers through `slotProps`:
 
-```tsx
+```tsx fragment uses=MyMark
 function EditorWithEvents() {
     const [value, setValue] = useState('')
     const [isFocused, setIsFocused] = useState(false)
@@ -133,21 +147,21 @@ function EditorWithEvents() {
             Mark={MyMark}
             slotProps={{
                 container: {
-                    onFocus: e => {
+                    onFocus: (e: React.FocusEvent<HTMLDivElement>) => {
                         console.log('Editor focused')
                         setIsFocused(true)
                     },
-                    onBlur: e => {
+                    onBlur: (e: React.FocusEvent<HTMLDivElement>) => {
                         console.log('Editor blurred')
                         setIsFocused(false)
                     },
-                    onKeyDown: e => {
+                    onKeyDown: (e: React.KeyboardEvent<HTMLDivElement>) => {
                         if (e.key === 's' && (e.metaKey || e.ctrlKey)) {
                             e.preventDefault()
                             console.log('Save triggered')
                         }
                     },
-                    onPaste: e => {
+                    onPaste: (e: React.ClipboardEvent<HTMLDivElement>) => {
                         console.log('Pasted:', e.clipboardData.getData('text'))
                     },
                     style: {
@@ -164,7 +178,7 @@ function EditorWithEvents() {
 
 Improve accessibility with ARIA attributes:
 
-```tsx
+```tsx markup uses=MyMark
 <MarkedInput
   Mark={MyMark}
   slotProps={{
@@ -187,7 +201,7 @@ Improve accessibility with ARIA attributes:
 
 Add custom data attributes for testing or analytics:
 
-```tsx
+```tsx markup uses=MyMark
 <MarkedInput
     Mark={MyMark}
     slotProps={{
@@ -196,8 +210,8 @@ Add custom data attributes for testing or analytics:
             'data-editor-type': 'mention-editor',
             'data-track': 'user-input',
         },
-        span: {
-            'data-text-node': true,
+        row: {
+            'data-doc-row': true,
         },
     }}
 />
@@ -211,7 +225,7 @@ For deeper customization, replace the default components entirely with `slots`.
 
 Replace the container with a custom component:
 
-```tsx
+```tsx fragment uses=MyMark
 import {forwardRef} from 'react'
 import type {HTMLAttributes} from 'react'
 
@@ -249,60 +263,80 @@ function Editor() {
 2. Forward the ref (`forwardRef`)
 3. Be typed correctly for TypeScript
 
-### Custom Span Component
+### Custom Paragraph Component
 
-Replace text spans with custom rendering:
+`slots.paragraph` is the component a row with NO kind renders through — the default is a bare `div`.
+Spread everything you are given onto the element you render, the row's rendered content included:
 
-```tsx
-const CustomSpan = forwardRef<
-  HTMLSpanElement,
-  HTMLAttributes<HTMLSpanElement>
->((props, ref) => {
-  return (
-    <span
-      {...props}
-      ref={ref}
-      style={{
-        ...props.style,
-        fontFamily: 'monospace',
-        letterSpacing: '0.5px',
-        color: '#666'
-      }}
-    />
-  )
-})
+```tsx fragment uses=MyMark
+const Paragraph = ({children, ref, className, style}: RowProps) => (
+    <p ref={ref} className={className} style={style}>
+        {children}
+    </p>
+)
 
-<MarkedInput
-  Mark={MyMark}
-  slots={{
-    span: CustomSpan
-  }}
-/>
+const Editor = () => (
+    <MarkedInput Mark={MyMark} slots={{paragraph: Paragraph}} />
+)
+```
+
+A row that MATCHED a kind never reaches this slot; it renders through `option.row.Component`. See
+[Row Kinds](/guides/row-kinds).
+
+### Custom Text Component
+
+Plain text is not a slot — it is the `Span` prop, and it is a special case: the element it renders IS
+the surface core writes the token's text into, so it cannot be wrapped and it must not be given a
+second writer.
+
+```tsx fragment uses=MyMark
+// `SpanProps` is the text token's props AND the ref core writes text through
+const Mono = ({value, ref}: SpanProps) => (
+    <span ref={ref} style={{fontFamily: 'monospace', letterSpacing: '0.5px'}}>
+        {value}
+    </span>
+)
+
+const Editor = () => (
+    <MarkedInput Mark={MyMark} Span={Mono} />
+)
+```
+
+The `ref` must land on the element that shows the text. A component that drops it leaves the text
+unbound and the caret cannot resolve into it.
+
+The prop carries that contract, so an inline `Span` needs no annotation at all — `value` and `ref`
+are typed from where it is written:
+
+```tsx fragment uses=MyMark
+const Editor = () => <MarkedInput Mark={MyMark} Span={({value, ref}) => <span ref={ref}>{value}</span>} />
 ```
 
 ### Combining slots and slotProps
 
 Use both together - `slots` to replace components, `slotProps` to pass additional props:
 
-```tsx
+```tsx fragment uses=Mark,MyMark,slots,slotProps,onFocus
 const CustomContainer = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>(
   (props, ref) => (
     <div {...props} ref={ref} className={`custom-editor ${props.className || ''}`} />
   )
 )
 
-<MarkedInput
-  Mark={MyMark}
-  slots={{
-    container: CustomContainer  // Custom component
-  }}
-  slotProps={{
-    container: {
-      className: 'with-shadow',  // Props passed to CustomContainer
-      onFocus: () => console.log('Focused')
-    }
-  }}
-/>
+const Editor = () => (
+    <MarkedInput
+      Mark={MyMark}
+      slots={{
+        container: CustomContainer  // Custom component
+      }}
+      slotProps={{
+        container: {
+          className: 'with-shadow',  // Props passed to CustomContainer
+          onFocus: () => console.log('Focused')
+        }
+      }}
+    />
+)
 ```
 
 The props from `slotProps.container` will be passed to your `CustomContainer` component.
@@ -313,7 +347,7 @@ The props from `slotProps.container` will be passed to your `CustomContainer` co
 
 Good for dynamic styles based on state:
 
-```tsx
+```tsx fragment uses=MyMark
 function ThemedEditor() {
     const [theme, setTheme] = useState('light')
 
@@ -338,7 +372,7 @@ function ThemedEditor() {
 
 Good for static styles and media queries:
 
-```tsx
+```tsx markup uses=MyMark
 <MarkedInput
     Mark={MyMark}
     slotProps={{
@@ -373,10 +407,10 @@ Good for static styles and media queries:
 
 Good for component libraries and scoped styles:
 
-```tsx
+```tsx fragment uses=MyMark
 import {styled} from '@mui/material/styles'
 
-const StyledContainer = styled('div')(({theme}) => ({
+const StyledContainer = styled('div')(({theme}: any) => ({
     border: `1px solid ${theme.palette.divider}`,
     borderRadius: theme.shape.borderRadius,
     padding: theme.spacing(2),
@@ -387,7 +421,7 @@ const StyledContainer = styled('div')(({theme}) => ({
     },
 }))
 
-const StyledSpan = styled('span')(({theme}) => ({
+const StyledParagraph = styled('div')(({theme}: any) => ({
     color: theme.palette.text.primary,
     fontSize: theme.typography.body1.fontSize,
 }))
@@ -398,7 +432,7 @@ function MuiEditor() {
             Mark={MyMark}
             slots={{
                 container: StyledContainer,
-                span: StyledSpan,
+                paragraph: StyledParagraph,
             }}
         />
     )
@@ -409,7 +443,7 @@ function MuiEditor() {
 
 Good for utility-first styling:
 
-```tsx
+```tsx fragment uses=Mark,MyMark,slots
 const TailwindContainer = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>(
   (props, ref) => (
     <div
@@ -426,12 +460,14 @@ const TailwindContainer = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivEleme
   )
 )
 
-<MarkedInput
-  Mark={MyMark}
-  slots={{
-    container: TailwindContainer
-  }}
-/>
+const Editor = () => (
+    <MarkedInput
+      Mark={MyMark}
+      slots={{
+        container: TailwindContainer
+      }}
+    />
+)
 ```
 
 ## Common Use Cases
@@ -440,7 +476,7 @@ const TailwindContainer = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivEleme
 
 Show placeholder when editor is empty:
 
-```tsx
+```tsx fragment uses=MyMark
 const ContainerWithPlaceholder = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement> & {isEmpty?: boolean}>(
     ({isEmpty, ...props}, ref) => (
         <div {...props} ref={ref} style={{position: 'relative'}}>
@@ -487,7 +523,7 @@ function EditorWithPlaceholder() {
 
 Add a character count overlay:
 
-```tsx
+```tsx fragment uses=MyMark
 const ContainerWithCounter = forwardRef<
     HTMLDivElement,
     HTMLAttributes<HTMLDivElement> & {charCount?: number; maxChars?: number}
@@ -535,7 +571,7 @@ function EditorWithCounter() {
 
 Highlight container on focus:
 
-```tsx
+```tsx fragment uses=Mark,MyMark,slots
 const FocusableContainer = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>(
   (props, ref) => {
     const [focused, setFocused] = useState(false)
@@ -563,19 +599,21 @@ const FocusableContainer = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElem
   }
 )
 
-<MarkedInput
-  Mark={MyMark}
-  slots={{
-    container: FocusableContainer
-  }}
-/>
+const Editor = () => (
+    <MarkedInput
+      Mark={MyMark}
+      slots={{
+        container: FocusableContainer
+      }}
+    />
+)
 ```
 
 ### Use Case 4: Line Numbers
 
 Add line numbers for multi-line content:
 
-```tsx
+```tsx fragment uses=MyMark
 const ContainerWithLineNumbers = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement> & {lineCount?: number}>(
     ({lineCount = 1, ...props}, ref) => (
         <div style={{display: 'flex'}}>
@@ -624,47 +662,45 @@ function EditorWithLineNumbers() {
 
 ### Use Case 5: Syntax Highlighting for Text
 
-Custom text rendering with highlighting:
+Custom text rendering with highlighting, through the `Span` prop:
 
-```tsx
-const HighlightedSpan = forwardRef<
-  HTMLSpanElement,
-  HTMLAttributes<HTMLSpanElement>
->((props, ref) => {
-  const text = props.children as string
+```tsx fragment uses=MyMark
+import type {SpanProps} from '@markput/react'
 
-  // Highlight specific patterns
-  const isUrl = /^https?:\/\//.test(text)
-  const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(text)
+const Highlighted = ({value = '', ref}: SpanProps) => {
+    const isUrl = /^https?:\/\//.test(value)
+    const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)
 
-  let style = { ...props.style }
-  if (isUrl) {
-    style.color = '#2196f3'
-    style.textDecoration = 'underline'
-  } else if (isEmail) {
-    style.color = '#4caf50'
-  }
+    const style = isUrl
+        ? {color: '#2196f3', textDecoration: 'underline'}
+        : isEmail
+          ? {color: '#4caf50'}
+          : undefined
 
-  return <span {...props} ref={ref} style={style} />
-})
+    return (
+        <span ref={ref} style={style}>
+            {value}
+        </span>
+    )
+}
 
-<MarkedInput
-  Mark={MyMark}
-  slots={{
-    span: HighlightedSpan
-  }}
-/>
+const Editor = () => (
+    <MarkedInput Mark={MyMark} Span={Highlighted} />
+)
 ```
+
+The styling reacts to the token's text, but the text on screen is core's to write: keep the `ref` on
+the element and put nothing beside the value inside it.
 
 ## Integration with UI Libraries
 
 ### Material-UI (MUI)
 
-```tsx
+```tsx fragment uses=MyMark
 import {Paper, useTheme} from '@mui/material'
 import {styled} from '@mui/material/styles'
 
-const MuiContainer = styled(Paper)(({theme}) => ({
+const MuiContainer = styled(Paper)(({theme}: any) => ({
     padding: theme.spacing(2),
     minHeight: 120,
     border: `1px solid ${theme.palette.divider}`,
@@ -693,7 +729,7 @@ function MuiEditor() {
 
 ### Chakra UI
 
-```tsx
+```tsx fragment uses=Mark,MyMark,slots
 import { Box } from '@chakra-ui/react'
 import { forwardRef } from 'react'
 
@@ -712,17 +748,19 @@ const ChakraContainer = forwardRef((props, ref) => (
   />
 ))
 
-<MarkedInput
-  Mark={MyMark}
-  slots={{
-    container: ChakraContainer
-  }}
-/>
+const Editor = () => (
+    <MarkedInput
+      Mark={MyMark}
+      slots={{
+        container: ChakraContainer
+      }}
+    />
+)
 ```
 
 ### Ant Design
 
-```tsx
+```tsx fragment uses=Mark,MyMark,slots
 import { Input } from 'antd'
 import { forwardRef } from 'react'
 
@@ -738,19 +776,21 @@ const AntContainer = forwardRef<HTMLDivElement, any>((props, ref) => (
   />
 ))
 
-<MarkedInput
-  Mark={MyMark}
-  slots={{
-    container: AntContainer
-  }}
-/>
+const Editor = () => (
+    <MarkedInput
+      Mark={MyMark}
+      slots={{
+        container: AntContainer
+      }}
+    />
+)
 ```
 
 ## TypeScript Usage
 
 ### Typing Custom Slot Components
 
-```tsx
+```tsx fragment uses=MyMark
 import {forwardRef} from 'react'
 import type {HTMLAttributes, CSSProperties} from 'react'
 
@@ -793,21 +833,17 @@ function TypedEditor() {
 
 ### Generic Slot Props
 
-```tsx
+```tsx fragment uses=MyMark
 import type {MarkedInputProps} from '@markput/react'
 
 interface EditorProps {
     containerClass?: string
-    spanClass?: string
 }
 
-function ConfigurableEditor({containerClass, spanClass}: EditorProps) {
+function ConfigurableEditor({containerClass}: EditorProps) {
     const slotProps: MarkedInputProps['slotProps'] = {
         container: {
             className: containerClass,
-        },
-        span: {
-            className: spanClass,
         },
     }
 
@@ -821,7 +857,7 @@ function ConfigurableEditor({containerClass, spanClass}: EditorProps) {
 
 Prevent unnecessary re-renders:
 
-```tsx
+```tsx fragment uses=Mark,MyMark,slots
 import { memo, forwardRef } from 'react'
 
 const MemoizedContainer = memo(
@@ -832,22 +868,24 @@ const MemoizedContainer = memo(
   )
 )
 
-<MarkedInput
-  Mark={MyMark}
-  slots={{
-    container: MemoizedContainer
-  }}
-/>
+const Editor = () => (
+    <MarkedInput
+      Mark={MyMark}
+      slots={{
+        container: MemoizedContainer
+      }}
+    />
+)
 ```
 
 ### Avoid Inline Function Creation
 
-```tsx
+```tsx fragment
 // ❌ Bad - creates new function each render
 ;<MarkedInput
     slotProps={{
         container: {
-            onKeyDown: e => console.log(e.key),
+            onKeyDown: (e: React.KeyboardEvent<HTMLDivElement>) => console.log(e.key),
         },
     }}
 />
@@ -872,16 +910,13 @@ function Editor() {
 
 ### Memoize slotProps Object
 
-```tsx
+```tsx fragment uses=MyMark
 function Editor() {
     const slotProps = useMemo(
         () => ({
             container: {
                 className: 'editor',
                 style: {padding: '16px'},
-            },
-            span: {
-                className: 'text',
             },
         }),
         []
@@ -955,9 +990,7 @@ function GitHubEditor() {
                     options={[
                         {
                             markup: '@[__value__]',
-                            slotProps: {
-                                overlay: {trigger: '@', data: ['octocat', 'github', 'copilot']},
-                            },
+                            overlay: {trigger: '@', data: ['octocat', 'github', 'copilot']},
                         },
                     ]}
                 />
@@ -969,7 +1002,7 @@ function GitHubEditor() {
 
 ### Example 2: Notion-Style Editor
 
-```tsx
+```tsx fragment uses=Heading,Bullet
 const NotionContainer = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>((props, ref) => {
     const [placeholder, setPlaceholder] = useState("Type '/' for commands")
 
@@ -987,26 +1020,13 @@ const NotionContainer = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement
                 minHeight: '300px',
                 outline: 'none',
             }}
+            data-placeholder={placeholder}
             onFocus={() => setPlaceholder('')}
             onBlur={e => {
-                if (!e.currentTarget.textContent) {
-                    setPlaceholder("Type '/' for commands")
-                }
+                if (!e.currentTarget.textContent) setPlaceholder("Type '/' for commands")
                 props.onBlur?.(e)
             }}
-        >
-            {!props.children && (
-                <div
-                    style={{
-                        position: 'absolute',
-                        color: '#9b9a97',
-                        pointerEvents: 'none',
-                    }}
-                >
-                    {placeholder}
-                </div>
-            )}
-        </div>
+        />
     )
 })
 
@@ -1030,44 +1050,51 @@ function NotionEditor() {
                     {value}
                 </span>
             )}
-            slots={{
-                container: NotionContainer,
-            }}
+            slots={{container: NotionContainer}}
+            options={[
+                {overlay: {trigger: '/'}},
+                {markup: '# __slot__', row: {Component: Heading}, menu: {label: 'Heading 1'}},
+                {markup: '- __slot__', row: {Component: Bullet, continues: true, indents: true}, menu: {label: 'Bulleted list'}},
+            ]}
+            draggable
         />
     )
 }
 ```
 
+The container must render whatever it is given: the editor's own children ARE the document. Paint a
+placeholder with CSS on `[data-placeholder]:empty::before` rather than by replacing them. What makes
+this a Notion-shaped editor is the row vocabulary beside it — see [Row Kinds](/guides/row-kinds).
+
 ## Best Practices
 
 ### ✅ Do
 
-```tsx
+```tsx fragment
+type ContainerProps = HTMLAttributes<HTMLDivElement>
+
 // Always forward refs
-const CustomContainer = forwardRef((props, ref) => <div {...props} ref={ref} />)
+const ForwardingContainer = forwardRef<HTMLDivElement, ContainerProps>((props, ref) => <div {...props} ref={ref} />)
 
 // Spread all props
-const CustomContainer = forwardRef((props, ref) => (
+const SpreadingContainer = forwardRef<HTMLDivElement, ContainerProps>((props, ref) => (
     <div {...props} ref={ref} className={`custom ${props.className || ''}`} />
 ))
 
 // Preserve existing style
-const CustomContainer = forwardRef((props, ref) => (
+const StyleKeepingContainer = forwardRef<HTMLDivElement, ContainerProps>((props, ref) => (
     <div {...props} ref={ref} style={{...props.style, padding: '16px'}} />
 ))
 
 // Memoize stable components
-const StableContainer = memo(forwardRef((props, ref) => <div {...props} ref={ref} />))
-
-// Type custom components properly
-const TypedContainer = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>((props, ref) => (
-    <div {...props} ref={ref} />
-))
+const StableContainer = memo(
+    forwardRef<HTMLDivElement, ContainerProps>((props, ref) => <div {...props} ref={ref} />)
+)
 ```
 
 ### ❌ Don't
 
-```tsx
+```tsx sketch="the anti-pattern list: every line here is deliberately wrong"
 // Don't forget forwardRef
 const Bad = (props) => <div {...props} />  // Missing ref!
 
@@ -1082,14 +1109,16 @@ const Bad = forwardRef((props, ref) => (
 ))
 
 // Don't use inline components
-<MarkedInput
-  slots={{
-    container: (props) => <div {...props} />  // Creates new component each render!
-  }}
-/>
+const Editor = () => (
+    <MarkedInput
+      slots={{
+        container: (props) => <div {...props} />  // Creates new component each render!
+      }}
+    />
 
-// Don't forget TypeScript types
-const Bad = forwardRef((props, ref) => (  // Any types!
-  <div {...props} ref={ref} />
-))
+    // Don't forget TypeScript types
+    const Bad = forwardRef((props, ref) => (  // Any types!
+      <div {...props} ref={ref} />
+    ))
+)
 ```

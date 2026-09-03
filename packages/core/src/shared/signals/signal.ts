@@ -314,7 +314,7 @@ function effectScopeOper(this: ReactiveNode): void {
 // `Signal<T>` is the base callable: read returns T, write accepts T | undefined
 // and returns whether the stored value changed. `Signal<T, C>` augments the
 // callable with named `Computed` views — one per key in `C` — derived from the
-// signal via the `computed` option. `C` is the *value* record (e.g. `{isBlock:
+// signal via the `computed` option. `C` is the *value* record (e.g. `{isDark:
 // boolean}`), not a record of getters; the getter shape is collapsed at the
 // `signal()` overload boundary.
 export type Signal<T, C extends Record<string, unknown> = {}> = {

@@ -28,7 +28,7 @@ This example demonstrates how to build a hashtag system like Twitter, Instagram,
 
 ### Step 1: Define Types
 
-```tsx
+```tsx fragment
 // types.ts
 export interface Hashtag {
     tag: string
@@ -117,14 +117,16 @@ interface HashtagOverlayProps {
 }
 
 export const HashtagOverlay: FC<HashtagOverlayProps> = ({trending, onSelect}) => {
-    const {style, match, select, close, ref} = useOverlay()
+    const {style, match, select, close, ref} = useOverlay<HTMLDivElement>()
     const [selectedIndex, setSelectedIndex] = useState(0)
 
-    const filteredHashtags = trending.filter(hashtag => hashtag.tag.toLowerCase().includes(match.value.toLowerCase()))
+    // `match` is undefined while no trigger is open
+    const query = match?.value ?? ''
+    const filteredHashtags = trending.filter(hashtag => hashtag.tag.toLowerCase().includes(query.toLowerCase()))
 
     useEffect(() => {
         setSelectedIndex(0)
-    }, [match.value])
+    }, [query])
 
     const selectHashtag = (hashtag: Hashtag) => {
         select({
@@ -160,8 +162,12 @@ export const HashtagOverlay: FC<HashtagOverlayProps> = ({trending, onSelect}) =>
 
     if (filteredHashtags.length === 0) {
         return (
-            <div ref={ref} className="hashtag-overlay" style={{position: 'absolute', left: style.left, top: style.top}}>
-                <div className="hashtag-overlay-empty">No hashtags found. Create #{match.value}?</div>
+            <div
+                ref={ref}
+                className="hashtag-overlay"
+                style={{position: 'absolute', left: style.left, top: style.top}}
+            >
+                <div className="hashtag-overlay-empty">No hashtags found. Create #{query}?</div>
             </div>
         )
     }
@@ -405,7 +411,7 @@ export const TrendingSidebar: FC<TrendingSidebarProps> = ({hashtags, onHashtagCl
 // HashtagEditor.tsx
 import {FC, useState, useCallback} from 'react'
 import {MarkedInput} from '@markput/react'
-import type {Option} from '@markput/react'
+import type {MarkProps, Option} from '@markput/react'
 import {HashtagMark} from './HashtagMark'
 import {HashtagOverlay} from './HashtagOverlay'
 import {TrendingSidebar} from './TrendingSidebar'
@@ -445,17 +451,13 @@ export const HashtagEditor: FC = () => {
 
     const hashtagOption: Option<HashtagMarkProps> = {
         markup: '#[__value__](__meta__)',
-        slots: {
-            mark: HashtagMark,
-            overlay: () => <HashtagOverlay trending={TRENDING_HASHTAGS} onSelect={handleHashtagSelect} />,
-        },
-        slotProps: {
-            mark: ({value, meta}) => ({
-                tag: value || '',
-                count: meta ? parseInt(meta) : undefined,
-                onClick: handleHashtagClick,
-            }),
-        },
+        Mark: HashtagMark,
+        Overlay: () => <HashtagOverlay trending={TRENDING_HASHTAGS} onSelect={handleHashtagSelect} />,
+        mark: ({value, meta}: MarkProps) => ({
+            tag: value || '',
+            count: meta ? parseInt(meta) : undefined,
+            onClick: handleHashtagClick,
+        }),
     }
 
     return (
@@ -576,7 +578,7 @@ export const HashtagEditor: FC = () => {
 
 ### Variation 1: Hashtag Analytics
 
-```tsx
+```tsx fragment uses=getMostUsed,getPostCount
 const HashtagAnalytics: FC = () => {
     const [analytics, setAnalytics] = useState({
         totalHashtags: 0,
@@ -612,7 +614,7 @@ const HashtagAnalytics: FC = () => {
 
 ### Variation 2: Hashtag Groups/Categories
 
-```tsx
+```tsx fragment uses=HashtagMarkProps
 interface HashtagCategory {
     name: string
     hashtags: string[]
@@ -651,7 +653,7 @@ const CategorizedHashtagMark: FC<HashtagMarkProps> = ({tag}) => {
 
 ### Variation 3: Related Hashtags
 
-```tsx
+```tsx fragment
 const RelatedHashtags: FC<{currentTag: string}> = ({currentTag}) => {
     const [related, setRelated] = useState<string[]>([])
 

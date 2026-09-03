@@ -20,7 +20,7 @@ import type {NodeAnchor, TreeNode} from '../tree/types'
  */
 function mountKeyed(value: string) {
 	const store = new Store()
-	store.props.set({defaultValue: value, options: [{markup: '@[__value__]'}], Mark: () => null})
+	store.props.set({separator: null, defaultValue: value, options: [{markup: '@[__value__]'}], Mark: () => null})
 	const container = document.createElement('div')
 	document.body.append(container)
 	const byId = new Map<number, HTMLElement>()

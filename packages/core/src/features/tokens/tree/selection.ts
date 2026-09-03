@@ -15,6 +15,13 @@ import type {Anchors, NodeAnchor, TransactionResult, TreeNode} from './types'
 export type SelectionDeps = {
 	offsetOf(anchor: NodeAnchor): number
 	anchorAt(offset: number): NodeAnchor
+	/**
+	 * The first offset a caret may occupy — 0 in every document except one opening with a typed
+	 * row, whose opener is structural. Beside {@link SelectionDeps.anchorAt} rather than derived
+	 * from it because the READ must not seed: {@link Selection.isAllSelected} evaluates inside a
+	 * computed, and seeding writes signals.
+	 */
+	contentStart(): number
 	value(): string
 }
 
@@ -83,7 +90,16 @@ export function createSelection(deps: SelectionDeps): Selection {
 		if (!current || v.length === 0) return false
 		const anchor = deps.offsetOf(current.anchor)
 		const head = deps.offsetOf(current.head)
-		return Math.min(anchor, head) === 0 && Math.max(anchor, head) === v.length
+		// A COLLAPSED selection selects nothing, whatever offsets it coincides with, and the two
+		// equalities below cannot say so on their own: a document whose whole content is a typed
+		// row with an EMPTY body — `'- '`, one keystroke into a fresh list — has its first
+		// selectable offset AT its length, so the caret sitting there satisfied both. Every
+		// consumer of this reads it as "replace the document", so the next character typed did.
+		if (anchor === head) return false
+		// Against the first SELECTABLE offset, not against 0: a document opening with a typed row
+		// starts with structural bytes no caret may enter, so {@link selectAll}'s own seed lands
+		// past 0 and comparing with 0 would make "everything is selected" unsatisfiable there.
+		return Math.min(anchor, head) === deps.contentStart() && Math.max(anchor, head) === v.length
 	})
 
 	const selectAll = (): void => {
@@ -156,6 +172,11 @@ export function createSelection(deps: SelectionDeps): Selection {
 	 * re-derives it.
 	 * `map` resolves against the post-adoption roots and is property-proven never to
 	 * answer with a dead node (`tree/adopt.property.spec.ts`).
+	 *
+	 * A REPLAYED caret does not come from that capture — it comes off an `EditRecord`, which
+	 * outlives the nodes its edit was made in — and it does not dangle either, by the same route
+	 * rather than by exception: the record carries OFFSETS, and `valueBoundary`'s fold resolves
+	 * them with `anchorAt` against the roots the replay leaves behind.
 	 */
 	const repair = (result: TransactionResult): void => {
 		const next = result.selectionAfter

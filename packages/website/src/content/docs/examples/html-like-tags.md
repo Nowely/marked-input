@@ -28,7 +28,7 @@ This example demonstrates how to create custom HTML-like tags with the "two valu
 
 ### Step 1: Define Tag Types
 
-```tsx
+```tsx fragment
 // types.ts
 export type TagType = 'color' | 'size' | 'bg' | 'align' | 'link' | 'box'
 
@@ -291,7 +291,7 @@ export const TagPalette: FC<{onInsert: (syntax: string) => void}> = ({onInsert})
 ```tsx
 // HtmlLikeEditor.tsx
 import {FC, useState} from 'react'
-import {MarkedInput} from '@markput/react'
+import {MarkedInput, type Option} from '@markput/react'
 import {CustomTag} from './CustomTag'
 import {TagPalette} from './TagPalette'
 import type {TagType, TagProps} from './types'
@@ -326,28 +326,24 @@ export const HtmlLikeEditor: FC = () => {
         return attrs
     }
 
-    const tagOptions = [
+    const tagOptions: Option[] = [
         {
             markup: '<__value__>__slot__</__value__>',
-            slots: {
-                mark: (props: any) => {
-                    const tagName = props.value as TagType
-                    const attributes = parseAttributes(props.meta || '')
+            Mark: (props: any) => {
+                const tagName = props.value as TagType
+                const attributes = parseAttributes(props.meta || '')
 
-                    return (
-                        <CustomTag tagName={tagName} attributes={attributes}>
-                            {props.children}
-                        </CustomTag>
-                    )
-                },
+                return (
+                    <CustomTag tagName={tagName} attributes={attributes}>
+                        {props.children}
+                    </CustomTag>
+                )
             },
-            slotProps: {
-                mark: ({value, meta, children}: any) => ({
-                    value,
-                    meta,
-                    children,
-                }),
-            },
+            mark: ({value, meta, children}: any) => ({
+                value,
+                meta,
+                children,
+            }),
         },
     ]
 
@@ -454,21 +450,19 @@ export const HtmlLikeEditor: FC = () => {
 
 ### Variation 1: Self-Closing Tags
 
-```tsx
+```tsx fragment
 const selfClosingOptions = [
     {
         markup: '<__value__ />',
-        slots: {
-            mark: (props: any) => {
-                switch (props.value) {
-                    case 'br':
-                        return <br />
-                    case 'hr':
-                        return <hr />
-                    default:
-                        return null
-                }
-            },
+        Mark: (props: any) => {
+            switch (props.value) {
+                case 'br':
+                    return <br />
+                case 'hr':
+                    return <hr />
+                default:
+                    return null
+            }
         },
     },
 ]
@@ -478,7 +472,7 @@ const selfClosingOptions = [
 
 ### Variation 2: Complex Attributes
 
-```tsx
+```tsx fragment
 const parseComplexAttributes = (meta: string) => {
     // Supports: <tag color="red" size="20" border>
     const attrs: Record<string, string | boolean> = {}
@@ -497,7 +491,7 @@ const parseComplexAttributes = (meta: string) => {
 
 ### Variation 3: Tag Validation
 
-```tsx
+```tsx fragment
 const validateTag = (opening: string, closing: string): {valid: boolean; error?: string} => {
     if (opening !== closing) {
         return {

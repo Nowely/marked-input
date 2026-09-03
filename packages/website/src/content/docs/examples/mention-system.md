@@ -39,7 +39,7 @@ This example demonstrates how to build a complete mention system with autocomple
 
 ### Step 1: Define Types
 
-```tsx
+```tsx fragment
 // types.ts
 export interface User {
     id: string
@@ -142,20 +142,23 @@ interface MentionOverlayProps {
 }
 
 export const MentionOverlay: FC<MentionOverlayProps> = ({users}) => {
-    const {style, match, select, close, ref} = useOverlay()
+    const {style, match, select, close, ref} = useOverlay<HTMLDivElement>()
     const [selectedIndex, setSelectedIndex] = useState(0)
+
+    // `match` is undefined while no trigger is open
+    const query = match?.value ?? ''
 
     // Filter users based on typed text
     const filteredUsers = users.filter(
         user =>
-            user.username.toLowerCase().includes(match.value.toLowerCase()) ||
-            user.displayName.toLowerCase().includes(match.value.toLowerCase())
+            user.username.toLowerCase().includes(query.toLowerCase()) ||
+            user.displayName.toLowerCase().includes(query.toLowerCase())
     )
 
     // Reset selection when filtered list changes
     useEffect(() => {
         setSelectedIndex(0)
-    }, [match.value])
+    }, [query])
 
     // Keyboard navigation
     const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -203,7 +206,7 @@ export const MentionOverlay: FC<MentionOverlayProps> = ({users}) => {
                     top: style.top,
                 }}
             >
-                <div className="mention-overlay-empty">No users found for "{match.value}"</div>
+                <div className="mention-overlay-empty">No users found for "{query}"</div>
             </div>
         )
     }
@@ -339,7 +342,7 @@ export const MentionOverlay: FC<MentionOverlayProps> = ({users}) => {
 // MentionEditor.tsx
 import {FC, useState} from 'react'
 import {MarkedInput} from '@markput/react'
-import type {Option} from '@markput/react'
+import type {MarkProps, Option} from '@markput/react'
 import {MentionMark} from './MentionMark'
 import {MentionOverlay} from './MentionOverlay'
 import type {User, MentionProps} from './types'
@@ -390,23 +393,19 @@ export const MentionEditor: FC = () => {
 
     const mentionOption: Option<MentionProps> = {
         markup: '@[__value__](__meta__)',
-        slots: {
-            mark: MentionMark,
-            overlay: () => <MentionOverlay users={USERS} />,
-        },
-        slotProps: {
-            mark: ({value, meta}) => {
-                // Parse meta: "userId|displayName|avatar"
-                const [userId = '', displayName = '', avatar = ''] = (meta || '').split('|')
+        Mark: MentionMark,
+        Overlay: () => <MentionOverlay users={USERS} />,
+        mark: ({value, meta}: MarkProps) => {
+            // Parse meta: "userId|displayName|avatar"
+            const [userId = '', displayName = '', avatar = ''] = (meta || '').split('|')
 
-                return {
-                    username: value || '',
-                    userId,
-                    displayName,
-                    avatar,
-                    onMentionClick: handleMentionClick,
-                }
-            },
+            return {
+                username: value || '',
+                userId,
+                displayName,
+                avatar,
+                onMentionClick: handleMentionClick,
+            }
         },
     }
 
@@ -572,17 +571,18 @@ This allows the mark to have all necessary data for rendering.
 
 ### Variation 1: Async User Loading
 
-```tsx
+```tsx fragment uses=User
 const MentionOverlayAsync: FC = () => {
     const {match, select} = useOverlay()
     const [users, setUsers] = useState<User[]>([])
     const [loading, setLoading] = useState(false)
+    const query = match?.value ?? ''
 
     useEffect(() => {
         const fetchUsers = async () => {
             setLoading(true)
             try {
-                const response = await fetch(`/api/users/search?q=${encodeURIComponent(match.value)}`)
+                const response = await fetch(`/api/users/search?q=${encodeURIComponent(query)}`)
                 const data = await response.json()
                 setUsers(data)
             } catch (error) {
@@ -592,12 +592,12 @@ const MentionOverlayAsync: FC = () => {
             }
         }
 
-        if (match.value.length >= 2) {
+        if (query.length >= 2) {
             fetchUsers()
         } else {
             setUsers([])
         }
-    }, [match.value])
+    }, [query])
 
     if (loading) {
         return <div className="mention-overlay-loading">Loading...</div>
@@ -609,7 +609,7 @@ const MentionOverlayAsync: FC = () => {
 
 ### Variation 2: Group Mentions
 
-```tsx
+```tsx fragment
 interface Group {
     id: string
     name: string
@@ -625,21 +625,19 @@ const GroupMentionMark: FC<{name: string; memberCount: number}> = ({name, member
 }
 
 // Usage
-const groupOption: Option = {
+const groupOption: Option<{name: string; memberCount: number}> = {
     markup: '@@[__value__](__meta__)',
-    slots: {mark: GroupMentionMark},
-    slotProps: {
-        mark: ({value, meta}) => ({
-            name: value,
-            memberCount: parseInt(meta || '0'),
-        }),
-    },
+    Mark: GroupMentionMark,
+    mark: ({value, meta}: MarkProps) => ({
+        name: value ?? '',
+        memberCount: parseInt(meta || '0'),
+    }),
 }
 ```
 
 ### Variation 3: Rich User Cards on Hover
 
-```tsx
+```tsx fragment uses=MentionProps,fetchUserCard,UserCard
 const MentionWithCard: FC<MentionProps> = props => {
     const [showCard, setShowCard] = useState(false)
     const [cardData, setCardData] = useState(null)
@@ -661,7 +659,7 @@ const MentionWithCard: FC<MentionProps> = props => {
 
 ### Variation 4: Mention Notifications
 
-```tsx
+```tsx fragment
 const MentionEditorWithNotifications: FC = () => {
     const [value, setValue] = useState('')
     const [mentionedUsers, setMentionedUsers] = useState<string[]>([])
@@ -735,7 +733,7 @@ const MentionEditorWithNotifications: FC = () => {
 
 ### Saving Mentions
 
-```tsx
+```tsx fragment
 const handleSubmit = async () => {
     // Extract mentions from value
     const mentions = extractMentions(value)
@@ -772,7 +770,7 @@ function extractMentions(text: string) {
 
 ### Loading Saved Mentions
 
-```tsx
+```tsx fragment uses=setValue
 const loadPost = async (postId: string) => {
     const response = await fetch(`/api/posts/${postId}`)
     const post = await response.json()
@@ -785,7 +783,7 @@ const loadPost = async (postId: string) => {
 
 ## Accessibility
 
-```tsx
+```tsx fragment uses=MentionProps,mentionedUsers
 const AccessibleMentionMark: FC<MentionProps> = props => {
     return (
         <button

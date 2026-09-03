@@ -2,7 +2,7 @@ import {KEYBOARD} from '../../shared/constants'
 import {listen} from '../../shared/signals/index.js'
 import type {Store} from '../../store/Store'
 
-type KbCtx = Pick<Store, 'edit' | 'tokens'>
+type KbCtx = Pick<Store, 'edit' | 'history' | 'overlay' | 'rows' | 'tokens'>
 import {captureMarkupPaste, consumeMarkupPaste} from '../clipboard'
 import {
 	anchorsForDelete,
@@ -10,9 +10,19 @@ import {
 	dropUnexpressedInput,
 	isConsumerKeyOrigin,
 	isConsumerOrigin,
+	ownsPlatformUndo,
 	replacementForInput,
 } from './beforeInput'
-import {handleRowEnter, handleRowParagraph} from './blockEdit'
+import {
+	demoteAtRowEntry,
+	handleRowEnter,
+	handleRowIndent,
+	handleRowParagraph,
+	handleRowSelection,
+	replaceRowSelection,
+	widenRowScope,
+	writeRowsFromInput,
+} from './rowKeys'
 
 export function enableInput(store: KbCtx, container: HTMLElement): void {
 	listen(container, 'paste', e => {
@@ -30,6 +40,27 @@ export function enableInput(store: KbCtx, container: HTMLElement): void {
 	)
 
 	listen(container, 'keydown', e => {
+		// THE EDITOR'S OWN UNDO (ADR-0012), and it is the ONE arm that runs ahead of the
+		// consumer-origin gate below, because a consumer control's edit is an edit to the
+		// DOCUMENT and this stack is the only thing that can take it back. Ticking a to-do
+		// leaves focus on the `<input type=checkbox>` — the browser's own default, reached by
+		// the plainest gesture the page has — and the gate then swallowed the `Mod+Z` after it
+		// whole. The entry was on the stack the whole time and replayed the moment focus
+		// returned to a text row; only the key was dead.
+		//
+		// It cancels whether or not there is anything to undo: the browser's stack is empty by
+		// construction — every input path prevents its default (ADR-0006) — so leaving the key
+		// alone would produce nothing anyway, and letting it through would be a promise this
+		// editor cannot keep. `code`, like select-all below, because the physical key is the
+		// shortcut. {@link ownsPlatformUndo} is the exception: a text field or an editable island
+		// has a stack of its own, and that one is not ours to take.
+		if ((e.ctrlKey || e.metaKey) && e.code === 'KeyZ' && !ownsPlatformUndo(container, e)) {
+			e.preventDefault()
+			if (e.shiftKey) store.history.redo()
+			else store.history.undo()
+			return
+		}
+
 		// ONE consumer-origin test for the WHOLE keydown tier, matching what
 		// `handleBeforeInput` does on its own: DOM the consumer owns — a registered control
 		// root, or an explicit `contenteditable` island — handles its own keys, and the model
@@ -43,17 +74,53 @@ export function enableInput(store: KbCtx, container: HTMLElement): void {
 		if (isConsumerKeyOrigin(store, container, e)) return
 
 		// Layout-independent on purpose: selecting the whole value is a model operation, and
-		// block rows are values too.
+		// rows are values too. Where the document has rows it CLIMBS to it instead of jumping —
+		// the caret's own row, then the row that one is nested in, then the whole value — which is
+		// {@link widenRowScope}, the same ladder Esc walks. In an INLINE editor the rung declines
+		// on its own (there is no row to select) and this is select-all exactly as it was.
 		if ((e.ctrlKey || e.metaKey) && e.code === 'KeyA') {
 			e.preventDefault()
-			store.tokens.selection.selectAll()
+			if (!widenRowScope(store)) store.tokens.selection.selectAll()
 			return
 		}
-		// The block ARM, after the shared checks and answering only in block layout. It used to
-		// be a second keydown listener on this same container that repeated both of them.
+
+		if (handleLineBoundary(store, e)) return
+
+		// The ROW arms, after the shared checks and answering only where the value parses into
+		// rows. They used to be a second keydown listener on this same container that repeated
+		// both checks; Backspace's row arm is the one that is not here, because it belongs INSIDE
+		// the delete arm rather than beside it.
 		handleRowEnter(store, e)
+		handleRowIndent(store, e)
+		handleRowSelection(store, e)
 		handleDeleteKey(store, e)
 	})
+}
+
+/**
+ * HOME AND END, and the shifted pair with them — the caret to its visual line's edge. Answers
+ * whether it consumed the key.
+ *
+ * THE EDITOR OWNS THESE TWO KEYS, which is a change and not a repair of one: on macOS the browser
+ * binds them to SCROLLING the document, so inside any page with room left to scroll the key
+ * scrolled and the caret stayed where it was — then the next press, with nothing left to scroll,
+ * moved it. Measured with no editor in the page at all, so this is not a defect the editor
+ * introduced; it is the platform's answer, and it is the wrong one for a field whose content is
+ * the thing being navigated. See {@link DomModel.moveToLineBoundary} for the primitive.
+ *
+ * A MODIFIER LEAVES IT ALONE. Cmd+Left/Right is macOS's own line-edge pair and Ctrl+Home is the
+ * document edge everywhere else; both belong to the platform, and this arm only claims the bare
+ * key. It is also AFTER the consumer-origin gate above, so a `<select>`, an `<input>` or an
+ * editable island inside a row keeps its own Home and End.
+ */
+function handleLineBoundary(store: KbCtx, event: KeyboardEvent): boolean {
+	if (event.key !== KEYBOARD.HOME && event.key !== KEYBOARD.END) return false
+	if (event.ctrlKey || event.metaKey || event.altKey) return false
+	if (!store.tokens.moveToLineBoundary(event.key === KEYBOARD.END ? 'forward' : 'backward', event.shiftKey)) {
+		return false
+	}
+	event.preventDefault()
+	return true
 }
 
 function handleDeleteKey(store: KbCtx, event: KeyboardEvent): void {
@@ -88,11 +155,47 @@ function handleDeleteKey(store: KbCtx, event: KeyboardEvent): void {
 	const anchors = store.tokens.domAnchors()
 	if (!anchors) return
 
+	// The ROW arms, and they sit HERE rather than beside this one so they inherit every check above.
+	// At a row's own entry Backspace DEMOTES — depth first, then kind — and only once the row has
+	// neither left does the expansion below take the boundary and merge the two rows. Over a ROW
+	// SELECTION the rows themselves leave, openers and all; deleting the span between the anchors
+	// instead left the first row's opener standing as an empty row of that kind.
+	if (event.key === KEYBOARD.BACKSPACE && demoteAtRowEntry(store, anchors)) {
+		event.preventDefault()
+		return
+	}
+	if (store.tokens.replaceRows(anchors, null)) {
+		event.preventDefault()
+		return
+	}
+
 	const inputType = event.key === KEYBOARD.BACKSPACE ? 'deleteContentBackward' : 'deleteContentForward'
 	const target = anchorsForDelete(store, inputType, anchors)
-	if (!target) return
 
+	// CANCELLED WHETHER OR NOT THE MODEL CAN EXPRESS IT, which is ADR-0006's rule and the one
+	// place a plain delete was still leaking out of it. `undefined` means the neighbour is not
+	// anchorable — a raw closed body's closing literal, a document edge — and declining here does
+	// not leave the key alone: Chromium then emits its OWN `deleteContentForward` carrying a
+	// RANGED target range, which outranks the live caret downstream and is applied verbatim.
+	// Measured on a fence: `'```bash⏎ls⏎```⏎plain'` with the caret at the end of `ls` emitted
+	// `'```bash⏎lsplain'` — the closing line and the kind gone, from one keystroke. There is no
+	// merge to offer across such a boundary in either direction, so the key is consumed and does
+	// nothing, which is Backspace's answer at a carved piece's start.
+	//
+	// The extents that legitimately need the browser's own event — a word or line delete — never
+	// reach here: the modifier test above declines ahead of this.
+	//
+	// AND IT SAYS NOTHING WHEN IT DECLINES. This arm announced the refusal for one release and the
+	// announcement was wrong more often than it was right: `undefined` above conflates the raw-body
+	// boundary with the plain DOCUMENT EDGE — Backspace at offset 0, Delete at the end — which is
+	// not a declined gesture but the universal no-op of every text field. The tint restarts on
+	// every keydown REPEAT, so holding Backspace at the top of a document painted a continuous
+	// alarm over the first row. Telling the two apart needs {@link boundarySpan} to distinguish
+	// "found and refused" from "not found", which grows its published return type for one key; the
+	// channel keeps the gestures a user actually aims — Tab, Shift+Enter, a typed character over a
+	// frozen row.
 	event.preventDefault()
+	if (!target) return
 	store.edit.replace(target.anchor, target.head, '')
 }
 
@@ -102,6 +205,18 @@ function handleBeforeInput(store: KbCtx, container: HTMLElement, event: InputEve
 	// event came from, so a character typed into a control's own `<input>` would replace
 	// the entire value with that character.
 	if (isConsumerOrigin(store, container, event)) return
+
+	// The same two commands as the keydown arm, in the spelling that does NOT come from a key: the
+	// Edit menu, a trackpad gesture, a touch keyboard's own undo. Ahead of the all-selected branch,
+	// which would otherwise read them as a replacement of the whole value, and ahead of the
+	// replacement table, which has no expression for them — so this is what stops both types
+	// failing closed through `dropUnexpressedInput` (ADR-0012 amends ADR-0006).
+	if (event.inputType === 'historyUndo' || event.inputType === 'historyRedo') {
+		event.preventDefault()
+		if (event.inputType === 'historyUndo') store.history.undo()
+		else store.history.redo()
+		return
+	}
 
 	if (store.tokens.selection.isAllSelected()) {
 		// The `paste` listener owns this one end-to-end: it consumes the markup
@@ -121,15 +236,15 @@ function handleBeforeInput(store: KbCtx, container: HTMLElement, event: InputEve
 			return
 		}
 		event.preventDefault()
-		store.edit.setValue(replacement)
+		store.edit.setValue(replacement.text)
 		return
 	}
 
-	// The block ARM, after the two checks above and answering only in block layout. It used to
+	// The ROW ARM, after the two checks above and answering only where the document has rows. It used to
 	// be a second CAPTURE listener on this same container, which repeated the control-root half
 	// of `isConsumerOrigin`, skipped whatever this one had already prevented, and — the reason
 	// this order matters — never took the island half at all. Everything past it is shared: the
-	// block tail was a copy of the one below.
+	// row tail was a copy of the one below.
 	if (handleRowParagraph(store, container, event)) return
 
 	const anchors = anchorsFromInputEvent(store, event)
@@ -139,15 +254,48 @@ function handleBeforeInput(store: KbCtx, container: HTMLElement, event: InputEve
 		return
 	}
 
-	// Only a DELETE expands; every other type edits exactly the span the event named.
-	const target = event.inputType.startsWith('delete') ? anchorsForDelete(store, event.inputType, anchors) : anchors
+	// The two ROW arms, which need both of the reads above. A paste or a cut over whole rows writes
+	// over their LINES, which no pair of anchors can address; a clip that crosses rows opens a row
+	// per line through the same plan Enter's split writes, in whichever language it arrived in.
+	if (replaceRowSelection(store, event, anchors, replacement)) {
+		event.preventDefault()
+		return
+	}
+	// THE SPAN A RANGED EDIT WRITES OVER, asked of its one owner. A typed character has gone through
+	// `TokenModel.rowSelectionText` since the arm above learned to, and a delete through
+	// `anchorsForDelete`; a PASTE, a DROP and an autocorrect replacement asked nobody and wrote the
+	// raw pair, so every structural byte that owner exists to protect was still writable through
+	// this door. MEASURED on `'head⏎```js⏎code⏎```⏎plain'` swept `he|ad`→`co|de`: pasting `'one'`
+	// emitted `'heonede⏎```⏎plain'` — the fence's opener gone and its closing literal left standing
+	// as prose — where typing the same span emits `'heZ⏎```js⏎code⏎```⏎plain'`.
+	//
+	// AHEAD OF THE ROW ARM, because the plan reads the span to decide which rows it crosses: handed
+	// the raw pair it opened its rows across a collapsed toggle's hidden body and across a fence's
+	// interior. `undefined` is that owner's ORDINARY-TEXT verdict and leaves the event's own pair.
+	//
+	// AND A DELETE ASKS IT THROUGH `anchorsForDelete`, NOT HERE. Its answer is DIFFERENT — that door
+	// reads a COLLAPSED pair as a caret before asking, where this line hands one to the owner and
+	// gets back the cover of a row no caret may enter — so the two cannot be folded into one call;
+	// what this one can do is not run. A delete's replacement is `''`, so `writeRowsFromInput`
+	// refuses at its first test without reading the pair, and `written` was then discarded unread.
+	// MEASURED: a second full document walk per ranged delete, 0.775 ms at 4000 rows
+	// (`rowVerbCost.bench.ts`'s W5), against a 5.9 ms keystroke.
+	const deleting = event.inputType.startsWith('delete')
+	const written = deleting ? anchors : (store.tokens.rowSelectionText(anchors) ?? anchors)
+	if (writeRowsFromInput(store, written, replacement)) {
+		event.preventDefault()
+		return
+	}
+
+	// Only a DELETE expands; every other type edits exactly the span the owner above answered.
+	const target = deleting ? anchorsForDelete(store, event.inputType, anchors) : written
 	if (!target) {
 		dropUnexpressedInput(container, event)
 		return
 	}
 
 	event.preventDefault()
-	store.edit.replace(target.anchor, target.head, replacement)
+	store.edit.replace(target.anchor, target.head, replacement.text)
 }
 
 function handlePaste(store: KbCtx, container: HTMLElement, event: ClipboardEvent): void {

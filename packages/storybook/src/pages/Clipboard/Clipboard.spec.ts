@@ -436,28 +436,28 @@ describe('Clipboard: paste', () => {
 		expect(sel.anchorOffset).toBe(0)
 	})
 
-	it('reconstruct the mark inside a block when markput data is pasted in drag mode', async () => {
-		// Drag story: layout 'block', defaultValue "hello\n@[world](1)\nfoo".
-		// Each line is a separate draggable block; the container is the one editing host.
+	it('reconstruct the mark inside a row when markput data is pasted in drag mode', async () => {
+		// Drag story: separator '\n', defaultValue "hello\n@[world](1)\nfoo".
+		// Each line is a separate draggable row; the container is the one editing host.
 		const {host} = await mount(Drag)
 		expect(host.querySelectorAll('mark').length).toBe(1)
 
-		// Focus the first block ("hello") and place caret at end
-		const blocks = childrenOf(host)
-		expect(blocks.length).toBeGreaterThan(0)
-		const firstBlock = blocks[0]
+		// Focus the first row ("hello") and place caret at end
+		const rows = childrenOf(host)
+		expect(rows.length).toBeGreaterThan(0)
+		const firstRow = rows[0]
 		host.focus()
 		await flush()
 
-		const firstBlockText = firstTextNode(firstBlock)
-		if (!firstBlockText) throw new Error('no text node in first block')
+		const firstRowText = firstTextNode(firstRow)
+		if (!firstRowText) throw new Error('no text node in first row')
 
-		window.getSelection()!.collapse(firstBlockText, firstBlockText.length)
+		window.getSelection()!.collapse(firstRowText, firstRowText.length)
 
 		const pasteClipboard = new DataTransfer()
 		pasteClipboard.setData('text/plain', ' test')
 		pasteClipboard.setData('application/x-markput', '@[test](99)')
-		pasteAt(host, pasteClipboard, firstBlockText, firstBlockText.length)
+		pasteAt(host, pasteClipboard, firstRowText, firstRowText.length)
 
 		await expect.element(page.getByRole('mark').first()).toBeInTheDocument()
 		const marksLocator = page.getByRole('mark')
@@ -535,7 +535,7 @@ describe('Clipboard: cut', () => {
 		const {host} = await mount(Drag)
 		const before = host.textContent
 		// The grip is painted by the editor's controls layer on the row nearest the pointer, so it
-		// is in the DOM only while a row is hovered — where block layout used to render one per
+		// is in the DOM only while a row is hovered — where the rows used to render one per
 		// row, always mounted and merely transparent.
 		await userEvent.hover(childrenOf(host)[0])
 		const button = page.elementLocator(host).getByRole('button').first().element()

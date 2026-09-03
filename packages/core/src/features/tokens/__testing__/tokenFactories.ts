@@ -20,9 +20,17 @@ export function markToken(value: string, content: string, start: number, childre
 		children,
 	}
 }
-/** A block-mode row, `terminated` false so its content needs no trailing separator. */
+/** A PARAGRAPH row: no kind, and its body is the whole span it covers. */
 export function rowToken(content: string, start: number, children: Token[]): RowToken {
-	return {type: 'row', content, position: {start, end: start + content.length}, children, terminated: false}
+	return {
+		type: 'row',
+		content,
+		position: {start, end: start + content.length},
+		slot: {content, start, end: start + content.length},
+		lead: '',
+		children,
+		rows: [],
+	}
 }
 /**
  * The same fixtures as LIVE nodes, for the consumers that address rows and marks as
@@ -31,7 +39,7 @@ export function rowToken(content: string, start: number, children: Token[]): Row
  * `slot` — rather than a hand-forged literal that would drift from `TreeNode`.
  * Unwired, so `update`/`remove` answer `false` (see `createTokenTree`).
  */
-export function nodesOf(tokens: readonly Token[]): readonly TreeNode[] {
+export function nodesOf(tokens: readonly (Token | RowToken)[]): readonly TreeNode[] {
 	return createTokenTree(tokens).roots()
 }
 /**

@@ -70,7 +70,7 @@ the framework has not repainted yet.
   writer.
 - `valueBoundary.ts` — the string boundary: commit policy plus arrival routing.
   Controlled mode emits and waits for the echo it spliced; uncontrolled commits
-  straight through. Block mode's parse routes through `parseRows` here — the
+  straight through. The row parse routes through `parseRows` here — the
   structural separator forms the rows (ADR-0009).
 - `__testing__/snapshot.ts` — TEST-ONLY, no production caller:
   `stripIds(snapshot(tree))` deep-equals a fresh parse of the tree's projection.
@@ -121,11 +121,11 @@ it. What holds the position writes correct is the snapshot ORACLE
 `adopt.property.spec.ts` asserts the whole tree against a fresh parse after
 every adopt, so a position left stale is a deep-equal mismatch.
 
-**Block-typing consequence:** every block row is a `RowNode` whose content is its
+**Row-typing consequence:** every row is a `RowNode` whose content is its
 children (ADR-0009), so without in-row adoption each keystroke in a row would be
 a whole-row replacement → structural → re-render. With it the keystroke touches
 only the row's text child → text path → the surface is patched with ZERO
-component re-renders — gated end-to-end by the block render-count specs
+component re-renders — gated end-to-end by the row render-count specs
 (`packages/storybook/src/pages/renderCount.spec.ts`, one file held against both
 adapters).
 
@@ -167,7 +167,7 @@ framework paints → a ref fires → consign(id)(element) → rebind(id): that i
 - **A control registration binds nothing.** `dom/controlRoots.ts` owns which
   elements sit under a control root and updates in place, because that answer is a
   DOM walk from each control up to the host and touches no token. It used to be
-  recomputed inside every bind, which made a block mount quadratic — block layout
+  recomputed inside every bind, which made a mount with rows quadratic — the rows
   registers up to four controls per ROW.
 - **Text is not the pipeline's business.** `bind` arms
   `effect(() => { const t = node.text(); if (el.textContent !== t) el.textContent = t })`
@@ -209,7 +209,7 @@ framework paints → a ref fires → consign(id)(element) → rebind(id): that i
   The `{added, removed, updated}` payload and the ledger that derived it are
   GONE: nothing in core read them once the per-row block store moved to a
   node-keyed `WeakMap`, which was its last reader — and that store is itself
-  gone now, replaced by one editor-level `BlockController`. `committed` no longer
+  gone now, replaced by one editor-level `RowController`. `committed` no longer
   surfaces publicly
   either — `MarkputHandle.changed` was withdrawn with the rest of the v2 verbs.
 
@@ -241,7 +241,7 @@ successful bind re-attaches the same handles. Alignment is all-or-nothing per
 frame — a count mismatch drops that frame AND every descendant frame with it,
 because a dropped frame never enqueues its children.
 
-**Block layout:** each immediate container child is a row; a row must contain
+**With rows:** each immediate container child is a row; a row must contain
 exactly one non-control element. Alignment is all-or-nothing — one bad row bails
 the whole frame, failing loud when an adapter renders something unexpected.
 
@@ -255,14 +255,15 @@ find(id) // the live TreeNode by stable id
 selection: Selection // THE stored anchors and their derivations (see below)
 
 // writes
-replaceBetween(from, to, text) / setValue(text, enterRoot?)
-// `enterRoot` puts the caret INTO that row of the RESULT, so a caller never forms an
-// absolute offset into a string that does not exist yet (ADR-0003)
+replaceBetween(from, to, text) / setValue(text)
+// neither names a caret: the splice's own post-edit anchor answers one, and a caller
+// never forms an absolute offset into a string that does not exist yet (ADR-0003)
 // per-node writes are MarkNode.update / MarkNode.remove, which ride a transaction
 
 // tree reads, in tree coordinates
 valueBetween(from, to) / adjacentMark(anchor, ±1) / step(anchor, ±1)
-rootIndexOf(id)
+rowsWithin(anchors) / rowScope(anchors, 'row'|'out'|'up'|'down') // the row selection and its gestures
+dropPlacements(nodes, row, edge) / moveRows(nodes, placement)    // what a multi-row drag asks and does
 
 // renderer contract (adapter-only)
 consign(id) / children(ownerId) / control() // ref callbacks; a ref IS the bind
@@ -279,7 +280,7 @@ anchorFor(node, offset, affinity?)   // DOM (node, offset) → NodeAnchor in the
 caretRect(): DOMRect | undefined     // viewport rect of the caret/selection, on demand
 selectedContent(): {html; text} | undefined // selection serialized for clipboard
 
-// the selection driver's reads, delegated (the driver itself is private)
+// the selection driver, delegated (the driver itself is private)
 domAnchors(): Anchors | undefined    // DOM TRUTH as anchors
 focusFirst()
 
@@ -398,7 +399,7 @@ There is no per-node `dirty` signal, and no event surface: a handle does not
 emit `text`/`moved`/`unmounted`. Consumers detect change through `committed` —
 published as `api.changed` — and re-read.
 
-### Measurement (over the bound elements, row scope in block layout)
+### Measurement (over the bound elements, row scope where the document has rows)
 
 Three reads, all answering an inert default when the handle is unbound:
 
@@ -432,8 +433,11 @@ implemented in `tree.ts`), and they split by the NATURE of the operation rather
 than by node type:
 
 - `NodeCommands` — the STRUCTURAL verbs, on every node: `remove()`,
-  `duplicate()`, `insertAfter(text)`, `mergeWith(next)`, `moveTo(index)`. A block
-  row can be a text node, so a mark-only port could not serve one.
+  `duplicate()`, `insertAfter(text)`, `mergeWith(next)`. A row can be a
+  text node, so a mark-only port could not serve one. The ROW verbs ride the same
+  port and are row-only by their addressing: `setDepth(depth)`,
+  `turnInto(option, patch)`, `splitAt(anchor)` and `moveTo(placement)`, whose
+  `RowPlacement` names a parent ROW and an index among its child rows.
 - `MarkCommands` — `update(patch)`, mark-only because `value`/`meta`/`slot` are.
 
 All of them ride a transaction — `serializeMark` (`seam/TokenModel.ts`, beside the
@@ -442,7 +446,8 @@ verb wiring) renders a patch to markup,
 read-only mode or off the tree, which is the same fail-closed answer a dead node
 gives. Each also OWNS its post-edit caret, applied through one shared rule, with
 one deliberate exception: `moveTo` moves none, because a move takes no position
-out of the document and the stored anchors still name the same characters.
+out of the document and the stored anchors still name the same characters — a
+re-indent included, since a lead is the ROW's bytes and lives in no text node.
 
 `MarkPatch` has no discriminator: an absent (or `undefined`) field is left alone,
 `null` CLEARS it, and a string sets it. Omitted keys are defaulted off the node
@@ -457,7 +462,7 @@ ref fires, and that absence is the whole of the refusal (ADR-0008).
 
 Split in two by owner, and owned HERE. There is no `features/selection/` and no
 `store.selection`: `TokenModel` constructs both halves, publishes the state as
-`tokens.selection` and delegates the driver's two externally-needed reads
+`tokens.selection` and delegates the driver's externally-needed members
 (`domAnchors`, `focusFirst`) the same way it delegates `DomModel`'s.
 
 There is no construction cycle around it: the string boundary calls
@@ -476,7 +481,13 @@ an explicit type annotation to keep `tsc` off TS7022.
 - `dom/SelectionDriver.ts` — the DOM I/O, private to `TokenModel`. Two listeners
   (the document-level `selectionchange` sync, and the `focusout` clear on the
   container) and three watches (`tokens.bound`, `readOnly`, and the stored
-  anchors themselves). BUILT IN THE CONSTRUCTOR
+  anchors themselves). The sync is also callable — `syncFromDom` — because
+  `selectionchange` is delivered on a TASK: an edit arriving before it is
+  addressed from the DOM, so the readings the same edit takes off the stored
+  anchors (the history entry, the pre-image a controlled echo maps) have to come
+  off the DOM too. The caller is `createTransactions`' own `syncSelection` dep —
+  the write gate every verb passes, so an inline edit and a row split read the
+  same caret. BUILT IN THE CONSTRUCTOR
   BODY, not as a field initializer: its dep bag takes `host` and `bound` as
   VALUES, so an initializer would read a constructor parameter property (`tsc`
   rejects it, TS2729) and `#pipeline` (which answers `undefined` silently from any
@@ -500,8 +511,9 @@ lands. Nothing searches the bound surfaces for a nearest position.
 
 ## Parse
 
-Inline and block parse are always a full parse. The boundary parses the whole
-spliced projection — `Parser.parseRows` in block layout, `Parser.parse` inline —
+Both parses are always a full parse. The boundary parses the whole spliced
+projection — `Parser.parseRows` when the document has rows, `Parser.parse` when
+`separator` is `null` and it has none —
 and hands the result to adoption. There is no windowed re-tokenizer: the only incrementality
 is adoption's prefix/suffix retention above. Full-parse cost is tracked by the
 `parser.bench.ts` tripwire.

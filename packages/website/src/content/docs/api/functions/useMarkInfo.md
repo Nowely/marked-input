@@ -15,4 +15,4 @@ Mark metadata for the surrounding mark token context.
 
 ## Returns
 
-`MarkInfo`
+[`MarkInfo`](/api/type-aliases/markinfo/)

@@ -8,7 +8,7 @@ import {TokenHandle} from '../dom/TokenHandle'
 
 function mountInline(value: string) {
 	const store = new Store()
-	store.props.set({defaultValue: value})
+	store.props.set({separator: null, defaultValue: value})
 	const container = document.createElement('div')
 	const span = document.createElement('span')
 	container.append(span)
@@ -21,7 +21,7 @@ function mountInline(value: string) {
 describe('TokenModel lookups', () => {
 	it('fires bound on a consignment, with no commit behind it', () => {
 		const store = new Store()
-		store.props.set({defaultValue: 'hi'})
+		store.props.set({separator: null, defaultValue: 'hi'})
 		const container = document.createElement('div')
 		const span = document.createElement('span')
 		container.append(span)
@@ -64,7 +64,7 @@ describe('TokenModel lookups', () => {
 
 	it('handleAt(node) on a registered control returns control', () => {
 		const store = new Store()
-		store.props.set({defaultValue: 'hello', layout: 'block'})
+		store.props.set({defaultValue: 'hello', separator: '\n\n'})
 		const container = document.createElement('div')
 		const row = document.createElement('div')
 		const control = document.createElement('button')
@@ -98,7 +98,7 @@ describe('TokenModel lookups', () => {
 
 	it('handleAt returns undefined before any commit has run', () => {
 		const store = new Store()
-		store.props.set({defaultValue: 'hello'})
+		store.props.set({separator: null, defaultValue: 'hello'})
 		const span = document.createElement('span')
 
 		expect(store.tokens.handleAt(span)).toBeUndefined()
@@ -106,7 +106,7 @@ describe('TokenModel lookups', () => {
 
 	it('setting the selection before any commit has run does not throw', () => {
 		const store = new Store()
-		store.props.set({defaultValue: 'hello'})
+		store.props.set({separator: null, defaultValue: 'hello'})
 		// intentionally NOT setting store.host.container() — no commit has run
 
 		expect(() => caretAt(store, 0)).not.toThrow()
@@ -138,7 +138,7 @@ describe('TokenModel.nodes() — the fresh reconciled read', () => {
 
 	it('nodes() is [] before any commit has run', () => {
 		const store = new Store()
-		store.props.set({defaultValue: 'hello'})
+		store.props.set({separator: null, defaultValue: 'hello'})
 		expect(treeShape(store.tokens.nodes())).toEqual([])
 	})
 
@@ -147,7 +147,12 @@ describe('TokenModel.nodes() — the fresh reconciled read', () => {
 		// moved down here from the public handle's spec when the handle stopped answering reads;
 		// both adapters render straight off this one, so its reactive half has to stay gated.
 		const store = new Store()
-		store.props.set({defaultValue: 'hello', Mark: () => null, options: [{markup: '@[__value__](__meta__)'}]})
+		store.props.set({
+			separator: null,
+			defaultValue: 'hello',
+			Mark: () => null,
+			options: [{markup: '@[__value__](__meta__)'}],
+		})
 		const container = document.createElement('div')
 		container.append(document.createElement('span'))
 		document.body.append(container)
@@ -187,7 +192,7 @@ describe('TokenModel.handle(id) — the id-keyed fail-closed lookup', () => {
 
 	it('handle(id) returns undefined before any commit has run', () => {
 		const store = new Store()
-		store.props.set({defaultValue: 'hello'})
+		store.props.set({separator: null, defaultValue: 'hello'})
 		expect(store.tokens.handle(0)).toBeUndefined()
 	})
 })

@@ -2,7 +2,7 @@ import {faker} from '@faker-js/faker'
 import {beforeEach, describe, expect, it} from 'vitest'
 
 import {KEYBOARD} from '../../shared/constants'
-import {filterSuggestions} from './filterSuggestions'
+import {filterSuggestions, suggestionLabel} from './filterSuggestions'
 import {navigateSuggestions} from './suggestionNavigation'
 
 const FAKER_SEED = 12345
@@ -12,30 +12,24 @@ beforeEach(() => {
 })
 
 describe('navigateSuggestions', () => {
+	/**
+	 * THE ONLY REFUSAL. A list with no rows leaves every key to whoever else wants it — which is
+	 * what keeps Enter splitting the row when the query matches nothing.
+	 */
 	describe('empty list', () => {
 		it.each([KEYBOARD.UP, KEYBOARD.DOWN, KEYBOARD.ENTER, KEYBOARD.ESC])('answers none for %s', key => {
 			expect(navigateSuggestions(key, 2, 0)).toEqual({action: 'none', index: 2})
 		})
-
-		it('passes a NaN active index through', () => {
-			expect(navigateSuggestions(KEYBOARD.DOWN, NaN, 0)).toEqual({action: 'none', index: NaN})
-		})
 	})
 
-	describe('nothing active yet (NaN)', () => {
-		it('answers index 0 on DOWN', () => {
-			expect(navigateSuggestions(KEYBOARD.DOWN, NaN, 3)).toEqual({action: 'down', index: 0})
-		})
-
-		it('answers index 0 on UP', () => {
-			expect(navigateSuggestions(KEYBOARD.UP, NaN, 3)).toEqual({action: 'up', index: 0})
-		})
-
-		// The guard that stops an overlay with no highlighted row from committing a mark the user
-		// never picked; Base.spec.ts covers the DOM consequence.
-		it('refuses to select on ENTER', () => {
-			expect(navigateSuggestions(KEYBOARD.ENTER, NaN, 3)).toEqual({action: 'none', index: NaN})
-		})
+	/**
+	 * ENTER PICKS, WITH NO ARROW FIRST. A list that has rows always has one highlighted
+	 * (`OverlayListModel.active`), so Enter is a complete gesture from the moment the list opens —
+	 * `/page t` narrows to one entry and Enter takes it, where it used to split the row and leave
+	 * the literal `/page t` behind.
+	 */
+	it('selects the highlighted row on ENTER, from the very first press', () => {
+		expect(navigateSuggestions(KEYBOARD.ENTER, 0, 3)).toEqual({action: 'select', index: 0})
 	})
 
 	describe('DOWN', () => {
@@ -113,5 +107,22 @@ describe('filterSuggestions', () => {
 
 		expect(data).toEqual(before)
 		expect(filtered).not.toBe(data)
+	})
+
+	it('matches a row carrying an identity by the label it shows, not by what it writes', () => {
+		const data = [
+			{value: 'Sarah Chen', meta: 'sarah.chen'},
+			{value: 'Marcus Kane', meta: 'marcus.kane'},
+		]
+
+		// `marcus.kane` is a substring of nothing shown: the id must not be part of the haystack.
+		expect(filterSuggestions(data, 'kane')).toEqual([data[1]])
+		expect(filterSuggestions(data, '.')).toEqual([])
+	})
+
+	it('prefers an explicit label over the value, which is the row a user reads', () => {
+		expect(suggestionLabel('Alice')).toBe('Alice')
+		expect(suggestionLabel({value: 'sarah.chen'})).toBe('sarah.chen')
+		expect(suggestionLabel({value: 'sarah.chen', label: 'Sarah Chen'})).toBe('Sarah Chen')
 	})
 })

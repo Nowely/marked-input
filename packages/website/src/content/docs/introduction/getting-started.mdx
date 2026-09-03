@@ -100,16 +100,19 @@ Add the `options` prop to enable autocomplete suggestions:
 
 The `options` prop configures autocomplete behavior:
 
-- **`markup`** — the pattern for inserted text (`__value__` inserts plain text)
-- **`slotProps.overlay`** — configuration for the built-in `Suggestions` component:
+- **`markup`** — the pattern the choice is written as. A markup must not begin with a placeholder, so
+  there is always a literal opener; `@[__value__]` turns `Alice` into `@[Alice]`
+- **`overlay`** — configuration for the built-in `Suggestions` component:
     - **`trigger`** — character that opens the overlay (here: `@`)
     - **`data`** — array of suggestions to display
+- **`Mark`** — the component that renders what was inserted
 
 When you type the trigger character `@`:
 
 1. Markput **detects** the trigger and shows the built-in `Suggestions` component
 2. As you type, suggestions are **filtered** based on your input
-3. When you select an item (e.g., `'Alice'`), Markput **inserts** the text
+3. When you select an item (e.g., `'Alice'`), Markput **writes** `@[Alice]` into the value and
+   renders it through `Mark`
 
 Keyboard navigation is built-in (↑↓ to navigate, Enter to select, Esc to close).
 
@@ -136,6 +139,34 @@ The `useOverlay` hook returns an object with everything you need to build a cust
 The hook handles all the complexity: detecting triggers, tracking the search query, and positioning the overlay. When you call `select({value, meta})`, it inserts the markup and closes the overlay.
 
 In this example, we fetch GitHub users and store the username as `value` and avatar URL as `meta`. The `Mark` component then uses `meta` to display the avatar. You can use any UI library or custom component. Markput doesn't impose styling constraints.
+
+## Rows Come For Free
+
+The editor above is already a multi-row document: `separator` defaults to `'\n'`, so every line is a
+**row** with its own drag grip and its own place in the tree. Enter opens a row, Tab nests one under
+another, `Esc` selects one, and `Ctrl/Cmd+Z` undoes — the editor keeps its own history stack.
+
+An option that declares `row` turns its markup into a **row kind**, matched only at a row's own
+start:
+
+```tsx uses=Heading,Bullet
+import {MarkedInput} from '@markput/react'
+
+<MarkedInput
+    defaultValue={'# Launch plan\n- ship it'}
+    draggable
+    options={[
+        {overlay: {trigger: '/'}},
+        {markup: '# __slot__', row: {Component: Heading}, menu: {label: 'Heading 1'}},
+        {markup: '- __slot__', row: {Component: Bullet, continues: true, indents: true}, menu: {label: 'Bulleted list'}},
+    ]}
+/>
+```
+
+That is the whole wiring for a `/` menu too: an option that declares a `menu` IS in it. Read
+[Rows and Nesting](/guides/rows) next, then [Row Kinds](/guides/row-kinds).
+
+Pass `separator={null}` if you want the old behaviour — one document, no rows, no row controls.
 
 ## Try It Live
 

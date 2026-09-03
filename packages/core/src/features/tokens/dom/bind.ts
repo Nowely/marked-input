@@ -37,6 +37,8 @@ export type ElementSource = {
 	 * are on the page and neither can be trusted to be this one's.
 	 */
 	childSequenceHost(ownerId: number): HTMLElement | undefined
+	/** The same, for a ROW's child-rows host. See {@link ElementBindings.rowSequenceHost}. */
+	rowSequenceHost(ownerId: number): HTMLElement | undefined
 }
 
 /** The mutable node-layer state both binding paths share. */
@@ -150,6 +152,7 @@ export function rebindNode(node: TreeNode, target: BindTarget): void {
 	forget(byElement, previous, bindings)
 	byElement.set(bindings.tokenElement, handle)
 	if (bindings.childSequenceHost) byElement.set(bindings.childSequenceHost, handle)
+	if (bindings.rowSequenceHost) byElement.set(bindings.rowSequenceHost, handle)
 }
 
 /**
@@ -165,9 +168,12 @@ function forget(
 	next?: ElementBindings
 ): void {
 	if (!previous) return
-	for (const element of [previous.tokenElement, previous.childSequenceHost]) {
+	for (const element of [previous.tokenElement, previous.childSequenceHost, previous.rowSequenceHost]) {
 		if (!element) continue
-		if (next && (element === next.tokenElement || element === next.childSequenceHost)) {
+		if (
+			next &&
+			(element === next.tokenElement || element === next.childSequenceHost || element === next.rowSequenceHost)
+		) {
 			continue
 		}
 		byElement.delete(element)
@@ -202,12 +208,15 @@ function bindingsFor(node: TreeNode, source: ElementSource): ElementBindings | u
 	// The `contains` test survives the walk's deletion: a host registered under this owner
 	// but sitting outside its element belongs to a generation that has not been torn down.
 	const childSequenceHost = host && element.contains(host) ? host : undefined
+	const rowHost = source.rowSequenceHost(node.id)
+	const rowSequenceHost = rowHost && element.contains(rowHost) ? rowHost : undefined
 	return {
 		tokenElement: element,
 		// A Surface is a TEXT token's own element — the walk gave one to text nodes only, and
 		// that equivalence is what lets the text effect write straight into it.
 		textElement: node.kind === 'text' ? element : undefined,
 		childSequenceHost,
+		rowSequenceHost,
 	}
 }
 

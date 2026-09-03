@@ -1,7 +1,7 @@
 import {faker} from '@faker-js/faker'
 import {describe, expect, it} from 'vitest'
 
-import {gapWindow} from './gapWindow'
+import {gapWindow, invertWindow} from './gapWindow'
 import type {Window} from './types'
 
 const BASE_SEED = 8_082_026
@@ -59,6 +59,39 @@ describe('gapWindow', () => {
 			const detail = `${JSON.stringify(previous)} → ${JSON.stringify(next)}`
 			expect(gapWindow(previous, next), detail).toEqual(expected)
 		}
+	})
+
+	it('inverts to the splice that undoes it, over the same generated pairs', () => {
+		// The inverse is asserted the only way it can be checked without a tree: applying it to
+		// `next` must reproduce `previous`, in `next`'s own coordinates.
+		for (let i = 0; i < ITERATIONS; i++) {
+			const seed = BASE_SEED + i
+			faker.seed(seed)
+			const [previous, next] = randomPair()
+			const inverse = invertWindow(gapWindow(previous, next))
+			const detail = `seed=${seed} ${JSON.stringify(previous)} → ${JSON.stringify(next)}`
+
+			const applied =
+				next.slice(0, inverse.start) +
+				previous.slice(inverse.start, inverse.start + inverse.insertedLength) +
+				next.slice(inverse.end)
+			expect(applied, detail).toBe(previous)
+		}
+	})
+
+	it('reads the pairing the other way round, and twice is where it started', () => {
+		// `pairing[j] = i` says previous row `i` became row `j`; undoing that move means row `j`
+		// becomes row `i`. A move of the first row of three to the middle, and back.
+		const moved: Window = {start: 0, end: 6, insertedLength: 6, pairing: [1, 0, 2]}
+		expect(invertWindow(moved)).toEqual({start: 0, end: 6, insertedLength: 6, pairing: [1, 0, 2]})
+
+		const rotated: Window = {start: 0, end: 9, insertedLength: 9, pairing: [1, 2, 0]}
+		expect(invertWindow(rotated).pairing).toEqual([2, 0, 1])
+		expect(invertWindow(invertWindow(rotated))).toEqual(rotated)
+	})
+
+	it('carries no pairing when the window had none', () => {
+		expect(invertWindow({start: 2, end: 2, insertedLength: 1})).toEqual({start: 2, end: 3, insertedLength: 0})
 	})
 
 	it('reproduces the next value from the previous one across generated pairs', () => {

@@ -61,11 +61,155 @@ export interface CoreOption {
 	 * "@[__slot__]"
 	 */
 	markup?: Markup
+	/**
+	 * Presence makes this a ROW option: its `markup` is matched ONLY at a row's own start, never
+	 * anywhere inside a line, and matching it TYPES the row — the row renders through this
+	 * option's own component instead of the paragraph slot.
+	 *
+	 * A row markup obeys the mark rules plus three of its own: exactly one body placeholder
+	 * (`__slot__` for an inline-parsed body, `__value__` for a raw one), no second `__value__`,
+	 * and no two placeholders touching. A markup that breaks one, or that compiles to an opener
+	 * an earlier row option already claims, is reported and contributes no row kind.
+	 */
+	row?: RowSpec
 	overlay?: {
 		trigger?: string
 		/** Rows the built-in Suggestions overlay filters against the match value. */
-		data?: string[]
+		data?: readonly Suggestion[]
 	}
+	/**
+	 * ONE contribution to the row menu an overlay offers, and its PRESENCE is what puts the option
+	 * there — an option that declares a menu entry IS the menu, so no list of kinds is written
+	 * anywhere else and no consumer component filters one.
+	 *
+	 * WITH NO {@link markup} IT IS THE UN-TYPING ENTRY: choosing it turns the caret's row back into
+	 * the row with NO kind, which renders through `slots.paragraph`. That is the one kind no option
+	 * can declare, so it was the one entry a block menu could not carry — and every editor has it.
+	 * Core ships no label for it: what it is called, and where it sits in the list, is the
+	 * consumer's, exactly like every other entry.
+	 */
+	menu?: MenuSpec
+}
+
+/** What an option declares to appear in {@link OverlayListModel.rows}. */
+export interface MenuSpec {
+	/**
+	 * What the row shows, and what the typed query is RANKED against: an exact match first, then a
+	 * label the query is a prefix of, then a label holding it anywhere — and only then the same
+	 * three over {@link keywords}, because a term the user cannot see must not outrank one they are
+	 * reading. Declaration order decides inside a band, and decides everything before the first
+	 * character is typed.
+	 */
+	label: string
+	/** Extra query terms that never appear on screen — `'h1'` for Heading 1. */
+	keywords?: readonly string[]
+	/**
+	 * SEEDS for the row this entry writes, and both are DATA rather than a callback: the entry
+	 * says what the row starts as, and `choose` is the only thing that writes it. They apply only
+	 * where there is nothing to keep — a row that already has text keeps its own body, since a
+	 * turn-into must not discard what the user typed.
+	 *
+	 * ONE ROW, so `text` may not carry the document separator. It becomes the row's BODY, and the
+	 * projection re-parses it: an extra line lands at the depth ITS OWN lead says, which for a seed
+	 * is none — so a two-line seed on a NESTED row writes its second line at the document root and
+	 * splits the construct across two depths.
+	 */
+	meta?: string
+	text?: string
+}
+
+/**
+ * ONE ROW of the list an open overlay offers: what to paint, and the pick that choosing it
+ * commits. It is the SAME shape for a suggestion and for a row-menu entry, which is what let the
+ * two lists collapse into {@link OverlayListModel} — a painter reads `label`, a click hands
+ * `pick` straight back to `choose`, and neither has to know which source the row came from.
+ *
+ * Insert-versus-turn-into is NOT here and is not anywhere else either — it is a fact about the
+ * caret's row that `choose` reads for itself, so no row and no overlay member carries a second
+ * copy of it.
+ */
+export type OverlayRow = {label: string; pick: OverlayPick}
+
+/**
+ * WHAT AN OVERLAY ACCEPTS, and a UNION because the two arms are exclusive in fact: naming a row
+ * KIND retypes the caret's row, naming a VALUE writes the trigger option's markup, and no call
+ * does both. Spelled as one optional bag the illegal states were representable — `{}` wrote
+ * `@[]()` into the document, and `{option, value}` typechecked while silently dropping `value`.
+ *
+ * The `?: never` members are load-bearing: a bare union does NOT forbid `{option, value}`,
+ * because excess-property checking against a union accepts any key declared by ANY arm.
+ */
+export type OverlayPick =
+	| {option: CoreOption; value?: never; meta?: never}
+	| {option?: never; value: string; meta?: string}
+
+/**
+ * A row of the built-in Suggestions overlay. A bare string is label and value at once, which is
+ * every list whose text IS what the document stores; the object form separates them, so a row can
+ * carry the identity that goes in the `__meta__` gap of `@[__value__](__meta__)` and a `label`
+ * that is neither. Without it any list with an id behind it had to drop the built-in overlay and
+ * write its own component.
+ */
+export type Suggestion = string | {value: string; meta?: string; label?: string}
+
+/** A row KIND's declaration: what an option adds to make its markup a row rather than a mark. */
+export interface RowSpec {
+	/**
+	 * REQUIRED. Every row kind renders through its own component; `slots.paragraph` is the row
+	 * with no kind, and the only fallback left.
+	 */
+	Component: Slot
+	/**
+	 * WHAT THE ROW A SPLIT PRODUCES IS. `true` is this kind again — a list item continues. `false`
+	 * or absent is a plain row, which is what a heading wants.
+	 *
+	 * THE KIND CONTINUES AND THE ROW'S OWN `meta` DOES NOT. A meta is the ROW's field, not the
+	 * kind's: `- [x] ` says THIS task is done, and Enter after it used to open a second task already
+	 * ticked. What the tail carries instead is the kind's SEED, `menu.meta` — what a row of this
+	 * kind starts as through every other door — so "a new to-do" means the same thing whether the
+	 * menu or Enter opened it. A kind whose meta really belongs to the kind says so by seeding it.
+	 *
+	 * AN OPTION IS A THIRD ANSWER: the tail takes THAT kind, and that kind's seed. A table HEADER is
+	 * the shape that needs it — it continues into a table LINE, not into a second header and not
+	 * into a paragraph, and without it the obvious way to add the first data row (Enter, then type
+	 * the cells) left a paragraph holding literal pipes. The option must be one this editor compiled
+	 * a row kind from, exactly as {@link split}'s `as` must; anything else continues into a plain
+	 * row.
+	 *
+	 * ONE field for the whole rule, and it is the same one Enter at a row's end reads: "another row
+	 * of this kind" and "the tail keeps this kind" are the same question asked at two caret
+	 * positions.
+	 */
+	continues?: boolean | CoreOption
+	/**
+	 * DOES TAB BELONG TO THIS EDITOR. Default false, so an editor no option declares it on leaves
+	 * Tab to the browser and the field stays escapable by keyboard alone — ADR-0002's accepted
+	 * cost, preserved rather than traded for a keyboard trap.
+	 *
+	 * ONE OPTION DECLARING IT ANSWERS FOR THE WHOLE EDITOR, and that is the granularity the
+	 * question has: it gates the KEY, and the key belongs to the field. Whether a PARTICULAR row
+	 * may go one level deeper is a structural question with an owner of its own — the scan's depth
+	 * ceiling plus "does the would-be parent paint child rows" — which is also what a DROP asks. So
+	 * Tab re-indents a row of any kind wherever a drag onto the same gap would, and it is consumed
+	 * even where the verb then refuses the step: a Tab that sometimes moves focus and sometimes
+	 * indents is worse than either.
+	 */
+	indents?: boolean
+	/**
+	 * This kind carves its OWN body at a literal, and each piece becomes an ordinary Row of the
+	 * option `as` names — a table line into cells. A cell is not a node kind of its own: it is a Row
+	 * whose structural bytes are the delimiter it was carved at, so it renders through its option's
+	 * component, holds ordinary inline marks, and round-trips by concatenation.
+	 *
+	 * `as` may be an option with NO markup at all — an anonymous kind, which nothing scans and which
+	 * exists only as a split's target. It must be an option of this editor carrying `row`; anything
+	 * else is reported and this kind carves nothing.
+	 *
+	 * A carved row takes no indent-nested children: its children ARE its body. Tab inside one walks
+	 * to the next piece rather than changing depth, and a piece cannot contain the delimiter — an
+	 * escape scoped to a cell's body is the named follow-up.
+	 */
+	split?: {at: string; as: CoreOption}
 }
 
 export type OverlayMatch<TOption = CoreOption> = {
@@ -104,14 +248,24 @@ export type OverlayTrigger = Array<'change' | 'selectionChange'> | 'change' | 's
 export type CSSProperties = CSS.Properties<string | number>
 export type DataAttributes = Record<`data${Capitalize<string>}`, string | number | boolean | undefined>
 
+/**
+ * THE slot key set, and both adapters extend it rather than restating it.
+ *
+ * A value is a framework component OR an intrinsic tag NAME. The string half is not a convenience:
+ * `resolveSlot`'s `defaultSlots` is a `Record<SlotName, string>`, so every slot a consumer leaves
+ * unset resolves to one, and `Slots.spec`'s `{container: 'article'}` mounts in both adapters.
+ */
 export interface CoreSlots {
-	container?: Slot
-	block?: Slot
+	container?: Slot | string
+	/** The component a row with NO kind renders through. A kind brings its own, so this is never asked for one. */
+	paragraph?: Slot | string
 }
 
+/** THE slot-props key set — NOT the same list as {@link CoreSlots}, and both adapters extend it. */
 export interface CoreSlotProps {
 	container?: Record<string, unknown> & {className?: string; style?: CSSProperties}
-	block?: Record<string, unknown> & {className?: string; style?: CSSProperties}
+	/** Merged onto EVERY row's wrapper — kind or paragraph alike, unlike `slots.paragraph`. */
+	row?: Record<string, unknown> & {className?: string; style?: CSSProperties}
 }
 
 export interface DraggableConfig {

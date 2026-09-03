@@ -1,0 +1,195 @@
+<script setup lang="ts">
+import {ROW_MENU_ITEMS, getAlwaysShowHandle} from '@markput/core'
+import type {RowBox} from '@markput/core'
+import {computed, onScopeDispose, ref, watchEffect} from 'vue'
+
+import {useMarkput} from '../lib/hooks/useMarkput'
+import {useStore} from '../lib/hooks/useStore'
+import {unwrapEl} from '../lib/unwrapEl'
+import List from './Popup/List.vue'
+import ListItem from './Popup/ListItem.vue'
+import Popup from './Popup/Popup.vue'
+
+import styles from '@markput/core/styles.module.css'
+
+/**
+ * ONE absolutely positioned row-controls layer per editor — the Vue mirror of the React
+ * `RowControls`, over the SAME `RowController`. Every decision is core's: the hover pin, the
+ * hit-test, the drop edge and the menu's row all live there, so this file is a painter.
+ *
+ * `RowControls`, not `RowLayer`: `Row.vue` is the row WRAPPER, and two near-identical names
+ * beside each other is the ambiguity this one is named to avoid.
+ */
+const store = useStore()
+const controller = store.rows
+
+const readOnly = useMarkput(s => s.props.readOnly)
+const draggable = useMarkput(s => s.props.draggable)
+const rows = useMarkput(s => s.tokens.nodes)
+const hovered = useMarkput(() => controller.state.hovered)
+const dragging = useMarkput(() => controller.state.dragging)
+const drop = useMarkput(() => controller.state.drop)
+const menu = useMarkput(() => controller.state.menu)
+const menuActive = useMarkput(() => controller.state.menuActive)
+const menuPosition = useMarkput(() => controller.menuPosition)
+const geometry = useMarkput(() => controller.state.geometry)
+const refused = useMarkput(() => controller.state.refused)
+
+const controlRef = store.tokens.control()
+const setLayerRef = (el: unknown) => controlRef(unwrapEl(el))
+const setMenuRef = (el: HTMLElement | null) => controller.menuElement(el)
+
+const alwaysShowHandle = computed(() => getAlwaysShowHandle(draggable.value))
+
+// The row the grip decorates: the dragged row while a drag is live, else the hovered one. The
+// fallback is what `alwaysShowHandle` now means — one layer cannot paint a grip on every row,
+// so the option is "one grip, on the row nearest the pointer", resting on the first row while
+// the pointer is away. DECLARED BEHAVIOUR CHANGE on a published option.
+const gripRow = computed<number | null>(
+	() => dragging.value ?? hovered.value ?? (alwaysShowHandle.value ? (rows.value[0]?.id ?? null) : null)
+)
+
+// Geometry is MEASURED, not inherited from a `position: relative` ancestor: `geometry` is the
+// container's resize/scroll clock and `flush: 'post'` puts the read after this patch painted.
+//
+// The GRIP alone: the drop indicator's line arrives already resolved on `state.drop`, measured by
+// the `dragover` that resolved the placement it will perform, so the layer cannot paint an
+// indicator anywhere but where the drop will land.
+const gripBox = ref<RowBox | null>(null)
+watchEffect(
+	() => {
+		void geometry.value
+		gripBox.value = gripRow.value === null ? null : (controller.boxOf(gripRow.value) ?? null)
+	},
+	{flush: 'post'}
+)
+
+// A row that GROWS as the user types moves the grip with it, and the container's own observer
+// says nothing when the container's size is fixed. Observing the ONE decorated row is the
+// cheapest correct trigger.
+let observer: ResizeObserver | undefined
+watchEffect(
+	() => {
+		observer?.disconnect()
+		observer = undefined
+		const id = gripRow.value
+		if (id === null) return
+		const element = store.tokens.handle(id)?.element()
+		if (!element) return
+		observer = new ResizeObserver(() => {
+			gripBox.value = controller.boxOf(id) ?? null
+		})
+		observer.observe(element)
+	},
+	{flush: 'post'}
+)
+onScopeDispose(() => observer?.disconnect())
+
+// THE REFUSED ROW'S BOX, measured the same way and on the same clock as the grip's — a refusal
+// writes nothing, so the row is where it was, but the layer's own origin still moves under it.
+const refusedBox = ref<RowBox | null>(null)
+watchEffect(
+	() => {
+		void geometry.value
+		const at = refused.value
+		refusedBox.value = at === null ? null : (controller.boxOf(at.id) ?? null)
+	},
+	{flush: 'post'}
+)
+
+// `left` is the ROW's left edge; `.SidePanel`'s negative margin hangs the band off it. The
+// layer's own origin would put it on top of the text wherever core reserves no gutter
+// (`draggable: false`).
+const gripStyle = computed(() => ({
+	top: `${gripBox.value?.top ?? 0}px`,
+	left: `${gripBox.value?.left ?? 0}px`,
+	height: `${gripBox.value?.height ?? 0}px`,
+}))
+// `left` says the DEPTH the drop will land at: core indents the line by the measured indent unit,
+// so the indicator answers "where" and "how deep" at once.
+const dropStyle = computed(() => {
+	const line = drop.value?.line
+	if (!line) return undefined
+	return {top: `${line.top - 1}px`, left: `${line.left}px`, width: `${line.width}px`}
+})
+const refusedStyle = computed(() => {
+	const box = refusedBox.value
+	if (!box) return undefined
+	return {top: `${box.top}px`, left: `${box.left}px`, width: `${box.width}px`, height: `${box.height}px`}
+})
+</script>
+
+<template>
+	<div :ref="setLayerRef" :class="styles.RowControls">
+		<!-- KEYED BY THE PRESS COUNT, which is what restarts the animation: Vue patches one element
+		     across two refusals of the same key on the same row, and an element already carrying an
+		     animation does not replay it. -->
+		<div v-if="refused && refusedStyle" :key="refused.at" :class="styles.RowRefused" :style="refusedStyle" />
+
+		<!-- Painted but INVISIBLE while its row is being dragged, as the per-row panel was: the
+		     grip stays mounted so its own `dragend` still fires (Chromium sends no mouseup for a
+		     drag), and the pointer is away with the drag image anyway. -->
+		<div
+			v-if="!readOnly && gripRow !== null && gripBox"
+			:class="[
+				styles.SidePanel,
+				alwaysShowHandle ? styles.SidePanelAlways : dragging === null && styles.SidePanelVisible,
+			]"
+			:style="gripStyle"
+		>
+			<!-- THE GUTTER'S `+`, left of the grip, where the reference page puts it. It runs the
+			     menu's own first entry on the row the pointer is on, so the two affordances cannot
+			     come to mean different things — what it saves is the click and the pick between
+			     them. Not behind `draggable`: adding a row is a row feature, and only the grip's
+			     drag is drag UI. -->
+			<button
+				type="button"
+				:class="[styles.GripButton, styles.GripButtonAdd]"
+				aria-label="Add a row below"
+				@mousedown="controller.pinHover()"
+				@click.prevent="controller.addRowBelow(gripRow!)"
+			>
+				<span :class="`${styles.Icon} ${styles.IconAdd}`" />
+			</button>
+
+			<!-- The grip is also the menu trigger, so it renders whether or not the rows drag;
+			     `draggable` gates only the drag affordance it carries. -->
+			<button
+				type="button"
+				:draggable="!!draggable"
+				:class="[styles.GripButton, dragging !== null && styles.GripButtonDragging]"
+				:aria-label="draggable ? 'Drag to reorder or click for options' : 'Row options'"
+				@mousedown="controller.pinHover()"
+				@dragstart="e => controller.beginDrag(gripRow!, e)"
+				@dragend="controller.endDrag()"
+				@click.prevent="
+					e => controller.openMenu(gripRow!, (e.currentTarget as HTMLElement).getBoundingClientRect())
+				"
+			>
+				<span :class="`${styles.Icon} ${styles.IconGrip}`" />
+			</button>
+		</div>
+
+		<div v-if="dropStyle" :class="styles.DropIndicator" :style="dropStyle" />
+
+		<Popup
+			v-if="menu"
+			:attach-ref="setMenuRef"
+			:style="{top: menuPosition.top + 'px', left: menuPosition.left + 'px', pointerEvents: 'auto'}"
+		>
+			<List>
+				<!-- `active` is the same prop and the same class the `/` list paints its highlight
+				     with — one list, one keyboard, one look. -->
+				<ListItem
+					v-for="(item, index) in ROW_MENU_ITEMS"
+					:key="item.label"
+					:active="index === menuActive"
+					@mousedown.prevent="item.run(controller)"
+				>
+					<span :class="item.iconClass" />
+					<span>{{ item.label }}</span>
+				</ListItem>
+			</List>
+		</Popup>
+	</div>
+</template>

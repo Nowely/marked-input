@@ -9,6 +9,12 @@ export type ElementBindings = {
 	readonly tokenElement: HTMLElement
 	readonly textElement?: HTMLElement
 	readonly childSequenceHost?: HTMLElement
+	/**
+	 * A ROW's child-ROWS host, beside the inline one above. Two NAMED parts rather than one list,
+	 * because the caret mapping needs the split between a row's `inline()` and its `rows()` to be
+	 * deterministic, and registration order cannot give it.
+	 */
+	readonly rowSequenceHost?: HTMLElement
 }
 
 /**
@@ -62,7 +68,7 @@ export class TokenHandle {
 		return this.#bindings
 	}
 
-	/** The text surface, else the token root — which for a RowNode IS the block wrapper. */
+	/** The text surface, else the token root — which for a RowNode IS the row wrapper. */
 	#measureScope(): HTMLElement | undefined {
 		const bindings = this.#bindings
 		return bindings?.textElement ?? bindings?.tokenElement
@@ -118,8 +124,9 @@ export class TokenHandle {
 		const boundary = this.caretBoundary(offset)
 		const bindings = this.#bindings
 		if (!boundary || !bindings) return false
-		// The ELEMENT, not the boundary node: a text boundary's node is a `Text`, which carries
-		// no `closest`. `caretBoundary` already declined the parentless case, so the fallback
+		// The ELEMENT, not the boundary node: a boundary's node is whatever holds the offset —
+		// a `Text`, or the surface itself when it holds no text — and neither is the element to
+		// focus through. `caretBoundary` already declined the parentless case, so the fallback
 		// here is unreachable and only satisfies the type.
 		focusEditingHost(bindings.textElement ?? bindings.tokenElement.parentElement ?? bindings.tokenElement)
 		collapseTo(boundary)
@@ -127,7 +134,7 @@ export class TokenHandle {
 	}
 
 	/**
-	 * Focus the editing host of this token's scope element (row in block layout).
+	 * Focus the editing host of this token's scope element (the row, where the document has rows).
 	 * Deliberately kept despite zero in-repo callers: public-reachable surface via the exported Store (`store.tokens.handle()`) — the `api.focus()` precedent.
 	 */
 	focus(): boolean {

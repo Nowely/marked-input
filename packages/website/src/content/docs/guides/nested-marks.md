@@ -6,13 +6,13 @@ keywords: [nested marks, __slot__, useMarkInfo, token tree]
 
 Use `__slot__` when a mark should contain parsed child tokens.
 
-```tsx
+```tsx fragment
 const options = [{markup: '**__slot__**'}]
 ```
 
 A slot mark receives rendered child tokens as `children`. Render those children to preserve nested content.
 
-```tsx
+```tsx fragment
 function Bold({children}: {children?: React.ReactNode}) {
     return <strong>{children}</strong>
 }
@@ -48,7 +48,7 @@ function TreeMark({children}: {children?: React.ReactNode}) {
 
 React and Vue wrap nested slot content in an internal child-sequence host. Custom Mark components should treat `children` as opaque rendered content and render it exactly once.
 
-```tsx
+```tsx fragment
 function Highlight({children}: {children?: React.ReactNode}) {
     return <mark>{children}</mark>
 }
@@ -56,7 +56,7 @@ function Highlight({children}: {children?: React.ReactNode}) {
 
 Marks can render controls, icons, or layout elements around children:
 
-```tsx
+```tsx fragment
 function TodoItem({children}: {children?: React.ReactNode}) {
     return (
         <label>
@@ -73,7 +73,7 @@ Do not inspect DOM child order to infer token identity. Use `useMarkInfo()` for 
 
 If a Mark component ignores `children`, nested content is not rendered. This is valid for value-only marks, but slot marks should render children or explicitly provide a fallback.
 
-```tsx
+```tsx fragment
 function SlotMark({children}: {children?: React.ReactNode}) {
     const mark = useMark()
     const info = useMarkInfo()

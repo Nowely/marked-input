@@ -26,24 +26,42 @@ export class PropsModel {
 	readonly options = signal<CoreOption[]>({default: DEFAULT_OPTIONS, equals: shallow, readonly: true})
 	readonly readOnly = signal({default: false, readonly: true})
 
-	readonly layout = signal({
-		default: 'inline' as 'inline' | 'block',
-		readonly: true,
-		computed: self => ({
-			isBlock: () => self() === 'block',
-		}),
-	})
 	/**
-	 * The structural row separator (issue 08): editor-level, belongs to no markup,
-	 * applied in BLOCK layout only — inline layout never splits rows. Inside
-	 * `__value__`/`__meta__` gaps it is that markup's own text, never a boundary.
+	 * The structural row separator (issue 08, ADR-0011): editor-level, belongs to no markup, and
+	 * the ONE fact that decides whether a document has rows at all. Inside `__value__`/`__meta__`
+	 * gaps it is that markup's own text, never a boundary.
 	 *
-	 * `''` is not a separator: it separates nothing, so `TokenModel.rowSeparator` reports it
-	 * and answers "no rows". The default replaces `undefined` only, which is why an explicit
-	 * empty string reaches that seam at all.
+	 * `null` says the value never splits: one document, no rows, no row controls.
+	 *
+	 * `''` is not `null`: it separates nothing rather than declining to separate, so
+	 * `TokenModel.rowConfig` reports it and answers "no rows". The default replaces `undefined`
+	 * only, which is why both an explicit `null` and an explicit `''` reach that seam at all.
+	 *
+	 * The default is ONE newline: a line is a row. `'\n\n'` would keep a soft break inside a row
+	 * at the price of a list item never being one, which is the trade issue 05 measured.
 	 */
-	readonly separator = signal<string>({default: '\n\n', readonly: true})
+	readonly separator = signal<string | null>({default: '\n', readonly: true})
+	/**
+	 * The indent unit a NESTED row leads with (ADR-0010): editor-level like the separator, and
+	 * structural in the same sense — a leading run of it at a row's own start belongs to no
+	 * markup and no caret may enter it.
+	 *
+	 * `''` turns nesting off, and it turns off more than that: a line whose first character is
+	 * not an opener is a paragraph, so a consumer storing leading tabs as content also loses row
+	 * kinds on those lines. Declared rather than guarded — the alternative reading, rejecting
+	 * `''` outright, would leave no way to ask for a flat document at all.
+	 */
+	readonly indent = signal<string>({default: '\t', readonly: true})
 	readonly draggable = signal<boolean | DraggableConfig>({default: false, readonly: true})
+	/**
+	 * Does the editor keep its own undo stack (ADR-0012). ON by default: the `beforeinput` guard
+	 * swallows the browser's native undo (ADR-0006), so `false` is the state where Mod+Z does
+	 * nothing at all — which is what every editor built on this did before the stack existed.
+	 *
+	 * Read at both ends of `HistoryModel`, so turning it off both stops recording and makes
+	 * whatever an earlier `true` recorded unreachable.
+	 */
+	readonly history = signal({default: true, readonly: true})
 
 	readonly showOverlayOn = signal<OverlayTrigger>({default: 'change', readonly: true})
 
@@ -54,8 +72,17 @@ export class PropsModel {
 	readonly className = signal<string>({readonly: true})
 	readonly style = signal<CSSProperties>({equals: shallow, readonly: true})
 
-	readonly slots = signal<CoreSlots>({readonly: true})
-	readonly slotProps = signal<CoreSlotProps>({readonly: true})
+	/**
+	 * SHALLOW, like {@link options} and for the same measured reason: `slots` is read by
+	 * `SlotsFeature.node`, ONE computed that every row subscribes to, so a fresh object with the
+	 * same components in it woke every watcher and repainted the whole document. A consumer writing
+	 * `slots={{paragraph: P}}` inline builds that fresh object on every render, and the gate is what
+	 * makes it free (issue 47).
+	 */
+	readonly slots = signal<CoreSlots>({readonly: true, equals: shallow})
+	/** Shallow for {@link slots}' reason; its own values are compared by reference, so a caller
+	 * rebuilding the NESTED bag each render still dirties it. */
+	readonly slotProps = signal<CoreSlotProps>({readonly: true, equals: shallow})
 
 	/**
 	 * The adapter's full sync, called on every render: every declared prop takes its incoming

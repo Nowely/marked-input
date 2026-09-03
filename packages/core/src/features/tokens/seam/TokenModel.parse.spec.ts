@@ -1,6 +1,7 @@
 import {describe, it, expect, afterEach, beforeEach, vi} from 'vitest'
 
 import {watch} from '../../../shared/signals'
+import type {CoreOption} from '../../../shared/types'
 import {Store} from '../../../store/Store'
 import {treeShape} from '../__testing__/tokenFactories'
 import type {Markup} from '../parser/types'
@@ -30,7 +31,7 @@ describe('TokenModel', () => {
 	})
 
 	function mountWith(value: string) {
-		store.props.set({Mark: () => null, defaultValue: value})
+		store.props.set({separator: null, Mark: () => null, defaultValue: value})
 		store.host.container(document.createElement('div'))
 	}
 
@@ -63,7 +64,7 @@ describe('TokenModel', () => {
 		})
 
 		it('does not parse markup when Mark is not set', () => {
-			store.props.set({options: [{markup: '@[__value__]'}]})
+			store.props.set({separator: null, options: [{markup: '@[__value__]'}]})
 			store.host.container(document.createElement('div'))
 			store.tokens.setValue('@[test]')
 			expect(treeShape(store.tokens.nodes())).toMatchObject([
@@ -72,7 +73,7 @@ describe('TokenModel', () => {
 		})
 
 		it('parses markup when Mark is set', () => {
-			store.props.set({Mark: () => null, options: [{markup: '@[__value__]'}]})
+			store.props.set({separator: null, Mark: () => null, options: [{markup: '@[__value__]'}]})
 			store.host.container(document.createElement('div'))
 			store.tokens.setValue('@[test]')
 			expect(store.tokens.nodes()).toEqual(expect.arrayContaining([expect.objectContaining({kind: 'mark'})]))
@@ -82,7 +83,7 @@ describe('TokenModel', () => {
 	describe('reactive parse', () => {
 		it('re-parses when parser changes', () => {
 			mountWith('hello @[world]')
-			store.props.set({Mark: () => null, options: [{markup: '@[__value__]'}]})
+			store.props.set({separator: null, Mark: () => null, options: [{markup: '@[__value__]'}]})
 			expect(treeShape(store.tokens.nodes())).toEqual([
 				expect.objectContaining({kind: 'text', content: 'hello '}),
 				expect.objectContaining({kind: 'mark', content: '@[world]'}),
@@ -94,9 +95,9 @@ describe('TokenModel', () => {
 
 		it('re-parses when Mark is added or removed', () => {
 			mountWith('first')
-			store.props.set({Mark: undefined})
+			store.props.set({separator: null, Mark: undefined})
 			store.tokens.setValue('second')
-			store.props.set({Mark: () => null})
+			store.props.set({separator: null, Mark: () => null})
 			expect(treeShape(store.tokens.nodes())).toMatchObject([
 				{kind: 'text', content: 'second', position: {start: 0, end: 6}},
 			])
@@ -109,7 +110,7 @@ describe('TokenModel', () => {
 			// watcher added afterwards, so by the time downstream listeners observe
 			// value.current, the tree reflects the new value (the structural commit
 			// self-heals synchronously against the bare container).
-			store.props.set({Mark: () => null, defaultValue: ''})
+			store.props.set({separator: null, Mark: () => null, defaultValue: ''})
 			store.host.container(document.createElement('div'))
 			let treeAtChangeTime: readonly TreeNode[] | undefined
 			const stop = watch(store.tokens.value, () => {
@@ -126,11 +127,33 @@ describe('TokenModel', () => {
 		})
 	})
 
-	describe('block layout rows (issue 08)', () => {
-		it('wraps the block top level into rows', () => {
+	describe('rows (issue 08)', () => {
+		it('splits at a newline when nothing configures a separator', () => {
+			// THE default (ADR-0011), so nothing here may spell it out: an editor that configures
+			// nothing is a row editor whose rows are lines.
+			store.props.set({Mark: () => null, options: [], defaultValue: 'a\nb'})
+			store.host.container(document.createElement('div'))
+
+			expect(store.tokens.rowConfig()).toEqual({separator: '\n', indent: '\t'})
+			expect(store.tokens.nodes().map(node => node.kind)).toEqual(['row', 'row'])
+		})
+
+		it('answers no rows for a null separator, and never reports it', () => {
+			// `null` DECLINES to separate, where `''` separates nothing — so this arm is silent
+			// and the empty-string arm below is not.
+			const errors = captureErrors()
+			store.props.set({Mark: () => null, separator: null, options: [], defaultValue: 'a\nb'})
+			store.host.container(document.createElement('div'))
+
+			expect(store.tokens.rowConfig()).toBeUndefined()
+			expect(store.tokens.nodes().map(node => node.kind)).toEqual(['text'])
+			expect(errors()).toEqual([])
+		})
+
+		it('wraps the top level into rows', () => {
 			store.props.set({
 				Mark: () => null,
-				layout: 'block',
+				separator: '\n\n',
 				options: [{markup: '@[__value__]'}],
 				defaultValue: '@[hello]',
 			})
@@ -145,35 +168,35 @@ describe('TokenModel', () => {
 		})
 
 		it('reports an explicit empty separator and renders a rowless document', () => {
-			// PropsModel defaults replace only undefined, so '' flows through to `rowSeparator`,
+			// PropsModel defaults replace only undefined, so '' flows through to `rowConfig`,
 			// which answers `undefined` — this seam's one word for "no rows". It used to reach
 			// `Parser.parseRows`' throw, which both adapters raise inside a per-render lifecycle
 			// hook: React tore down the whole render root, Vue kept the stale tree.
 			const errors = captureErrors()
-			store.props.set({layout: 'block', separator: '', options: [], defaultValue: 'a\n\nb'})
+			store.props.set({separator: '', options: [], defaultValue: 'a\n\nb'})
 			store.host.container(document.createElement('div'))
 
 			expect(treeShape(store.tokens.nodes())).toMatchObject([{kind: 'text', content: 'a\n\nb'}])
-			expect(store.tokens.rowSeparator()).toBeUndefined()
-			expect(errors()).toEqual([expect.stringContaining('`separator` is empty in block layout')])
+			expect(store.tokens.rowConfig()).toBeUndefined()
+			expect(errors()).toEqual([expect.stringContaining('`separator` is empty')])
 		})
 
 		it('reports an empty separator once per distinct value, not once per prop sync', () => {
 			// Both adapters call `props.set` on EVERY render, so a report placed upstream of an
-			// equality gate would flood the console. `rowSeparator` re-evaluates only when
-			// `layout` or `separator` actually moves.
+			// equality gate would flood the console. `rowConfig` re-evaluates only when
+			// `separator` actually moves.
 			const errors = captureErrors()
-			store.props.set({layout: 'block', separator: '', options: []})
+			store.props.set({separator: '', options: []})
 			store.host.container(document.createElement('div'))
-			for (let i = 0; i < 10; i++) store.props.set({layout: 'block', separator: '', options: []})
+			for (let i = 0; i < 10; i++) store.props.set({separator: '', options: []})
 
 			expect(errors()).toHaveLength(1)
 		})
 
-		it('brackets a leading mark with empty text roots in inline layout', () => {
+		it('brackets a leading mark with empty text roots when the value never splits', () => {
 			store.props.set({
 				Mark: () => null,
-				layout: 'inline',
+				separator: null,
 				options: [{markup: '@[__value__]'}],
 				defaultValue: '@[hello]',
 			})
@@ -187,7 +210,12 @@ describe('TokenModel', () => {
 
 	describe('framework identity (adapter SPI)', () => {
 		it('a suffix-shifted mark keeps its node, and therefore its key', () => {
-			store.props.set({Mark: () => null, options: [{markup: '@[__value__]'}], defaultValue: 'he@[x]llo'})
+			store.props.set({
+				separator: null,
+				Mark: () => null,
+				options: [{markup: '@[__value__]'}],
+				defaultValue: 'he@[x]llo',
+			})
 			store.host.container(document.createElement('div'))
 			const mark = store.tokens.nodes()[1]
 			const markKey = mark.id
@@ -216,13 +244,13 @@ describe('TokenModel', () => {
 			// `syncProps` allocates a fresh options array on every run of a watch whose deps
 			// include `props.value` — so a controlled Vue editor tripped this on every keystroke.
 			const Mark = () => null
-			store.props.set({Mark, options: [{markup: '@[__value__]'}], defaultValue: 'he@[x]llo'})
+			store.props.set({separator: null, Mark, options: [{markup: '@[__value__]'}], defaultValue: 'he@[x]llo'})
 			store.host.container(document.createElement('div'))
 			const before = store.tokens.nodes()
 			const ids = before.map(node => node.id)
 
 			// Same content, new array and new option objects — what an inline prop produces.
-			store.props.set({Mark, options: [{markup: '@[__value__]'}], defaultValue: 'he@[x]llo'})
+			store.props.set({separator: null, Mark, options: [{markup: '@[__value__]'}], defaultValue: 'he@[x]llo'})
 
 			const after = store.tokens.nodes()
 			expect(after.map(node => node.id)).toEqual(ids)
@@ -233,11 +261,21 @@ describe('TokenModel', () => {
 
 		it('a CHANGED markup still re-parses', () => {
 			// The other half of the gate above: memoizing the parser must not make it deaf.
-			store.props.set({Mark: () => null, options: [{markup: '@[__value__]'}], defaultValue: 'he@[x]llo'})
+			store.props.set({
+				separator: null,
+				Mark: () => null,
+				options: [{markup: '@[__value__]'}],
+				defaultValue: 'he@[x]llo',
+			})
 			store.host.container(document.createElement('div'))
 			expect(store.tokens.nodes()).toHaveLength(3)
 
-			store.props.set({Mark: () => null, options: [{markup: '#[__value__]'}], defaultValue: 'he@[x]llo'})
+			store.props.set({
+				separator: null,
+				Mark: () => null,
+				options: [{markup: '#[__value__]'}],
+				defaultValue: 'he@[x]llo',
+			})
 
 			// '@[x]' is no longer a markup, so the whole value is one text token.
 			expect(store.tokens.nodes()).toHaveLength(1)
@@ -251,6 +289,7 @@ describe('TokenModel', () => {
 			// React root and leaves a Vue editor rendering its stale tree.
 			const errors = captureErrors()
 			store.props.set({
+				separator: null,
 				Mark: () => null,
 				options: [{markup: '__value__ says'}, {markup: '@[__value__]'}],
 				defaultValue: 'hi @[m]',
@@ -282,11 +321,147 @@ describe('TokenModel', () => {
 			// leading-placeholder rule above needs no cast: that shape typechecks.
 			// oxlint-disable-next-line no-unsafe-type-assertion
 			const markup = 'plain' as Markup
-			store.props.set({Mark: () => null, options: [{markup}], defaultValue: 'hi @[m]'})
+			store.props.set({separator: null, Mark: () => null, options: [{markup}], defaultValue: 'hi @[m]'})
 			store.host.container(document.createElement('div'))
 
 			expect(treeShape(store.tokens.nodes())).toMatchObject([{kind: 'text', content: 'hi @[m]'}])
 			expect(errors()).toHaveLength(1)
+		})
+
+		/**
+		 * The ROW half of the same boundary. `RowKind.spec` pins `rowMarkupError` as a function;
+		 * these pin that `usableOptions` CALLS it — without them the whole row arm can be deleted
+		 * and the suite stays green, while a consumer's bad `row` option throws out of `props.set`
+		 * and so out of the adapter's own render hook (ADR-0008, doctrine rule 7).
+		 */
+		it('reports a bad ROW markup and drops that option, keeping the others and their indices', () => {
+			const errors = captureErrors()
+			expect(() => {
+				store.props.set({
+					Mark: () => null,
+					separator: '\n',
+					// A leading placeholder, which makes line-start recognition undecidable.
+					options: [
+						{markup: '__slot__\n', row: {Component: 'div'}},
+						{markup: '# __slot__', row: {Component: 'h1'}},
+					],
+					defaultValue: '# Title',
+				})
+				store.host.container(document.createElement('div'))
+			}).not.toThrow()
+
+			const row = store.tokens.nodes()[0]
+			if (row.kind !== 'row') throw new Error('expected a row')
+			// The dropped option leaves a HOLE: the survivor keeps ITS index, which is what
+			// resolves its `row.Component`.
+			expect(row.option()).toBe(1)
+			expect(row.slot()).toBe('Title')
+			expect(errors()).toEqual([expect.stringContaining('This option contributes no row kind')])
+		})
+
+		it('reports a duplicate row opener and lets the EARLIER option keep it', () => {
+			const errors = captureErrors()
+			store.props.set({
+				Mark: () => null,
+				separator: '\n',
+				options: [
+					{markup: '# __slot__', row: {Component: 'h1'}},
+					{markup: '# __value__', row: {Component: 'h2'}},
+				],
+				defaultValue: '# Title',
+			})
+			store.host.container(document.createElement('div'))
+
+			const row = store.tokens.nodes()[0]
+			if (row.kind !== 'row') throw new Error('expected a row')
+			expect(row.option()).toBe(0)
+			expect(errors()).toEqual([expect.stringContaining('Duplicate row opener "# "')])
+		})
+
+		/**
+		 * A shared opener PREFIX is legal — longest-first is what tells a todo from a bullet — and it
+		 * is unbounded document loss when the longer opener closes its own body, because the scan
+		 * lets a body gap cross separators. One `/`-menu **Divider** click took the showcase page
+		 * from 36 rows to 3 this way.
+		 */
+		it('drops a CLOSED row kind whose opener extends another kind and keeps the rows it would have taken', () => {
+			const errors = captureErrors()
+			store.props.set({
+				Mark: () => null,
+				separator: '\n',
+				options: [
+					{markup: '---__slot__', row: {Component: 'hr'}},
+					{markup: '---\n__value__\n---', row: {Component: 'div'}},
+				],
+				defaultValue: 'a\n---\nb\nc\nd\n---\ne',
+			})
+			store.host.container(document.createElement('div'))
+
+			expect(treeShape(store.tokens.nodes()).map(node => node.content)).toEqual([
+				'a',
+				'---',
+				'b',
+				'c',
+				'd',
+				'---',
+				'e',
+			])
+			expect(errors()).toEqual([expect.stringContaining('extends "---", which another row option claims')])
+		})
+
+		/**
+		 * The closed kind loses whichever was declared first, which is where this rule parts company
+		 * with the duplicate above: dropping the SHORTER kind would leave the swallow in place,
+		 * since the longer opener matches the same bytes with or without it.
+		 */
+		it('drops the closed kind even when it is the EARLIER option', () => {
+			const errors = captureErrors()
+			store.props.set({
+				Mark: () => null,
+				separator: '\n',
+				options: [
+					{markup: '---\n__value__\n---', row: {Component: 'div'}},
+					{markup: '---__slot__', row: {Component: 'hr'}},
+				],
+				// The document that FUSES, so the drop is what the assertion reads. `'a\n---\nb'`
+				// cannot exhibit it: with one `'---'` the closed kind finds no closing literal and
+				// declines the row whether or not it was dropped, so option 1 wins either way and
+				// the pin held down the report alone.
+				defaultValue: 'a\n---\nb\nc\nd\n---\ne',
+			})
+			store.host.container(document.createElement('div'))
+
+			expect(treeShape(store.tokens.nodes()).map(node => node.content)).toEqual([
+				'a',
+				'---',
+				'b',
+				'c',
+				'd',
+				'---',
+				'e',
+			])
+			const rule = store.tokens.nodes()[1]
+			if (rule.kind !== 'row') throw new Error('expected a row')
+			expect(rule.option()).toBe(1)
+			expect(errors()).toHaveLength(1)
+		})
+
+		it('keeps a shared opener prefix whose longer kind ends at the row', () => {
+			const errors = captureErrors()
+			store.props.set({
+				Mark: () => null,
+				separator: '\n',
+				options: [
+					{markup: '- __slot__', row: {Component: 'li'}},
+					{markup: '- [__meta__] __slot__', row: {Component: 'li'}},
+				],
+				defaultValue: '- a\n- [x] b',
+			})
+			store.host.container(document.createElement('div'))
+
+			const rows = store.tokens.nodes()
+			expect(rows.map(row => (row.kind === 'row' ? row.option() : undefined))).toEqual([0, 1])
+			expect(errors()).toEqual([])
 		})
 
 		it('reports once per distinct markup set, not once per prop sync', () => {
@@ -294,13 +469,103 @@ describe('TokenModel', () => {
 			// STRINGS. `props.options` compares elements by reference, so the inline array below —
 			// what a JSX prop produces on every render — is never equal to the last one.
 			const errors = captureErrors()
-			store.props.set({Mark: () => null, options: [{markup: '__value__ says'}], defaultValue: 'hi'})
+			store.props.set({
+				separator: null,
+				Mark: () => null,
+				options: [{markup: '__value__ says'}],
+				defaultValue: 'hi',
+			})
 			store.host.container(document.createElement('div'))
 			for (let i = 0; i < 10; i++) {
-				store.props.set({Mark: () => null, options: [{markup: '__value__ says'}], defaultValue: 'hi'})
+				store.props.set({
+					separator: null,
+					Mark: () => null,
+					options: [{markup: '__value__ says'}],
+					defaultValue: 'hi',
+				})
 			}
 
 			expect(errors()).toHaveLength(1)
+		})
+
+		/**
+		 * A SPLIT answers to two rules of its own, and both cost the kind its CARVE rather than its
+		 * existence — an empty delimiter would match at every offset, and a target this editor does
+		 * not carry has no kind to give the pieces. Without these the row arm reports nothing and
+		 * the kind silently stops carving, which reads to a consumer as a table that is not a table.
+		 */
+		it('reports an unusable split and leaves the kind parsing its own body whole', () => {
+			const errors = captureErrors()
+			const cell = {row: {Component: 'td'}}
+			store.props.set({
+				Mark: () => null,
+				separator: '\n',
+				options: [{markup: '|__slot__', row: {Component: 'tr', split: {at: '', as: cell}}}, cell],
+				defaultValue: '| a | b',
+			})
+			store.host.container(document.createElement('div'))
+
+			const row = store.tokens.nodes()[0]
+			if (row.kind !== 'row') throw new Error('expected a row')
+			expect(row.option()).toBe(0)
+			expect(row.rows()).toEqual([])
+			expect(row.slot()).toBe(' a | b')
+			expect(errors()).toEqual([expect.stringContaining('A row `split.at` is empty')])
+		})
+
+		it('reports a split target this editor does not carry', () => {
+			const errors = captureErrors()
+			store.props.set({
+				Mark: () => null,
+				separator: '\n',
+				// The target is an option of the same SHAPE, and not one of these options.
+				options: [
+					{markup: '|__slot__', row: {Component: 'tr', split: {at: ' | ', as: {row: {Component: 'td'}}}}},
+				],
+				defaultValue: '| a | b',
+			})
+			store.host.container(document.createElement('div'))
+
+			const row = store.tokens.nodes()[0]
+			if (row.kind !== 'row') throw new Error('expected a row')
+			expect(row.rows()).toEqual([])
+			expect(errors()).toEqual([
+				expect.stringContaining('A row `split.as` names an option this editor does not carry'),
+			])
+		})
+
+		/**
+		 * THE SAME GATE AS THE MARKUPS' ABOVE, read on a split: a split record is allocated per
+		 * evaluation, so comparing the declarations by reference makes every prop sync a fresh
+		 * parser — and a fresh parser re-parses, which re-mints every node the document has. The
+		 * ORACLE is the node objects, since the value is byte-identical either way.
+		 */
+		it('keeps one parser across a fresh-but-identical options array carrying a split', () => {
+			// Fresh objects on every call, including the `row` specs — a JSX prop built inline.
+			const options = (): CoreOption[] => {
+				const cell: CoreOption = {row: {Component: 'td'}}
+				return [
+					{markup: '|__slot__', row: {Component: 'tr', split: {at: ' | ', as: cell}}},
+					cell,
+					{markup: '@[__value__]'},
+				]
+			}
+			const props = () => ({Mark: () => null, separator: '\n', options: options(), defaultValue: '| @[x] | b'})
+			store.props.set(props())
+			store.host.container(document.createElement('div'))
+			const row = store.tokens.nodes()[0]
+			if (row.kind !== 'row') throw new Error('expected a row')
+			const cells = row.rows()
+			const mention = cells[0].children()[1]
+
+			for (let i = 0; i < 10; i++) store.props.set(props())
+
+			expect(store.tokens.nodes()[0]).toBe(row)
+			expect(row.rows()).toEqual(cells)
+			// A fresh parser mints fresh DESCRIPTORS, and adoption refuses a mark whose descriptor
+			// is not the same object — so the mark inside a cell is what a re-minted parser loses.
+			expect(cells[0].children()[1]).toBe(mention)
+			expect(store.tokens.value()).toBe('| @[x] | b')
 		})
 	})
 })

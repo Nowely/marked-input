@@ -1,5 +1,6 @@
 import {describe, it, expect, vi} from 'vitest'
 
+import {watch} from '../../../shared/signals'
 import {Store} from '../../../store/Store'
 import {anchorsAt} from '../__testing__/mountFixtures'
 import {treeShape} from '../__testing__/tokenFactories'
@@ -37,7 +38,7 @@ describe('TokenModel value boundary', () => {
 
 	it('initializes from controlled value on enable', () => {
 		const store = new Store()
-		store.props.update({value: 'hello'})
+		store.props.update({separator: null, value: 'hello'})
 		mount(store)
 		expect(store.tokens.value()).toBe('hello')
 		expect(treeShape(store.tokens.nodes())).toMatchObject([
@@ -52,13 +53,13 @@ describe('TokenModel value boundary', () => {
 		// reducing the getter to `props.value() ?? this.#committed()` returns '' here,
 		// because nothing has committed yet.
 		const store = new Store()
-		store.props.set({defaultValue: 'hello'})
+		store.props.set({separator: null, defaultValue: 'hello'})
 		expect(store.tokens.value()).toBe('hello')
 	})
 
 	it('initializes from defaultValue when uncontrolled', () => {
 		const store = new Store()
-		store.props.set({defaultValue: 'hello'})
+		store.props.set({separator: null, defaultValue: 'hello'})
 		mount(store)
 		expect(store.tokens.value()).toBe('hello')
 		expect(treeShape(store.tokens.nodes())).toMatchObject([
@@ -68,7 +69,7 @@ describe('TokenModel value boundary', () => {
 
 	it('controlled prop echo commits current and tokens', () => {
 		const store = new Store()
-		store.props.update({value: 'hello'})
+		store.props.update({separator: null, value: 'hello'})
 		mount(store)
 		store.props.update({value: 'world'})
 
@@ -84,7 +85,7 @@ describe('TokenModel value boundary', () => {
 		// which the user last saw before the parent took over (or never saw at all). The seed
 		// answers only before the tree holds anything; here it holds 'hello'.
 		const store = new Store()
-		store.props.update({value: 'hello', defaultValue: 'default'})
+		store.props.update({separator: null, value: 'hello', defaultValue: 'default'})
 		mount(store)
 		store.props.update({value: undefined})
 
@@ -98,7 +99,7 @@ describe('TokenModel value boundary', () => {
 	it('readOnly rejects editor-originated range replacement', () => {
 		const store = new Store()
 		const onChange = vi.fn()
-		store.props.set({defaultValue: 'hello', readOnly: true, onChange})
+		store.props.set({separator: null, defaultValue: 'hello', readOnly: true, onChange})
 		mount(store)
 		store.tokens.setValue('world')
 
@@ -112,7 +113,7 @@ describe('TokenModel value boundary', () => {
 	it('readOnly allows controlled prop updates to replace accepted value', () => {
 		const store = new Store()
 		const onChange = vi.fn()
-		store.props.update({value: 'hello', readOnly: true, onChange})
+		store.props.update({separator: null, value: 'hello', readOnly: true, onChange})
 		mount(store)
 		store.props.update({value: 'world'})
 
@@ -123,10 +124,37 @@ describe('TokenModel value boundary', () => {
 		])
 	})
 
+	describe('edits and replay()', () => {
+		it('feeds one record per landed edit, and none for a replay', () => {
+			const store = new Store()
+			store.props.set({separator: null, defaultValue: 'hello'})
+			mount(store)
+			const seen: string[][] = []
+			watch(store.tokens.edits, record => seen.push([record.base, record.next]))
+
+			store.tokens.setValue('hello!')
+			store.tokens.replay('hello', {start: 5, end: 6, insertedLength: 0})
+
+			expect(store.tokens.value()).toBe('hello')
+			expect(seen).toEqual([['hello', 'hello!']])
+		})
+
+		it('refuses a replay while readOnly, where the stack outlived the flip', () => {
+			const store = new Store()
+			store.props.set({separator: null, defaultValue: 'hello'})
+			mount(store)
+			store.tokens.setValue('hello!')
+			store.props.update({readOnly: true})
+
+			expect(store.tokens.replay('hello', {start: 5, end: 6, insertedLength: 0})).toBe(false)
+			expect(store.tokens.value()).toBe('hello!')
+		})
+	})
+
 	describe('replaceBetween()', () => {
 		it('commits uncontrolled range replacement', () => {
 			const store = new Store()
-			store.props.set({defaultValue: 'hello world'})
+			store.props.set({separator: null, defaultValue: 'hello world'})
 			store.tokens.replaceBetween(store.tokens.anchorAt(6), store.tokens.anchorAt(11), 'markput')
 
 			expect(store.tokens.value()).toBe('hello markput')
@@ -161,7 +189,7 @@ describe('TokenModel value boundary', () => {
 			// screen. An editor that wants 'edited' back can pass it: dropping control is not
 			// an undo.
 			const store = new Store()
-			store.props.set({defaultValue: 'default'})
+			store.props.set({separator: null, defaultValue: 'default'})
 			mount(store)
 			store.tokens.setValue('edited')
 			expect(store.tokens.value()).toBe('edited')
@@ -179,7 +207,7 @@ describe('TokenModel value boundary', () => {
 			// always takes the arrival arm — with `value === undefined` on an uncontrolled store,
 			// which is the only arm that can fall back to the seed.
 			const store = new Store()
-			store.props.set({defaultValue: 'default'})
+			store.props.set({separator: null, defaultValue: 'default'})
 			mount(store)
 			store.tokens.setValue('edited')
 			expect(store.tokens.value()).toBe('edited')
@@ -201,7 +229,7 @@ describe('TokenModel value boundary', () => {
 			// recorded only on the controlled edge it is still `undefined` here, and the
 			// arrival falls back to `#seed()` — 'default', discarding the edit.
 			const store = new Store()
-			store.props.set({defaultValue: 'default'})
+			store.props.set({separator: null, defaultValue: 'default'})
 			store.tokens.setValue('edited')
 			expect(store.tokens.value()).toBe('edited')
 
@@ -220,6 +248,7 @@ describe('TokenModel value boundary', () => {
 			const store = new Store()
 			const seen: {value: string; tokens: string}[] = []
 			store.props.set({
+				separator: null,
 				defaultValue: 'he@[x]llo',
 				options: [{markup: '@[__value__]'}],
 				Mark: () => null,
@@ -246,7 +275,7 @@ describe('TokenModel value boundary', () => {
 			// discriminating tests (a capture moved after adoption) live at the boundary,
 			// which is the only layer where the TransactionResult is observable.
 			const store = new Store()
-			store.props.set({defaultValue: 'hello'})
+			store.props.set({separator: null, defaultValue: 'hello'})
 			expect(() => mount(store)).not.toThrow()
 			expect(() => store.edit.replace(...anchorsAt(store, 0, 0), 'X')).not.toThrow()
 			expect(store.tokens.value()).toBe('Xhello')
@@ -254,10 +283,62 @@ describe('TokenModel value boundary', () => {
 	})
 
 	/**
-	 * The clipboard's markup entry (`ClipboardController`'s markput MIME) and the block rows'
-	 * text read (`keyboard/blockEdit.ts`). `block/operations.spec` stubs the read with a plain
-	 * `doc.slice`, so the delegation to `tree/sliceNodes` — and the anchor resolution in front
-	 * of it — is pinned only here.
+	 * ONE OWNER for the separator that joins the CURRENT roots. `TokenTree.separator` records what
+	 * the roots were parsed under; `rowConfig` is the policy for the NEXT parse. The two agree only
+	 * while the props watch is live, and a DETACHED editor's is not — its scope dies with the
+	 * container. A `separator` prop that moves while detached therefore leaves the tree holding rows
+	 * joined by the OLD separator while every read reaches for the new one.
+	 */
+	describe('the separator that joins the current roots', () => {
+		const ROWS = {separator: '\n\n', Mark: () => null, options: [], defaultValue: 'a\n\nb'}
+
+		const detachedAfterSeparatorMove = (): Store => {
+			const store = new Store()
+			store.props.set({...ROWS, separator: '\n\n'})
+			mount(store)
+			store.host.container(null)
+			store.props.set({...ROWS, separator: '\n'})
+			return store
+		}
+
+		it('slices the whole document back to its own projection', () => {
+			const store = detachedAfterSeparatorMove()
+
+			expect(store.tokens.value()).toBe('a\n\nb')
+			// Read off `rowConfig` this answered 'a\nb' — a copy of the whole document that is not
+			// the document.
+			expect(store.tokens.valueBetween('start', 'end')).toBe('a\n\nb')
+		})
+
+		it('duplicates the document-final row without fusing the copies', () => {
+			const store = detachedAfterSeparatorMove()
+
+			store.tokens.nodes()[1].duplicate()
+
+			// Off `rowConfig` this was 'a\n\nb\nb': a single '\n' is no boundary here, so the copy
+			// landed INSIDE the row it was copied from.
+			expect(store.tokens.value()).toBe('a\n\nb\n\nb')
+		})
+
+		it('removes the document-final row together with the separator before it', () => {
+			const store = detachedAfterSeparatorMove()
+
+			store.tokens.nodes()[1].remove()
+
+			// Off `rowConfig` this was 'a\n': the wrong length came off, leaving a stray byte and a
+			// phantom trailing row.
+			expect(store.tokens.value()).toBe('a')
+			expect(store.tokens.nodes()).toHaveLength(1)
+		})
+	})
+
+	/**
+	 * `valueBetween` has two callers — the clipboard's markup entry (`ClipboardController`'s
+	 * markput MIME) and `rows.duplicate`, which projects a row's own span before re-inserting it —
+	 * and neither pins the PROJECTION: the clipboard's cover is the browser `Clipboard.spec`, end
+	 * to end, and `duplicate`'s specs assert the document that came back. `tree/tree.spec` pins
+	 * `sliceNodes` on anchors it builds itself, so the delegation to it — and the expansion
+	 * `anchorAt` performs in front of it — is pinned only here.
 	 */
 	describe('valueBetween()', () => {
 		// The browser `Clipboard.spec`'s own fixture value, so the answers below are the unit
@@ -267,6 +348,7 @@ describe('TokenModel value boundary', () => {
 		const inlineStore = (): Store => {
 			const store = new Store()
 			store.props.set({
+				separator: null,
 				defaultValue: INLINE,
 				options: [{markup: '@[__value__](__meta__)'}],
 				Mark: () => null,
@@ -306,7 +388,7 @@ describe('TokenModel value boundary', () => {
 		it('answers exactly the markup for a window on the mark boundaries', () => {
 			const store = inlineStore()
 			const mark = store.tokens.nodes()[1]
-			// `{before}`/`{after}` is the form `blockEdit` reads a row with; the offsets are the
+			// `{before}`/`{after}` is the form `rowKeys` reads a row with; the offsets are the
 			// same window through `anchorAt`.
 			expect(store.tokens.valueBetween({before: mark}, {after: mark})).toBe('@[world](1)')
 			expect(store.tokens.valueBetween(...anchorsAt(store, 6, 17))).toBe('@[world](1)')
@@ -344,6 +426,7 @@ describe('TokenModel value boundary', () => {
 			// a truncated one.
 			const store = new Store()
 			store.props.set({
+				separator: null,
 				defaultValue: 'a#[hello]b',
 				options: [{markup: '#[__slot__]'}],
 				Mark: () => null,

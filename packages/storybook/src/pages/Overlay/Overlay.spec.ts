@@ -1,8 +1,8 @@
 import type {Markup} from '@markput/core'
-import {describe, expect, it} from 'vitest'
+import {afterEach, describe, expect, it} from 'vitest'
 import {page, userEvent} from 'vitest/browser'
 
-import {getElement, textSurfaces} from '../../shared/lib/dom'
+import {getElement, rowsOf, textSurfaces} from '../../shared/lib/dom'
 import {focusAtEnd, verifyCaretPosition} from '../../shared/lib/focus'
 import {Mark} from '../../shared/lib/marks'
 import {composePage, mount, mountEcho} from '../../shared/lib/page'
@@ -10,7 +10,7 @@ import * as BaseStories from '../Base/Base.stories'
 import * as OverlayStories from './Overlay.stories'
 
 const {Default} = composePage(BaseStories)
-const {DefaultOverlay} = composePage(OverlayStories)
+const {DefaultOverlay, RowMenu} = composePage(OverlayStories)
 
 const ECHO_OPTIONS = [
 	{
@@ -235,5 +235,161 @@ describe('API: Overlay and Triggers', () => {
 		// Focus should be on span("") at childIndex + 2 = 4, NOT tail at index 6.
 		// Caret position: "Start " (6) + "A" (1) + " mid " (5) + "Item" (4) = 16
 		verifyCaretPosition(host, 16)
+	})
+})
+
+/**
+ * THE ROW MENU, driven through the SHIPPED `OverlayList` in both projects. The probe page that
+ * proved ticket 11 is React-only until P12, so without these the Vue component's `rows` binding,
+ * its ref wiring, its keyboard and its click path never ran anywhere.
+ *
+ * Both cases go through `mountEcho`: a menu writes a row, and the value the editor emits is the
+ * only thing that says which of the two gestures it ran.
+ */
+describe('API: the row menu', () => {
+	/** INSERT: the row holds nothing but the trigger, so the kind seeds an empty body. */
+	it('start a kind from the menu on an empty row', async () => {
+		const {host, value} = await mountEcho(RowMenu, {value: 'Intro\n\n'})
+
+		await focusAtEnd(rowsOf(host).at(-1)!)
+		await userEvent.keyboard('/')
+		await expect.element(page.getByText('Heading 1')).toBeInTheDocument()
+
+		await page.getByText('Heading 1').click()
+
+		await expect.poll(value).toBe('Intro\n\n# ')
+	})
+
+	/**
+	 * CONVERT, which is ticket 11: the menu must retype the ROW rather than write over the
+	 * trigger's span, so the text the user typed is what the heading holds.
+	 */
+	it('convert a row that already has text, keeping the text', async () => {
+		const {host, value} = await mountEcho(RowMenu, {value: 'Intro\n\nplain row'})
+
+		await focusAtEnd(rowsOf(host).at(-1)!)
+		await userEvent.keyboard('/')
+		await expect.element(page.getByText('Heading 1')).toBeInTheDocument()
+
+		await page.getByText('Heading 1').click()
+
+		await expect.poll(value).toBe('Intro\n\n# plain row')
+	})
+
+	/** The query pass is core's, so a keyword that appears in no label still narrows the list. */
+	it('narrow the menu by a keyword that appears in no label', async () => {
+		const {host} = await mountEcho(RowMenu, {value: 'Intro\n\nplain row'})
+
+		await focusAtEnd(rowsOf(host).at(-1)!)
+		await userEvent.keyboard('/h1')
+
+		await expect.element(page.getByText('Heading 1')).toBeInTheDocument()
+		await expect.element(page.getByText('Bulleted list')).not.toBeInTheDocument()
+	})
+
+	/**
+	 * THE GESTURE THE MENU WAS REACHABLE BY AND THE KEYBOARD WAS NOT. Every case above CLICKS,
+	 * which is why three green rounds never saw this: the shipped menu had no `active` and no
+	 * Enter, so `/h1` + ArrowDown + Enter left the literal `/h1` in the row and SPLIT it —
+	 * `'Intro\n\n/h1\nplain row'` — while the `@` picker beside it had arrows and Enter all along.
+	 */
+	it('choose a kind with the keyboard alone, never touching the mouse', async () => {
+		const {host, value} = await mountEcho(RowMenu, {value: 'Intro\n\nplain row'})
+
+		await focusAtEnd(rowsOf(host).at(-1)!)
+		await userEvent.keyboard('/h1')
+		await expect.element(page.getByText('Heading 1')).toBeInTheDocument()
+
+		await userEvent.keyboard('{ArrowDown}')
+		await userEvent.keyboard('{Enter}')
+
+		await expect.poll(value).toBe('Intro\n\n# plain row')
+	})
+
+	/** ArrowDown with nothing highlighted takes the first row, and the highlight is PAINTED. */
+	it('highlight the row the arrows land on', async () => {
+		const {host} = await mountEcho(RowMenu, {value: 'Intro\n\nplain row'})
+
+		await focusAtEnd(rowsOf(host).at(-1)!)
+		await userEvent.keyboard('/')
+		await expect.element(page.getByText('Heading 1')).toBeInTheDocument()
+		const before = getElement(page.getByText('Heading 1')).className
+
+		await userEvent.keyboard('{ArrowDown}')
+
+		await expect.poll(() => getElement(page.getByText('Heading 1')).className).not.toBe(before)
+	})
+})
+/**
+ * A POPUP THAT WOULD NOT FIT OPENS WHERE IT FITS. Both popups were positioned by
+ * `anchor.bottom + gap` and nothing else, so at the bottom of a page a menu was measured at
+ * top 836 with height 196 in a 900px viewport — two thirds of it below the fold, and the entries
+ * it was hiding unreachable by any gesture.
+ *
+ * THE VIEWPORT IS SHRUNK RATHER THAN THE DOCUMENT LENGTHENED, because a document long enough to
+ * push the caret to the fold is also long enough to SCROLL, and then the caret's position is the
+ * scroller's answer rather than the test's.
+ */
+describe('a popup that does not fit below the caret', () => {
+	afterEach(async () => {
+		await page.viewport(1280, 720)
+	})
+
+	it('opens above it instead of off the bottom of the page', async () => {
+		await page.viewport(640, 150)
+		const {host} = await mountEcho(RowMenu, {value: 'a\nb\nc\nd\ne\nplain row'})
+
+		await focusAtEnd(rowsOf(host).at(-1)!)
+		await userEvent.keyboard('/')
+		await expect.element(page.getByText('Heading 1')).toBeInTheDocument()
+
+		const caret = caretRect()
+		const popup = overlayBox(getElement(page.getByText('Heading 1'))).getBoundingClientRect()
+
+		expect(
+			caret.bottom + popup.height,
+			'the popup must not fit below the caret, or this case proves nothing'
+		).toBeGreaterThan(window.innerHeight)
+		expect(popup.bottom).toBeLessThanOrEqual(window.innerHeight)
+		expect(popup.bottom).toBeLessThanOrEqual(caret.top)
+	})
+})
+
+/**
+ * THE SHIPPED LOOK IS A DEFAULT A CONSUMER CAN REPLACE. The three popups this editor paints — the
+ * overlay list, the row menu and the grip menu — were white-on-light with no door at all, so
+ * inside a dark page they read as browser chrome rather than as document. The door is a custom
+ * property, not a class: a CSS-module class name is hashed and is not a contract.
+ */
+describe('the popup takes its colours from the page', () => {
+	const THEMED = 'rgb(17, 18, 19)'
+
+	afterEach(() => {
+		document.documentElement.style.removeProperty('--markput-popup-background')
+	})
+
+	it('paints the background a consumer declares on an ancestor', async () => {
+		const {host} = await mount(Default, {defaultValue: 'Hello ', options: LABELLED_ITEM})
+		document.documentElement.style.setProperty('--markput-popup-background', THEMED)
+		const [surface] = textSurfaces(host)
+
+		await focusAtEnd(surface)
+		await userEvent.keyboard('@')
+		await expect.element(page.getByText('Item')).toBeInTheDocument()
+
+		const popup = overlayBox(getElement(page.getByText('Item')))
+		expect(getComputedStyle(popup).backgroundColor).toBe(THEMED)
+	})
+
+	it('paints white when nobody declares anything, which is the shipped default', async () => {
+		const {host} = await mount(Default, {defaultValue: 'Hello ', options: LABELLED_ITEM})
+		const [surface] = textSurfaces(host)
+
+		await focusAtEnd(surface)
+		await userEvent.keyboard('@')
+		await expect.element(page.getByText('Item')).toBeInTheDocument()
+
+		const popup = overlayBox(getElement(page.getByText('Item')))
+		expect(getComputedStyle(popup).backgroundColor).toBe('rgb(255, 255, 255)')
 	})
 })

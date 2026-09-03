@@ -56,6 +56,7 @@ exports[`Component: stories > Clipboard stories > Story Drag 1`] = `
 "<div contenteditable="true">
   <div>
     <span>hello</span>
+    <span></span>
   </div>
   <div>
     <span></span>
@@ -63,9 +64,11 @@ exports[`Component: stories > Clipboard stories > Story Drag 1`] = `
       <mark>world</mark>
     </span>
     <span></span>
+    <span></span>
   </div>
   <div>
     <span>foo</span>
+    <span></span>
   </div>
   <div contenteditable="false"></div>
 </div>"
@@ -120,9 +123,11 @@ exports[`Component: stories > Drag stories > Story Markdown 1`] = `
       </span>
     </span>
     <span></span>
+    <span></span>
   </div>
   <div>
     <span>A powerful library for parsing rich text with markdown formatting.</span>
+    <span></span>
   </div>
   <div>
     <span></span>
@@ -133,6 +138,7 @@ exports[`Component: stories > Drag stories > Story Markdown 1`] = `
         </span>
       </span>
     </span>
+    <span></span>
     <span></span>
   </div>
   <div>
@@ -161,6 +167,7 @@ exports[`Component: stories > Drag stories > Story Markdown 1`] = `
       </span>
     </span>
     <span></span>
+    <span></span>
   </div>
   <div>
     <span></span>
@@ -180,6 +187,7 @@ exports[`Component: stories > Drag stories > Story Markdown 1`] = `
       </span>
     </span>
     <span></span>
+    <span></span>
   </div>
   <div>
     <span></span>
@@ -194,6 +202,7 @@ exports[`Component: stories > Drag stories > Story Markdown 1`] = `
         </span>
       </span>
     </span>
+    <span></span>
     <span></span>
   </div>
   <div>
@@ -210,6 +219,7 @@ exports[`Component: stories > Drag stories > Story Markdown 1`] = `
       </span>
     </span>
     <span></span>
+    <span></span>
   </div>
   <div>
     <span></span>
@@ -221,6 +231,7 @@ exports[`Component: stories > Drag stories > Story Markdown 1`] = `
       </span>
     </span>
     <span></span>
+    <span></span>
   </div>
   <div>
     <span></span>
@@ -228,9 +239,11 @@ exports[`Component: stories > Drag stories > Story Markdown 1`] = `
       <span>const parser = new ParserV2(['**__value__**', '*__value__*'])&#10;const result = parser.parse('Hello **world**!')&#10;</span>
     </span>
     <span></span>
+    <span></span>
   </div>
   <div>
     <span>Visit our docs for more details.</span>
+    <span></span>
   </div>
   <div contenteditable="false"></div>
 </div>"
@@ -248,12 +261,15 @@ exports[`Component: stories > Drag stories > Story MarkdownDrag 1`] = `
       </span>
     </span>
     <span></span>
+    <span></span>
   </div>
   <div>
     <span>This is the first paragraph.</span>
+    <span></span>
   </div>
   <div>
     <span>This is the second paragraph.</span>
+    <span></span>
   </div>
   <div>
     <span></span>
@@ -264,6 +280,7 @@ exports[`Component: stories > Drag stories > Story MarkdownDrag 1`] = `
         </span>
       </span>
     </span>
+    <span></span>
     <span></span>
   </div>
   <div>
@@ -276,8 +293,10 @@ exports[`Component: stories > Drag stories > Story MarkdownDrag 1`] = `
       </span>
     </span>
     <span></span>
+    <span></span>
   </div>
   <div>
+    <span></span>
     <span></span>
   </div>
   <div contenteditable="false"></div>
@@ -288,20 +307,26 @@ exports[`Component: stories > Drag stories > Story PlainTextDrag 1`] = `
 "<div contenteditable="true">
   <div>
     <span>First block of plain text</span>
+    <span></span>
   </div>
   <div>
     <span>Second block of plain text</span>
+    <span></span>
   </div>
   <div>
     <span>Third block of plain text</span>
+    <span></span>
   </div>
   <div>
     <span>Fourth block of plain text</span>
+    <span></span>
   </div>
   <div>
     <span>Fifth block of plain text</span>
+    <span></span>
   </div>
   <div>
+    <span></span>
     <span></span>
   </div>
   <div contenteditable="false"></div>
@@ -312,14 +337,18 @@ exports[`Component: stories > Drag stories > Story ReadOnlyDrag 1`] = `
 "<div contenteditable="false">
   <div>
     <span>Read-Only Content</span>
+    <span></span>
   </div>
   <div>
     <span>Section A</span>
+    <span></span>
   </div>
   <div>
     <span>Section B</span>
+    <span></span>
   </div>
   <div>
+    <span></span>
     <span></span>
   </div>
   <div contenteditable="false"></div>
@@ -331,6 +360,7 @@ exports[`Component: stories > Drag stories > Story TodoList 1`] = `
   <div>
     <div contenteditable="true">
       <div>
+        <span></span>
         <span></span>
       </div>
       <div>
@@ -344,6 +374,7 @@ exports[`Component: stories > Drag stories > Story TodoList 1`] = `
           </div>
         </span>
         <span></span>
+        <span></span>
       </div>
       <div>
         <span></span>
@@ -355,6 +386,7 @@ exports[`Component: stories > Drag stories > Story TodoList 1`] = `
             </span>
           </span>
         </span>
+        <span></span>
         <span></span>
       </div>
       <div>
@@ -368,6 +400,7 @@ exports[`Component: stories > Drag stories > Story TodoList 1`] = `
           </span>
         </span>
         <span></span>
+        <span></span>
       </div>
       <div>
         <span></span>
@@ -379,6 +412,7 @@ exports[`Component: stories > Drag stories > Story TodoList 1`] = `
             </span>
           </span>
         </span>
+        <span></span>
         <span></span>
       </div>
       <div>
@@ -392,6 +426,7 @@ exports[`Component: stories > Drag stories > Story TodoList 1`] = `
           </div>
         </span>
         <span></span>
+        <span></span>
       </div>
       <div>
         <span></span>
@@ -403,6 +438,7 @@ exports[`Component: stories > Drag stories > Story TodoList 1`] = `
             </span>
           </span>
         </span>
+        <span></span>
         <span></span>
       </div>
       <div>
@@ -416,6 +452,7 @@ exports[`Component: stories > Drag stories > Story TodoList 1`] = `
           </span>
         </span>
         <span></span>
+        <span></span>
       </div>
       <div>
         <span></span>
@@ -427,6 +464,7 @@ exports[`Component: stories > Drag stories > Story TodoList 1`] = `
             </span>
           </span>
         </span>
+        <span></span>
         <span></span>
       </div>
       <div>
@@ -440,6 +478,7 @@ exports[`Component: stories > Drag stories > Story TodoList 1`] = `
           </span>
         </span>
         <span></span>
+        <span></span>
       </div>
       <div>
         <span></span>
@@ -451,6 +490,7 @@ exports[`Component: stories > Drag stories > Story TodoList 1`] = `
             </span>
           </div>
         </span>
+        <span></span>
         <span></span>
       </div>
       <div>
@@ -464,6 +504,7 @@ exports[`Component: stories > Drag stories > Story TodoList 1`] = `
           </span>
         </span>
         <span></span>
+        <span></span>
       </div>
       <div>
         <span></span>
@@ -475,6 +516,7 @@ exports[`Component: stories > Drag stories > Story TodoList 1`] = `
             </span>
           </span>
         </span>
+        <span></span>
         <span></span>
       </div>
       <div>
@@ -488,6 +530,7 @@ exports[`Component: stories > Drag stories > Story TodoList 1`] = `
           </span>
         </span>
         <span></span>
+        <span></span>
       </div>
       <div>
         <span></span>
@@ -499,6 +542,7 @@ exports[`Component: stories > Drag stories > Story TodoList 1`] = `
             </span>
           </span>
         </span>
+        <span></span>
         <span></span>
       </div>
       <div>
@@ -512,6 +556,7 @@ exports[`Component: stories > Drag stories > Story TodoList 1`] = `
           </span>
         </span>
         <span></span>
+        <span></span>
       </div>
       <div>
         <span></span>
@@ -523,6 +568,7 @@ exports[`Component: stories > Drag stories > Story TodoList 1`] = `
             </span>
           </div>
         </span>
+        <span></span>
         <span></span>
       </div>
       <div>
@@ -536,6 +582,7 @@ exports[`Component: stories > Drag stories > Story TodoList 1`] = `
           </span>
         </span>
         <span></span>
+        <span></span>
       </div>
       <div>
         <span></span>
@@ -548,8 +595,10 @@ exports[`Component: stories > Drag stories > Story TodoList 1`] = `
           </span>
         </span>
         <span></span>
+        <span></span>
       </div>
       <div>
+        <span></span>
         <span></span>
       </div>
       <div contenteditable="false"></div>
@@ -1570,6 +1619,605 @@ exports[`Component: stories > Nested stories > Story SimpleNesting 1`] = `
 </div>"
 `;
 
+exports[`Component: stories > Notion stories > Story Empty 1`] = `
+"<div>
+  <div>
+    <span>Product</span>
+    <span>/</span>
+    <span>Launches</span>
+    <span>/</span>
+    <span>Apollo</span>
+    <div>
+      <span>Edited 14m ago</span>
+      <button type="button">Share</button>
+      <button aria-label="More actions" type="button">…</button>
+    </div>
+  </div>
+  <div>
+    <div></div>
+    <div>🚀</div>
+    <div contenteditable="true">
+      <div data-placeholder="Type / for commands…">
+        <span></span>
+        <span></span>
+      </div>
+      <div contenteditable="false"></div>
+    </div>
+  </div>
+</div>"
+`;
+
+exports[`Component: stories > Notion stories > Story Showcase 1`] = `
+"<div>
+  <div>
+    <span>Product</span>
+    <span>/</span>
+    <span>Launches</span>
+    <span>/</span>
+    <span>Apollo</span>
+    <div>
+      <span>Edited 14m ago</span>
+      <button type="button">Share</button>
+      <button aria-label="More actions" type="button">…</button>
+    </div>
+  </div>
+  <div>
+    <div></div>
+    <div>🚀</div>
+    <div contenteditable="true">
+      <div>
+        <span>Apollo — Q2 launch plan</span>
+      </div>
+      <div>
+        <div contenteditable="false">
+          <div>
+            <span>Status</span>
+            <span>
+              <span>
+                <span>In progress</span>
+              </span>
+            </span>
+            <span>Owner</span>
+            <span>
+              <span>
+                <span title="Kara Vance">KV</span>
+                Kara Vance
+              </span>
+            </span>
+            <span>Team</span>
+            <span>
+              <span>
+                <span>
+                  <span title="Kara Vance">KV</span>
+                  <span title="Ines Duarte">ID</span>
+                  <span title="Milo Freeman">MF</span>
+                  <span>+3 others</span>
+                </span>
+              </span>
+            </span>
+            <span>Timeline</span>
+            <span>
+              <span>Apr 8 → Jun 30</span>
+            </span>
+            <span>Tags</span>
+            <span>
+              <span>
+                <span>Platform</span>
+              </span>
+              <span>
+                <span>Design</span>
+              </span>
+              <span>Q2</span>
+            </span>
+            <span>Spec</span>
+            <span>
+              <span>
+                <span title="https://example.com/apollo/spec">apollo/spec</span>
+              </span>
+            </span>
+            <span>Confidence</span>
+            <span>
+              <span>82%</span>
+            </span>
+            <button type="button">+ Add a property</button>
+          </div>
+        </div>
+      </div>
+      <div>
+        <span contenteditable="false"></span>
+        <span></span>
+      </div>
+      <div data-placeholder="Type / for commands…">
+        <span>Apollo moves the collaboration layer from beta to general availability. Ownership sits with </span>
+        <span contenteditable="false">
+          <span>@Platform</span>
+        </span>
+        <span>, and </span>
+        <span>
+          <span>
+            <span>
+              <span>launch gating on the auth migration</span>
+            </span>
+          </span>
+        </span>
+        <span> is what everything downstream assumes.</span>
+        <span></span>
+      </div>
+      <div>
+        <div contenteditable="false">
+          <span>Launch tasks</span>
+          <span>Sprint board</span>
+          <span>Metrics &amp; risks</span>
+          <span>Decision log</span>
+        </div>
+      </div>
+      <div>
+        <span>Launch tasks</span>
+      </div>
+      <div>
+        <span>Inline database · 24 items</span>
+      </div>
+      <div>
+        <div contenteditable="false">
+          <div>
+            <div role="tablist">
+              <button aria-selected="true" role="tab" type="button">Table</button>
+              <button aria-selected="false" role="tab" type="button">Board</button>
+              <button aria-selected="false" role="tab" type="button">Timeline</button>
+              <button aria-selected="false" role="tab" type="button">Calendar</button>
+            </div>
+            <div>
+              <button type="button">Filter</button>
+              <button type="button">Sort</button>
+              <button type="button">New</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <span>
+          <div>
+            <span>Task</span>
+          </div>
+          <div>
+            <span>Status</span>
+          </div>
+          <div>
+            <span>Owner</span>
+          </div>
+          <div>
+            <span>Due</span>
+          </div>
+          <div>
+            <span>Effort</span>
+          </div>
+        </span>
+      </div>
+      <div>
+        <span>
+          <div>
+            <span>Auth service migration</span>
+          </div>
+          <div>
+            <span></span>
+            <span contenteditable="false">
+              <span>Blocked</span>
+            </span>
+            <span></span>
+          </div>
+          <div>
+            <span></span>
+            <span contenteditable="false">
+              <span title="Kara Vance">KV</span>
+            </span>
+            <span></span>
+          </div>
+          <div>
+            <span></span>
+            <span contenteditable="false">
+              <span>2026-04-02</span>
+            </span>
+            <span></span>
+          </div>
+          <div>
+            <span></span>
+            <span contenteditable="false">
+              <span title="Effort 0.2">
+                <span></span>
+              </span>
+            </span>
+            <span></span>
+          </div>
+        </span>
+      </div>
+      <div>
+        <span>
+          <div>
+            <span>Realtime sync engine</span>
+          </div>
+          <div>
+            <span></span>
+            <span contenteditable="false">
+              <span>In progress</span>
+            </span>
+            <span></span>
+          </div>
+          <div>
+            <span></span>
+            <span contenteditable="false">
+              <span title="Milo Freeman">MF</span>
+            </span>
+            <span></span>
+          </div>
+          <div>
+            <span></span>
+            <span contenteditable="false">
+              <span>2026-04-18</span>
+            </span>
+            <span></span>
+          </div>
+          <div>
+            <span></span>
+            <span contenteditable="false">
+              <span title="Effort 0.6">
+                <span></span>
+              </span>
+            </span>
+            <span></span>
+          </div>
+        </span>
+      </div>
+      <div>
+        <span>
+          <div>
+            <span>Pricing page rewrite</span>
+          </div>
+          <div>
+            <span></span>
+            <span contenteditable="false">
+              <span>Done</span>
+            </span>
+            <span></span>
+          </div>
+          <div>
+            <span></span>
+            <span contenteditable="false">
+              <span title="Ines Duarte">ID</span>
+            </span>
+            <span></span>
+          </div>
+          <div>
+            <span></span>
+            <span contenteditable="false">
+              <span>2026-03-27</span>
+            </span>
+            <span></span>
+          </div>
+          <div>
+            <span></span>
+            <span contenteditable="false">
+              <span title="Effort 1">
+                <span></span>
+              </span>
+            </span>
+            <span></span>
+          </div>
+        </span>
+      </div>
+      <div>
+        <span>
+          <div>
+            <span>Load test at 5× peak</span>
+          </div>
+          <div>
+            <span></span>
+            <span contenteditable="false">
+              <span>Planned</span>
+            </span>
+            <span></span>
+          </div>
+          <div>
+            <span></span>
+            <span contenteditable="false">
+              <span title="Priya Raman">PR</span>
+            </span>
+            <span></span>
+          </div>
+          <div>
+            <span></span>
+            <span contenteditable="false">
+              <span>2026-05-06</span>
+            </span>
+            <span></span>
+          </div>
+          <div>
+            <span></span>
+            <span contenteditable="false">
+              <span title="Effort 0">
+                <span></span>
+              </span>
+            </span>
+            <span></span>
+          </div>
+        </span>
+      </div>
+      <div>
+        <span>
+          <div>
+            <span>Vendor SLA sign-off</span>
+          </div>
+          <div>
+            <span></span>
+            <span contenteditable="false">
+              <span>At risk</span>
+            </span>
+            <span></span>
+          </div>
+          <div>
+            <span></span>
+            <span contenteditable="false">
+              <span title="Tomas Alvarez">TA</span>
+            </span>
+            <span></span>
+          </div>
+          <div>
+            <span></span>
+            <span contenteditable="false">
+              <span>2026-04-09</span>
+            </span>
+            <span></span>
+          </div>
+          <div>
+            <span></span>
+            <span contenteditable="false">
+              <span title="Effort 0.35">
+                <span></span>
+              </span>
+            </span>
+            <span></span>
+          </div>
+        </span>
+      </div>
+      <div>
+        <button type="button" contenteditable="false">+ New</button>
+        <span>
+          <span>Count 24 · 9 done</span>
+        </span>
+      </div>
+      <div>
+        <span>Sprint board</span>
+      </div>
+      <div>
+        <div contenteditable="false">
+          <div>
+            <div>
+              <div>
+                <span>To do</span>
+                <span>3</span>
+              </div>
+              <div draggable="true">
+                <span>Sign the vendor SLA</span>
+                <span>Legal</span>
+              </div>
+              <div draggable="true">
+                <span>EU region quota</span>
+                <span>Infra</span>
+              </div>
+              <div draggable="true">
+                <span>Launch copy review</span>
+              </div>
+            </div>
+            <div>
+              <div>
+                <span>In progress</span>
+                <span>2</span>
+              </div>
+              <div draggable="true">
+                <span>Auth migration</span>
+                <span>Platform</span>
+              </div>
+              <div draggable="true">
+                <span>p95 latency budget</span>
+                <span>Perf</span>
+              </div>
+            </div>
+            <div>
+              <div>
+                <span>Shipped</span>
+                <span>1</span>
+              </div>
+              <div draggable="true">
+                <span>Beta invites</span>
+                <span>Growth</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <span>Metrics &amp; risks</span>
+      </div>
+      <div>
+        <div contenteditable="false">
+          <div>
+            <div>
+              <span>Beta users</span>
+              <span>4,120</span>
+            </div>
+            <div>
+              <span>p95 latency</span>
+              <span>184ms</span>
+            </div>
+            <div>
+              <span>Crash-free</span>
+              <span>99.4%</span>
+            </div>
+            <div>
+              <span>Open bugs</span>
+              <span>37</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div>
+          <span>
+            <button type="button" contenteditable="false">🚨</button>
+          </span>
+          <div>
+            <span>Launch gating on the auth migration — GA holds only if cutover lands by 2026-04-09.</span>
+            <span></span>
+          </div>
+        </div>
+      </div>
+      <div>
+        <span>Risks</span>
+      </div>
+      <div>
+        <span contenteditable="false"></span>
+        <span>Vendor SLA unsigned</span>
+        <span></span>
+      </div>
+      <div>
+        <span contenteditable="false"></span>
+        <span>EU region capacity unconfirmed</span>
+        <span>
+          <div>
+            <span contenteditable="false"></span>
+            <span>Awaiting quota approval</span>
+            <span></span>
+          </div>
+        </span>
+      </div>
+      <div>
+        <span contenteditable="false"></span>
+        <span>Support headcount at 60%</span>
+        <span></span>
+      </div>
+      <div>
+        <input type="checkbox" contenteditable="false">
+        <span>
+          <span>Confirm the EU quota with the vendor</span>
+        </span>
+        <span></span>
+      </div>
+      <div>
+        <input type="checkbox" checked="" contenteditable="false">
+        <span>
+          <span>Signed off by Platform</span>
+        </span>
+        <span></span>
+      </div>
+      <div>
+        <span>Decision log</span>
+      </div>
+      <div>
+        <button aria-expanded="true" aria-label="Collapse" type="button" contenteditable="false"></button>
+        <span>Why we cut the Android target</span>
+        <div>
+          <span>
+            <div data-placeholder="Type / for commands…">
+              <span>Shipping three platforms at once puts the auth migration on the critical path twice.</span>
+              <span></span>
+            </div>
+            <div>
+              <span contenteditable="false"></span>
+              <span>Auth migration owns the critical path.</span>
+              <span></span>
+            </div>
+            <div>
+              <span contenteditable="false"></span>
+              <span>Three platforms at once doubles the QA matrix.</span>
+              <span></span>
+            </div>
+          </span>
+        </div>
+      </div>
+      <div>
+        <button aria-expanded="false" aria-label="Expand" type="button" contenteditable="false"></button>
+        <span>Single-region GA first</span>
+        <div hidden="until-found">
+          <span>
+            <div data-placeholder="Type / for commands…">
+              <span>EU capacity is unconfirmed, so a second region is a launch risk with no launch benefit.</span>
+              <span></span>
+            </div>
+          </span>
+        </div>
+      </div>
+      <div>
+        <button aria-expanded="false" aria-label="Expand" type="button" contenteditable="false"></button>
+        <span>Adopt CRDT over OT</span>
+        <div hidden="until-found">
+          <span>
+            <div data-placeholder="Type / for commands…">
+              <span>Presence and offline edits fall out of the same merge; OT needed a server for each.</span>
+              <span></span>
+            </div>
+          </span>
+        </div>
+      </div>
+      <div>
+        <span>Canary procedure</span>
+      </div>
+      <div>
+        <select contenteditable="false">
+          <option>bash</option>
+          <option>ts</option>
+          <option>json</option>
+          <option>sql</option>
+        </select>
+        <span>apollo deploy --env=staging --canary=5%&#10;# → rollout 5% · healthy · p95 184ms</span>
+      </div>
+      <div>
+        <span>If the cutover isn't boring, we're not ready to call it GA.</span>
+        <span></span>
+      </div>
+      <div>
+        <div contenteditable="false">
+          <div>
+            <span>
+              <span>Auth migration — rollout plan</span>
+              <span>How the auth migration changes token lifetimes, and what breaks if it slips.</span>
+              <span>https://example.com/apollo/auth-migration</span>
+            </span>
+            <span></span>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div contenteditable="false">
+          <div>
+            <div>
+              <span title="Kara Vance">KV</span>
+              <div>
+                <span>Kara Vance</span>
+                <span>2h ago</span>
+              </div>
+              <div>Can we confirm the EU quota before Friday?</div>
+            </div>
+            <div>
+              <span title="Milo Freeman">MF</span>
+              <div>
+                <span>Milo Freeman</span>
+                <span>41m ago</span>
+              </div>
+              <div>Asked the vendor this morning — expecting an answer tomorrow.</div>
+            </div>
+            <button type="button">Reply…</button>
+          </div>
+        </div>
+      </div>
+      <div data-placeholder="Type / for commands…">
+        <span></span>
+        <span></span>
+      </div>
+      <div contenteditable="false"></div>
+    </div>
+  </div>
+</div>"
+`;
+
 exports[`Component: stories > Overlay stories > Story CustomOverlay 1`] = `
 "<div contenteditable="true">
   <span>Hello, custom overlay by trigger @!</span>
@@ -1591,6 +2239,24 @@ exports[`Component: stories > Overlay stories > Story DefaultOverlay 1`] = `
 exports[`Component: stories > Overlay stories > Story PositionedOverlay 1`] = `
 "<div contenteditable="true">
   <span>Hello, positioned overlay by trigger @!</span>
+</div>"
+`;
+
+exports[`Component: stories > Overlay stories > Story RowMenu 1`] = `
+"<div contenteditable="true">
+  <div>
+    <span>Intro</span>
+    <span></span>
+  </div>
+  <div>
+    <span></span>
+    <span></span>
+  </div>
+  <div>
+    <span>plain row</span>
+    <span></span>
+  </div>
+  <div contenteditable="false"></div>
 </div>"
 `;
 

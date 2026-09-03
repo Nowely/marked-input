@@ -2,8 +2,9 @@ import type {Markup} from '@markput/core'
 import {describe, expect, it, vi} from 'vitest'
 import {page, userEvent} from 'vitest/browser'
 
-import {caretIsInside, childrenOf, firstChild, getElement} from '../../shared/lib/dom'
-import {focusAtEnd, focusAtStart, verifyCaretPosition} from '../../shared/lib/focus'
+import {caretIsInside, firstChild, getElement, rowsOf} from '../../shared/lib/dom'
+import {ADD_ROW, dragRowTo, GRIP, gripOfRow} from '../../shared/lib/drag'
+import {focusAtEnd, focusAtStart, settle, verifyCaretPosition} from '../../shared/lib/focus'
 import {dispatchInsertText, dispatchPaste} from '../../shared/lib/inputEvents'
 import {defineMark, Mark} from '../../shared/lib/marks'
 import {composePage, mount, mountComponent, mountEcho} from '../../shared/lib/page'
@@ -26,76 +27,85 @@ const MARKDOWN_DRAG_VALUE =
 const CONTROLLED_ARGS = {
 	Mark,
 	value: 'hello @[world](1)\n\nfoo',
-	layout: 'block',
+	separator: '\n\n',
 	draggable: true,
 } as const
-
-const GRIP = {name: 'Drag to reorder or click for options'} as const
-
-/**
- * The rows of a block layout. Under the single-host topology the editing host IS the row
- * container, so a row is one of its element children — MINUS the controls layer, which is one
- * more container child and not a row.
- */
-const rowsOf = (host: HTMLElement) => childrenOf(host).filter(child => !child.matches(BLOCK_CONTROLS))
-
-const BLOCK_CONTROLS = '[class*="BlockControls"]'
 
 /**
  * The ONE grip. It lives in the editor's controls layer rather than inside a row, so it is found
  * on the host and follows the pointer: hovering a row is what puts it on that row.
  */
-async function gripOfRow(host: HTMLElement, rowIndex: number) {
-	await userEvent.hover(rowsOf(host)[rowIndex])
-	return page.elementLocator(host).getByRole('button', GRIP).findElement()
+async function gripElementOfRow(host: HTMLElement, rowIndex: number) {
+	return (await gripOfRow(host, rowsOf(host)[rowIndex])).findElement()
 }
 
-/** Hovers a row, then clicks its grip — the only way the block menu opens. */
+/** Hovers a row, then clicks its grip — the only way the row menu opens. */
 async function openMenuForRow(host: HTMLElement, rowIndex: number) {
-	await userEvent.click(await gripOfRow(host, rowIndex))
+	await userEvent.click(await gripElementOfRow(host, rowIndex))
 }
 
 /**
- * The TARGET half of a drag: dragover then drop, both on the CONTAINER, which is where the layer
- * listens, carrying the clientY that names the edge. Its own helper because the host it aims at
- * need not be the one the drag started in — that is how a foreign drag arrives.
+ * The TARGET half of a FOREIGN drag: dragover then drop, both on the CONTAINER, which is where the
+ * layer listens. Fabricated on purpose and only here — a drag that started in another application
+ * is the one gesture Playwright cannot drive, and what these two cases assert is that the editor
+ * claims NEITHER event. Every drag of the editor's own row goes through {@link dragRow}, which is
+ * real; see `shared/lib/drag.ts` for why that matters.
  */
 function dropOnRow(host: HTMLElement, rowIndex: number, dt: DataTransfer, position: 'before' | 'after' = 'after') {
 	const rect = rowsOf(host)[rowIndex].getBoundingClientRect()
 	const clientY = position === 'before' ? rect.top + 1 : rect.bottom - 1
-	const over = new DragEvent('dragover', {bubbles: true, cancelable: true, dataTransfer: dt, clientY})
+	const clientX = rect.left
+	const over = new DragEvent('dragover', {bubbles: true, cancelable: true, dataTransfer: dt, clientX, clientY})
 	host.dispatchEvent(over)
-	const drop = new DragEvent('drop', {bubbles: true, cancelable: true, dataTransfer: dt, clientY})
+	const drop = new DragEvent('drop', {bubbles: true, cancelable: true, dataTransfer: dt, clientX, clientY})
 	host.dispatchEvent(drop)
 	return {over, drop}
 }
 
-/** The grip's own `dragstart` — the only thing that makes a later drop this editor's own row. */
+/**
+ * The menu BOX around a rendered item — the positioned ancestor, found by the one property that
+ * defines it (`position: fixed`) rather than by a CSS-module class name or by counting parents.
+ */
+function menuBox(inner: HTMLElement): DOMRect {
+	for (let element: HTMLElement | null = inner; element; element = element.parentElement) {
+		if (getComputedStyle(element).position === 'fixed') return element.getBoundingClientRect()
+	}
+	throw new Error('Expected a fixed-positioned menu ancestor')
+}
+
+/**
+ * The grip's own `dragstart`, left standing — for the two cases whose subject is what happens
+ * BETWEEN `dragstart` and the drop, where a real drag gives the test no seam to look through.
+ */
 async function beginRowDrag(host: HTMLElement, rowIndex: number) {
-	const grip = await gripOfRow(host, rowIndex)
+	const grip = await gripElementOfRow(host, rowIndex)
 	const dt = new DataTransfer()
 	grip.dispatchEvent(new DragEvent('dragstart', {bubbles: true, cancelable: true, dataTransfer: dt}))
 	return {grip, dt, end: () => grip.dispatchEvent(new DragEvent('dragend', {bubbles: true, cancelable: true}))}
 }
 
-/** The whole sequence a browser produces, start to finish, inside ONE editor. */
+/**
+ * A whole drag of row `sourceIndex`, released on `targetIndex`'s own line — REAL, driven by the
+ * browser through {@link dragRowTo}.
+ *
+ * BOTH COORDINATES, and the X is the half this file used to leave out: a synthetic event carries
+ * only what the author set, `clientX` defaulted to 0, and every drop this suite made therefore
+ * resolved to the shallowest depth on offer. It could not nest a row at all, which is how a drop
+ * that wrote a row into a parent painting none of its children shipped under a green suite.
+ */
 async function dragRow(
 	host: HTMLElement,
 	sourceIndex: number,
 	targetIndex: number,
 	position: 'before' | 'after' = 'after'
 ) {
-	const {dt, end} = await beginRowDrag(host, sourceIndex)
-	dropOnRow(host, targetIndex, dt, position)
-	end()
+	const target = rowsOf(host)[targetIndex]
+	const rect = target.getBoundingClientRect()
+	await dragRowTo(host, rowsOf(host)[sourceIndex], target, {
+		clientX: rect.left,
+		clientY: position === 'before' ? rect.top + 1 : rect.bottom - 1,
+	})
 }
-
-/**
- * One turn of the event loop, for the assertions that say NOTHING happened. React commits an
- * echoed `onChange` in a microtask, so reading the harness value straight after a synthetic drop
- * reports the stale one — an unreordered document and a reordered one look identical there.
- */
-const settle = () => new Promise(resolve => setTimeout(resolve, 0))
 
 /** The helper stories driven as a controlled field that echoes `onChange` back into `value`. */
 const echoPlainText = () => mountEcho(PlainTextDrag, {value: PLAIN_TEXT_VALUE})
@@ -149,6 +159,56 @@ describe('Feature: drag rows', () => {
 		expect(checkboxOf('Design Phase').checked).toBe(false)
 	})
 
+	/**
+	 * THE GUTTER'S `+`, in both adapters. It is the one affordance a person reaches for first and
+	 * the editor had none — the row menu's first entry was the only way to open a row with the
+	 * mouse, two gestures away behind a grip whose own label says it is for dragging.
+	 */
+	describe('the gutter add button', () => {
+		it('opens a row under the one the pointer is on', async () => {
+			const {host, value} = await mountEcho(PlainTextDrag, {value: 'alpha\n\nbeta'})
+			await userEvent.hover(rowsOf(host)[0])
+
+			await userEvent.click(await page.elementLocator(host).getByRole('button', ADD_ROW).findElement())
+
+			await expect.poll(value).toBe('alpha\n\n\n\nbeta')
+			await expect.poll(() => rowsOf(host)).toHaveLength(3)
+		})
+
+		/** It runs the menu's own first entry, so the two affordances write the same document. */
+		it("writes what the menu's Add below writes", async () => {
+			const {host: byButton, value: fromButton} = await mountEcho(PlainTextDrag, {value: 'alpha\n\nbeta'})
+			await userEvent.hover(rowsOf(byButton)[0])
+			await userEvent.click(await page.elementLocator(byButton).getByRole('button', ADD_ROW).findElement())
+			await expect.poll(fromButton).toBe('alpha\n\n\n\nbeta')
+
+			const {host: byMenu, value: fromMenu} = await mountEcho(PlainTextDrag, {value: 'alpha\n\nbeta'})
+			await openMenuForRow(byMenu, 0)
+			await userEvent.click(getElement(page.getByText('Add below')))
+
+			await expect.poll(fromMenu).toBe(fromButton())
+		})
+
+		it('is painted in the gutter core reserves, left of the grip', async () => {
+			const {host} = await mount(PlainTextDrag)
+			await userEvent.hover(rowsOf(host)[0])
+
+			const add = await page.elementLocator(host).getByRole('button', ADD_ROW).findElement()
+			const grip = await page.elementLocator(host).getByRole('button', GRIP).findElement()
+			const row = rowsOf(host)[0].getBoundingClientRect()
+
+			expect(add.getBoundingClientRect().right).toBeLessThanOrEqual(grip.getBoundingClientRect().left + 0.5)
+			expect(grip.getBoundingClientRect().right).toBeLessThanOrEqual(row.left + 0.5)
+			expect(add.getBoundingClientRect().left).toBeGreaterThanOrEqual(host.getBoundingClientRect().left - 0.5)
+		})
+
+		it('is not painted in a read-only editor', async () => {
+			const {host} = await mount(ReadOnlyDrag)
+			await userEvent.hover(rowsOf(host)[0])
+			await expect.element(page.getByRole('button', ADD_ROW)).not.toBeInTheDocument()
+		})
+	})
+
 	describe('menu', () => {
 		it('open with Add below, Duplicate, Delete options', async () => {
 			const {host} = await mount(PlainTextDrag)
@@ -157,6 +217,34 @@ describe('Feature: drag rows', () => {
 			await expect.element(page.getByText('Add below')).toBeInTheDocument()
 			await expect.element(page.getByText('Duplicate')).toBeInTheDocument()
 			await expect.element(page.getByText('Delete')).toBeInTheDocument()
+		})
+
+		/**
+		 * A MENU THAT WOULD NOT FIT OPENS WHERE IT FITS. It hung off `grip.bottom + 4` and nothing
+		 * else, so near the fold two thirds of it was off-screen and the verbs it was hiding could
+		 * not be reached at all. The viewport is shrunk rather than the document lengthened,
+		 * because a document long enough to push a grip to the fold is also long enough to SCROLL.
+		 */
+		it('open above the grip when it does not fit below it', async () => {
+			await page.viewport(640, 220)
+			try {
+				const {host} = await mount(PlainTextDrag, {defaultValue: 'a\n\nb\n\nc\n\nd\n\ne\n\nf\n\ng'})
+				const grip = await gripElementOfRow(host, rowsOf(host).length - 1)
+				const gripBox = grip.getBoundingClientRect()
+
+				await userEvent.click(grip)
+				await expect.element(page.getByText('Add below')).toBeInTheDocument()
+
+				const menu = menuBox(getElement(page.getByText('Add below')))
+				expect(
+					gripBox.bottom + menu.height,
+					'the menu must not fit below the grip, or this case proves nothing'
+				).toBeGreaterThan(window.innerHeight)
+				expect(menu.bottom).toBeLessThanOrEqual(window.innerHeight)
+				expect(menu.bottom).toBeLessThanOrEqual(gripBox.top)
+			} finally {
+				await page.viewport(1280, 720)
+			}
 		})
 
 		it('close on Escape', async () => {
@@ -175,6 +263,49 @@ describe('Feature: drag rows', () => {
 
 			await userEvent.click(firstChild(host)!)
 			await expect.element(page.getByText('Add below')).not.toBeInTheDocument()
+		})
+
+		/**
+		 * THE ROW MENU HONOURS THE SAME KEYBOARD CONTRACT AS THE `/` LIST, which is what "one overlay
+		 * list with one keyboard" claimed and this menu did not keep: ArrowDown scrolled the page and
+		 * highlighted nothing, Enter did nothing, and only Escape worked — so the menu could be
+		 * operated by the mouse alone. The protocol is `navigateSuggestions`, the same pure function
+		 * the `/` list runs, so the two cannot drift.
+		 *
+		 * The FIRST entry is highlighted from the moment it opens, which is what makes Enter a
+		 * complete gesture on its own (`OverlayListModel.active`'s rule, read at this list).
+		 */
+		it('highlight the first entry the moment it opens, and move the highlight on ArrowDown', async () => {
+			const {host} = await mount(PlainTextDrag)
+			await openMenuForRow(host, 0)
+
+			// The `<li>` carries the highlight class; `getByText` lands on the label span inside it.
+			const entry = (label: string) => getElement(page.getByText(label)).closest('li')!.className
+			expect(entry('Add below')).not.toBe(entry('Duplicate'))
+			expect(entry('Duplicate')).toBe(entry('Delete'))
+
+			await userEvent.keyboard('{ArrowDown}')
+
+			await expect.poll(() => entry('Duplicate')).not.toBe(entry('Add below'))
+			await expect.poll(() => entry('Add below')).toBe(entry('Delete'))
+		})
+
+		/**
+		 * AND THE KEYBOARD RUNS THE VERB, which is the half Escape alone could never reach. Then the
+		 * next character has to LAND: the grip is a `<button>` inside the container, so without the
+		 * editor taking its focus back the row was duplicated into a field that could no longer be
+		 * typed in — the same trap a to-do's checkbox sets, at the one control the editor paints
+		 * itself.
+		 */
+		it('run the highlighted verb on Enter, and leave the field typeable after it', async () => {
+			const {host, value} = await echoPlainText()
+			await openMenuForRow(host, 0)
+
+			await userEvent.keyboard('{ArrowDown}{Enter}')
+
+			await expect.poll(value).toContain('First block of plain text\n\nFirst block of plain text')
+			await expect.element(page.getByText('Add below')).not.toBeInTheDocument()
+			expect(document.activeElement).toBe(host)
 		})
 	})
 
@@ -242,6 +373,25 @@ describe('Feature: drag rows', () => {
 	})
 
 	describe('delete row', () => {
+		/**
+		 * THE EDITOR TAKES ITS FOCUS BACK AFTER ITS OWN VERB. The grip is a `<button>` inside the
+		 * container, so a click on a menu item leaves `document.activeElement` on it — and the whole
+		 * keydown tier declines for a consumer control root, which made the `Mod+Z` that follows a
+		 * Delete a dead key. The entry was there the whole time: click back into the text and the
+		 * same press restores the row. The stack was never the problem; reaching it was.
+		 */
+		it('leaves focus in the editor after a row verb, so the undo that follows reaches it', async () => {
+			const {host, value} = await echoPlainText()
+			await openMenuForRow(host, 2)
+			await userEvent.click(getElement(page.getByText('Delete')))
+			await expect.poll(value).not.toContain('Third block of plain text')
+
+			expect(document.activeElement).toBe(host)
+
+			await userEvent.keyboard('{Control>}z{/Control}')
+			await expect.poll(value).toBe(PLAIN_TEXT_VALUE)
+		})
+
 		it('drop the middle row with its separator and leave the rest in place', async () => {
 			const {host, value} = await echoPlainText()
 			await openMenuForRow(host, 2)
@@ -406,12 +556,12 @@ describe('Feature: drag rows', () => {
 	})
 
 	describe('drag & drop', () => {
-		it('keep grip visible when pointer moves from block content to grip button', async () => {
+		it('keep grip visible when pointer moves from row content to grip button', async () => {
 			// The layer lives INSIDE the container, so a mousemove over the grip still bubbles to
 			// the container's hit-test — and the grip sits in its own row's vertical band, so the
 			// hover it recomputes is the row it is already on.
 			const {host} = await mount(PlainTextDrag)
-			const grip = await gripOfRow(host, 0)
+			const grip = await gripElementOfRow(host, 0)
 
 			await userEvent.hover(grip)
 			expect(grip.parentElement!.matches('[class*="SidePanelVisible"]')).toBe(true)
@@ -423,7 +573,7 @@ describe('Feature: drag rows', () => {
 			// left behind. It stays MOUNTED — its own `dragend` is the pin's release, and
 			// Chromium sends no mouseup for a drag at all.
 			const {host} = await mount(PlainTextDrag)
-			const grip = await gripOfRow(host, 0)
+			const grip = await gripElementOfRow(host, 0)
 			const visible = () => grip.parentElement!.matches('[class*="SidePanelVisible"]')
 			expect(visible()).toBe(true)
 
@@ -453,6 +603,30 @@ describe('Feature: drag rows', () => {
 			expect(grip.contains(hit)).toBe(true)
 
 			end()
+		})
+
+		/**
+		 * THE EDITOR TAKES ITS FOCUS BACK when the gesture ends. The grip is a `<button>` inside the
+		 * container, so after a drag `document.activeElement` is the grip — a registered control root,
+		 * which the whole keydown tier declines for. Measured before the fix: the drop landed, and the
+		 * `X` typed straight after it emitted NOTHING. (`Mod+Z` was the one key that still worked, its
+		 * arm running ahead of that gate, which is why the report read as "the first undo is
+		 * swallowed" — it was not, and everything else was.)
+		 *
+		 * The editor is deliberately given NO focus first: a user who drags a row before ever clicking
+		 * into the text is the case with nothing to restore.
+		 */
+		it('take the focus back after a drag, so the next keystroke lands', async () => {
+			const {host, value} = await echoPlainText()
+			document.body.focus()
+
+			await dragRow(host, 0, 2)
+			await expect.poll(() => value().startsWith('Second block')).toBe(true)
+
+			expect(host.contains(document.activeElement)).toBe(true)
+			await userEvent.keyboard('X')
+
+			await expect.poll(() => value().includes('X')).toBe(true)
 		})
 
 		it('reorder rows when dragging row 0 after row 2', async () => {
@@ -546,8 +720,8 @@ describe('Feature: drag rows', () => {
 
 	/**
 	 * The controls layer paints at coordinates it MEASURES, where the per-row panel inherited them
-	 * from `.Block { position: relative }`. These are the properties that geometry has to hold
-	 * and that no unit test in `BlockController.spec.ts` can see, because it paints nothing.
+	 * from `.Row { position: relative }`. These are the properties that geometry has to hold
+	 * and that no unit test in `RowController.spec.ts` can see, because it paints nothing.
 	 */
 	describe('controls layer geometry', () => {
 		const centerY = (element: Element) => {
@@ -562,26 +736,32 @@ describe('Feature: drag rows', () => {
 			const {host} = await mountComponent({
 				options: [],
 				defaultValue: 'alpha\n\nbeta\n\n',
-				layout: 'block',
+				separator: '\n\n',
 				draggable: true,
 			})
 			expect(getComputedStyle(host).position).toBe('relative')
 		})
 
 		it('hang the grip band LEFT of its row, where core reserves no gutter', async () => {
-			// Core supplies the 24px gutter only for draggable, editable block layout. A band
-			// anchored to the layer's own origin therefore covers the first 24px of the hovered
+			// Core supplies the 48px gutter only for draggable, editable rows. A band
+			// anchored to the layer's own origin therefore covers the first 48px of the hovered
 			// row and swallows the click that should place a caret there.
+			//
+			// SO THE BAND HANGS ITS FULL WIDTH OUTSIDE, and the number is asserted below rather
+			// than left to be discovered: the two controls are 48px and nothing is reserved for
+			// them, so a consumer whose container sits at the page's left edge has neither. That
+			// was 24px and one control before the `+` landed; `marginLeft` here is what gives the
+			// band somewhere to be.
 			const {host} = await mountComponent({
 				options: [],
 				defaultValue: 'alpha\n\nbeta\n\n',
-				layout: 'block',
+				separator: '\n\n',
 				draggable: false,
 				style: {marginLeft: '64px'},
 			})
 			const row = rowsOf(host)[0]
 			await userEvent.hover(row)
-			const grip = await page.elementLocator(host).getByRole('button', {name: 'Block options'}).findElement()
+			const grip = await page.elementLocator(host).getByRole('button', {name: 'Row options'}).findElement()
 
 			const band = grip.parentElement!.getBoundingClientRect()
 			const rect = row.getBoundingClientRect()
@@ -589,11 +769,19 @@ describe('Feature: drag rows', () => {
 
 			const hit = document.elementFromPoint(rect.left + 2, centerY(row))
 			expect(row.contains(hit)).toBe(true)
+
+			// AND THE OVERHANG IS THE WHOLE BAND, stated so a later widening cannot double it
+			// unnoticed the way the `+` did. Core reserves `padding-left` only while the rows drag,
+			// the band paints whenever the menu grip does, so here the two disagree by the band's
+			// full width — 48px, up from 24px, and the `+` is the outermost control of it.
+			expect(getComputedStyle(host).paddingLeft).toBe('0px')
+			expect(band.width).toBe(48)
+			expect(Math.round(host.getBoundingClientRect().left - band.left)).toBe(48)
 		})
 
 		it('put the grip INSIDE the container gutter core reserves, in BOTH frameworks', async () => {
 			// The other half of the same anchor: WITH a gutter the band has to land in it. A
-			// band placed 24px left of the layer's origin overshoots by exactly the gutter, and
+			// band placed 48px left of the layer's origin overshoots by exactly the gutter, and
 			// an `overflow: auto` consumer container clips it out of existence.
 			//
 			// The gutter is core's own here — no `slotProps` stand-in. It used to need one: core
@@ -604,10 +792,11 @@ describe('Feature: drag rows', () => {
 			const {host} = await mountComponent({
 				options: [],
 				defaultValue: 'alpha\n\nbeta\n\n',
-				layout: 'block',
+				separator: '\n\n',
 				draggable: true,
 			})
-			expect(getComputedStyle(host).paddingLeft).toBe('24px')
+			// 48px: the band holds two controls, the `+` and the grip, at 24px each.
+			expect(getComputedStyle(host).paddingLeft).toBe('48px')
 
 			const row = rowsOf(host)[0]
 			await userEvent.hover(row)
@@ -616,7 +805,7 @@ describe('Feature: drag rows', () => {
 			const band = grip.parentElement!.getBoundingClientRect()
 			const rect = row.getBoundingClientRect()
 			const container = host.getBoundingClientRect()
-			expect(rect.left - container.left).toBeCloseTo(24, 0)
+			expect(rect.left - container.left).toBeCloseTo(48, 0)
 			expect(band.right).toBeCloseTo(rect.left, 0)
 			expect(band.left).toBeGreaterThanOrEqual(container.left - 0.5)
 		})
@@ -629,14 +818,14 @@ describe('Feature: drag rows', () => {
 			const {host} = await mountComponent({
 				options: [],
 				defaultValue: 'r0\n\nr1\n\nr2\n\nr3\n\nr4\n\n',
-				layout: 'block',
+				separator: '\n\n',
 				draggable: true,
 				style: {marginLeft: '64px'},
 				slotProps: {container: {style: {overflow: 'auto', height: '200px'}}},
 			})
 			await focusAtEnd(rowsOf(host)[0])
 			const row = rowsOf(host)[3]
-			const grip = await gripOfRow(host, 3)
+			const grip = await gripElementOfRow(host, 3)
 			expect(Math.abs(centerY(grip) - centerY(row))).toBeLessThan(2)
 
 			// Enter splits row 0 in two, so every row below it moves down by a row.
@@ -673,12 +862,12 @@ describe('Feature: drag rows', () => {
 					Mark: Growing,
 					options: [{markup: '@[__value__]' as Markup}],
 					defaultValue: '@[img] r0\n\nr1\n\nr2\n\nr3\n\nr4\n\n',
-					layout: 'block',
+					separator: '\n\n',
 					draggable: true,
 					slotProps: {container: {style: {overflow: 'auto', height: '200px'}}},
 				})
 				const row = rowsOf(host)[3]
-				const grip = await gripOfRow(host, 3)
+				const grip = await gripElementOfRow(host, 3)
 				const containerHeight = host.getBoundingClientRect().height
 				expect(Math.abs(centerY(grip) - centerY(row))).toBeLessThan(2)
 				const topBefore = row.getBoundingClientRect().top
@@ -698,11 +887,11 @@ describe('Feature: drag rows', () => {
 		it('paint the row menu above consumer content that outranks the layer', async () => {
 			// `.Popup` is `z-index: 9999` and the layer must not clamp it: a `z-index` on the
 			// layer would make it a stacking context, where the deleted per-row controls hung off
-			// `.Block` (positioned, `z-index: auto`) and the popup competed at the page level.
+			// `.Row` (positioned, `z-index: auto`) and the popup competed at the page level.
 			const {host} = await mountComponent({
 				options: [],
 				defaultValue: 'alpha\n\nbeta\n\n',
-				layout: 'block',
+				separator: '\n\n',
 				draggable: true,
 				style: {marginLeft: '64px'},
 			})
@@ -729,17 +918,20 @@ describe('Feature: drag rows', () => {
 			const {host} = await mountComponent({
 				options: [],
 				defaultValue: 'alpha\n\nbeta\n\ngamma\n\n',
-				layout: 'block',
+				separator: '\n\n',
 				draggable: {alwaysShowHandle: true},
 				style: {marginLeft: '64px'},
 			})
 
 			// Polled, not read: the box is measured after the paint that created the rows, so
 			// Vue's `flush: 'post'` watcher paints the resting grip one tick after mount.
-			await expect.poll(() => host.querySelectorAll('[class*="GripButton"]').length).toBe(1)
-			const grips = host.querySelectorAll('[class*="GripButton"]')
-			expect(grips[0].parentElement!.matches('[class*="SidePanelAlways"]')).toBe(true)
-			expect(Math.abs(centerY(grips[0]) - centerY(rowsOf(host)[0]))).toBeLessThan(2)
+			//
+			// BANDS, not buttons: the band holds the gutter's `+` beside the grip, and what one
+			// layer cannot paint is one band per ROW.
+			await expect.poll(() => host.querySelectorAll('[class*="SidePanel"]').length).toBe(1)
+			const bands = host.querySelectorAll('[class*="SidePanel"]')
+			expect(bands[0].matches('[class*="SidePanelAlways"]')).toBe(true)
+			expect(Math.abs(centerY(bands[0]) - centerY(rowsOf(host)[0]))).toBeLessThan(2)
 		})
 
 		/**
@@ -776,13 +968,13 @@ describe('Feature: drag rows', () => {
 			const {host} = await mountComponent({
 				options: [],
 				defaultValue: 'alpha\n\nbeta\n\ngamma\n\n',
-				layout: 'block',
+				separator: '\n\n',
 				draggable: {alwaysShowHandle: true},
 				style: {marginLeft: '64px'},
 				slotProps: {container: {style: containerStyle}},
 			})
-			await expect.poll(() => host.querySelectorAll('[class*="GripButton"]').length).toBe(1)
-			const grip = host.querySelector('[class*="GripButton"]')!
+			await expect.poll(() => host.querySelectorAll('[class*="SidePanel"]').length).toBe(1)
+			const grip = host.querySelector('[class*="SidePanel"]')!
 			const row = rowsOf(host)[0]
 			expect(Math.abs(centerY(grip) - centerY(row))).toBeLessThan(2)
 
@@ -1056,12 +1248,12 @@ describe('Feature: drag row keyboard navigation', () => {
 
 			it('lands the caret at the join inside the heading row', async () => {
 				const {host} = await mount(MarkdownDrag)
-				const markBlock = rowsOf(host)[0]
+				const markRow = rowsOf(host)[0]
 
 				await focusAtStart(rowsOf(host)[1])
 				await userEvent.keyboard('{Backspace}')
 
-				expect(caretIsInside(markBlock)).toBe(true)
+				expect(caretIsInside(markRow)).toBe(true)
 			})
 		})
 	})
@@ -1172,12 +1364,12 @@ describe('Feature: drag row keyboard navigation', () => {
 
 			it('move focus to mark row on Delete at mark boundary', async () => {
 				const {host} = await mount(MarkdownDrag)
-				const markBlock = rowsOf(host)[0]
+				const markRow = rowsOf(host)[0]
 
 				await focusAtStart(rowsOf(host)[1])
 				await userEvent.keyboard('{Delete}')
 
-				expect(caretIsInside(markBlock)).toBe(true)
+				expect(caretIsInside(markRow)).toBe(true)
 			})
 		})
 	})
@@ -1200,23 +1392,28 @@ describe('Feature: drag row keyboard navigation', () => {
 			expect(value()).not.toContain('First block of plain text\n\n')
 		})
 
-		it('replaces the whole document when Ctrl+A in a row then typing', async () => {
-			// BREAKING (one-host migration): select-all is no longer clamped to the row it
-			// started in — rows are not editing hosts any more — so it selects the document
-			// and typing replaces all of it, exactly as in inline layout.
+		it('takes the ROW on the first Ctrl+A and the document on the second', async () => {
+			// Select-all is not clamped to the row it started in — rows are not editing hosts
+			// (one-host migration) — but it CLIMBS to the document instead of jumping there:
+			// the caret's row first, which is the rung Esc has always had, then everything.
+			// These rows are all roots, so there is nothing between the two.
 			const {host, value} = await echoPlainText()
 
 			await focusAtEnd(rowsOf(host)[1])
 			await userEvent.keyboard('{Control>}a{/Control}')
 			await userEvent.keyboard('X')
+			await expect.poll(value).toBe(PLAIN_TEXT_VALUE.replace('Second block of plain text', 'X'))
 
-			await expect.poll(value).toBe('X')
+			await userEvent.keyboard('{Control>}a{/Control}')
+			await userEvent.keyboard('{Control>}a{/Control}')
+			await userEvent.keyboard('Y')
+			await expect.poll(value).toBe('Y')
 		})
 
 		it('ignores beforeinput inside a drag control', async () => {
 			const {host, value} = await echoPlainText()
 			const before = value()
-			const handle = await gripOfRow(host, 0)
+			const handle = await gripElementOfRow(host, 0)
 
 			await userEvent.click(handle)
 			await userEvent.keyboard('x')

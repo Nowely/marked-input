@@ -4,7 +4,7 @@ description: Custom autocomplete overlays for Markput - trigger characters, sugg
 keywords: [overlay, autocomplete, suggestions, trigger characters, useOverlay hook, positioning, custom UI]
 ---
 
-The overlay system provides autocomplete, suggestions, and contextual menus when users type trigger characters. Markput includes a default Suggestions component, but you can fully customize it to match your needs.
+The overlay system provides autocomplete, suggestions, and contextual menus when users type trigger characters. Markput includes a default `OverlayList` component — one list for both jobs — but you can fully customize it to match your needs.
 
 ## Overview
 
@@ -20,9 +20,17 @@ User selects 'Alice'
 Text becomes '@[Alice]'
 ```
 
-## Default Suggestions Overlay
+Everything typed after the trigger and left of the caret is the **query**, spaces and punctuation
+included, up to the next line break or a second trigger — so a multi-word entry (`To-do list`,
+`Table of contents`) can be typed in full. A query nothing matches simply offers nothing: the list
+is empty, the built-in overlay paints nothing, and every key goes back to the editor.
 
-Markput includes a built-in Suggestions component:
+## The Default Overlay List
+
+Markput includes a built-in `OverlayList` component, and it is what a trigger option resolves to
+when it names no `Overlay` of its own. What it offers depends on the matched option and on
+nothing else: an option that declares `overlay.data` offers that data, and an option that
+declares none offers the ROW MENU (see below). One list, one keyboard, either way.
 
 ```tsx
 import {MarkedInput} from '@markput/react'
@@ -54,9 +62,162 @@ function BasicSuggestions() {
 
 - Keyboard navigation (↑↓)
 - Filtering as you type
-- Enter to select
+- Enter to select the highlighted row — the FIRST one until an arrow moves it, so Enter alone
+  finishes the gesture and never leaves the trigger text in the document
 - Esc to close
 - Click to select
+
+### Suggestions with an identity
+
+A row of `data` may be a string or `{value, meta?, label?}`. The object form is what a list with
+an id behind it needs — the `__meta__` half of `@[__value__](__meta__)` — so a mention picker no
+longer has to abandon the built-in overlay and write its own component:
+
+```tsx value
+{
+    markup: '@[__value__](__meta__)',
+    overlay: {
+        trigger: '@',
+        data: [
+            {value: 'Sarah Chen', meta: 'sarah.chen'},
+            {value: 'Marcus Kane', meta: 'marcus.kane'},
+        ],
+    },
+}
+```
+
+Filtering matches the LABEL and nothing else — `label` when given, otherwise `value` — so an id
+the user cannot see never matches a query. A bare string still writes the row's index as its
+meta, because a label is the only identity it has.
+
+## The Row Menu
+
+A `/` menu is not a custom overlay: an option that declares a `menu` IS in the menu, and each
+adapter ships the paint.
+
+```tsx
+const options = [
+    {overlay: {trigger: '/'}},
+    {markup: '# __slot__', row: {Component: 'h1'}, menu: {label: 'Heading 1', keywords: ['h1', 'title']}},
+    {markup: '- __slot__', row: {Component: 'li', continues: true}, menu: {label: 'Bulleted list'}},
+    {markup: '> __slot__', row: {Component: 'blockquote'}, menu: {label: 'Quote'}},
+]
+```
+
+That is the whole wiring, and it names no component: the `/` option carries no markup of its own
+— it exists to own the trigger — declares no `overlay.data`, and therefore resolves to the
+built-in list showing the row menu. What a choice writes is the ROW KIND the chosen entry names,
+by click or by ↑↓ and Enter.
+
+| `MenuSpec` field | Meaning                                                                |
+| ---------------- | ---------------------------------------------------------------------- |
+| `label`          | What the row shows, and the text the query is ranked against           |
+| `keywords`       | Extra query terms that never appear on screen                          |
+| `meta`           | Seeds the meta of the row this entry writes                            |
+| `text`           | Seeds the body of the row this entry writes                            |
+
+**The best answer is the first row, and `Enter` picks the first row.** The query ranks rather than
+merely filters: an exact `label` first, then a label the query is a prefix of, then a label holding
+it anywhere — and only then the same three over `keywords`, because a term the user cannot see must
+not outrank one they are reading. Declaration order decides inside a band, and decides the whole
+list before the first character is typed. Without ranking, `/table` committed **Table of contents**
+on the first try because that option happened to be declared earlier.
+
+**An entry with no `markup` is the way back to plain text.** Every other entry names a kind to turn
+INTO; the paragraph is the one kind no option can declare, because it is `slots.paragraph`. An
+option carrying a `menu` and no `markup` names it, so choosing that entry un-types the caret's row:
+
+```tsx
+const options = [
+    {overlay: {trigger: '/'}},
+    {menu: {label: 'Text', keywords: ['paragraph', 'plain']}},
+    {markup: '# __slot__', row: {Component: 'h1'}, menu: {label: 'Heading 1'}},
+]
+```
+
+Core ships no label for it: what it is called, and where it sits in the list, is yours. A markup
+that IS declared and compiles to no row kind still refuses — that is a typo, not a request.
+
+**Two gestures, one splice.** On a row holding nothing but the trigger the entry INSERTS: the
+row becomes that kind, seeded from `menu.text`/`menu.meta`. On a row that already has text it
+CONVERTS: `'plain row'` + `/` + Heading 1 emits `'# plain row'`, and the seeds are not applied,
+because a turn-into must not discard what the user typed. Both run
+`RowNode.turnInto(option, {text})` once — a single splice, which is what controlled mode
+requires of a gesture that removes a span and retypes a row at the same time.
+
+Which gesture it is is not published, because nothing paints it: `choose` decides it from the
+caret row's own body and no menu component asks. An entry that wants to say "Turn into" needs
+core to answer, so the member comes back with the reader that needs it and not before.
+
+**Replacing `OverlayList`.** A consumer's own list reads the same things and still writes no
+filtering and no insert logic. `activate()` is what buys the keyboard — arrows move `active`,
+Enter chooses the row it names — and it is opt-in so an overlay that is not a list never swallows
+those keys. A list with NO rows claims nothing, so a query that matches nothing leaves Enter to the
+row split:
+
+```tsx fragment
+function MyMenu() {
+    const {rows, active, activate, choose, style, ref} = useOverlay<HTMLUListElement>()
+    useEffect(activate, [activate])
+    if (rows.length === 0) return null
+
+    return (
+        <ul ref={ref} style={{position: 'absolute', ...style}}>
+            {rows.map((row, index) => (
+                <li
+                    key={row.label}
+                    style={index === active ? {background: '#cce9ff'} : undefined}
+                    onMouseDown={event => event.preventDefault()}
+                    onClick={() => choose(row.pick)}
+                >
+                    {row.label}
+                </li>
+            ))}
+        </ul>
+    )
+}
+```
+
+## Where a Popup Opens
+
+`style` is a viewport position (`position: fixed`), and it is not simply "under the caret": a popup
+that would not fit below the anchor opens ABOVE it, and one that fits neither way is clamped inside
+the viewport rather than left hanging off it. The same rule positions the row menu the grip opens.
+
+The flip needs the popup's own SIZE, which nothing knows until it has mounted — so `style` is
+evaluated twice for a newly opened overlay: once at the anchor, then again, fitted, in the same
+commit that attached the `ref`. **Attach `ref` or you get no flip**: it is how core learns how big
+your overlay is, as well as how outside-click detection finds it.
+
+## Theming the Built-in Look
+
+The popup, its highlighted row, the gutter buttons, the drop indicator and the refusal tint are painted from
+`@markput/core/styles.module.css`, and every colour in it is read through a custom property whose
+fallback is the shipped default. Declare any of them on an ancestor — no CSS-module class name is
+involved, and an editor nobody themes looks exactly as it did.
+
+| Custom property                    | Default                          | Paints                       |
+| ---------------------------------- | -------------------------------- | ---------------------------- |
+| `--markput-popup-background`       | `white`                          | Popup background             |
+| `--markput-popup-border`           | `#ccc`                           | Popup border                 |
+| `--markput-popup-text`             | `#000`                           | Popup text                   |
+| `--markput-popup-shadow`           | `0 3px 6px -2px rgba(0,0,0,.6)`  | Popup shadow                 |
+| `--markput-popup-item-background`  | `#cce9ff`                        | Hovered / highlighted row    |
+| `--markput-popup-item-text`        | `#2589f5`                        | Hovered / highlighted row    |
+| `--markput-grip-color`             | `#9ca3af`                        | Both gutter buttons          |
+| `--markput-drop-indicator`         | `#3b82f6`                        | The row drop line            |
+| `--markput-row-selected`           | `rgb(35 131 226 / 28%)`          | The row selection overlay    |
+| `--markput-row-refused`            | `rgb(235 87 87 / 26%)`           | The refused-gesture tint     |
+
+```css
+.my-dark-page {
+    --markput-popup-background: #252525;
+    --markput-popup-border: rgb(255 255 255 / 13%);
+    --markput-popup-text: rgb(255 255 255 / 82%);
+    --markput-popup-item-background: rgb(255 255 255 / 4%);
+    --markput-popup-item-text: rgb(255 255 255 / 82%);
+}
+```
 
 ## The useOverlay Hook
 
@@ -74,17 +235,21 @@ function CustomOverlay() {
 
 ### useOverlay API
 
-| Property   | Type           | Description                            |
-| ---------- | -------------- | -------------------------------------- |
-| `style`    | `{left, top}`  | Absolute position for overlay          |
-| `close()`  | `function`     | Close the overlay                      |
-| `select()` | `function`     | Insert a mark                          |
-| `match`    | `OverlayMatch` | Match details (value, source, trigger) |
-| `ref`      | `RefObject`    | Ref for outside click detection        |
+| Property    | Type                                | Description                                     |
+| ----------- | ----------------------------------- | ----------------------------------------------- |
+| `style`     | `{left, top}`                       | Viewport position, already fitted (see above)   |
+| `close()`   | `function`                          | Close the overlay                               |
+| `select()`  | `function`                          | Insert a mark                                   |
+| `choose()`  | `function`                          | The one accept path; `{option}` retypes the row |
+| `rows`      | `readonly OverlayRow[]`             | The list on offer, already narrowed by the query|
+| `active`    | `number`                            | Index of the highlighted row; the FIRST by default |
+| `activate()`| `function`                          | Bind ↑↓/Enter; returns the unbind               |
+| `match`     | `OverlayMatch`                      | Match details (value, source, trigger)          |
+| `ref`       | `RefObject`                         | Ref for outside click detection                 |
 
 **Complete interface:**
 
-```tsx
+```tsx fragment uses=Anchors
 interface OverlayHandler {
     style: {
         left: number // X coordinate
@@ -92,6 +257,14 @@ interface OverlayHandler {
     }
     close: () => void
     select: (value: {value: string; meta?: string}) => void
+    /** `{option}` turns the caret's row into that option's kind; `{value, meta}` is `select`. */
+    choose: (pick: OverlayPick) => boolean
+    /** The matched option's `overlay.data`, or the row menu when it declares none. */
+    rows: readonly OverlayRow[]
+    /** Index into `rows` of the highlighted row — the first one until an arrow moves it. */
+    active: number
+    /** Bind ↑↓/Enter to the editing host, and return the unbind. Opt-in. */
+    activate: () => () => void
     match: {
         value: string // Typed text after trigger
         source: string // Full matched text including trigger
@@ -108,7 +281,7 @@ interface OverlayHandler {
 
 ### Example 1: Simple List
 
-```tsx
+```tsx fragment
 import {useOverlay} from '@markput/react'
 
 function SimpleListOverlay() {
@@ -135,7 +308,7 @@ function SimpleListOverlay() {
 
 Position the overlay at the caret:
 
-```tsx
+```tsx fragment
 function PositionedOverlay() {
     const {style, select} = useOverlay()
 
@@ -168,14 +341,17 @@ function PositionedOverlay() {
 
 Filter based on typed text:
 
-```tsx
+```tsx fragment
 function FilteredOverlay() {
     const {select, match, close} = useOverlay()
 
     const allItems = ['Alice', 'Bob', 'Charlie', 'Diana']
 
+    // `match` is undefined while no trigger is open
+    const query = match?.value ?? ''
+
     // Filter items based on typed text
-    const filtered = allItems.filter(item => item.toLowerCase().includes(match.value.toLowerCase()))
+    const filtered = allItems.filter(item => item.toLowerCase().includes(query.toLowerCase()))
 
     if (filtered.length === 0) {
         return (
@@ -201,7 +377,7 @@ function FilteredOverlay() {
 
 Include metadata when selecting:
 
-```tsx
+```tsx fragment
 function UserOverlay() {
     const {select} = useOverlay()
 
@@ -253,7 +429,7 @@ import {useOverlay} from '@markput/react'
 import {useState, useEffect} from 'react'
 
 function KeyboardOverlay() {
-    const {select, close, ref} = useOverlay()
+    const {select, close, ref} = useOverlay<HTMLDivElement>()
     const [selected, setSelected] = useState(0)
 
     const items = ['Alice', 'Bob', 'Charlie']
@@ -295,9 +471,9 @@ function KeyboardOverlay() {
 
 Use the `ref` to detect clicks outside the overlay:
 
-```tsx
+```tsx fragment
 function ClickOutsideOverlay() {
-    const {select, ref} = useOverlay()
+    const {select, ref} = useOverlay<HTMLDivElement>()
 
     const items = ['Item 1', 'Item 2']
 
@@ -326,58 +502,43 @@ function ClickOutsideOverlay() {
 
 ### Single Trigger
 
-```tsx
-options={[
-  {
-    markup: '@[__value__]',
-    overlay: {
-      trigger: '@',
-      data: ['Alice', 'Bob']
-    }
-  }
-]}
+```tsx fragment
+const options: Option[] = [
+    {
+        markup: '@[__value__]',
+        overlay: {trigger: '@', data: ['Alice', 'Bob']},
+    },
+]
 ```
 
 ### Multiple Triggers
 
 Different triggers for different mark types:
 
-```tsx
-options={[
-  {
-    markup: '@[__value__](user)',
-    overlay: { trigger: '@', data: users }
-  },
-  {
-    markup: '#[__value__](hashtag)',
-    overlay: { trigger: '#', data: hashtags }
-  },
-  {
-    markup: '/[__value__](command)',
-    overlay: { trigger: '/', data: commands }
-  }
-]}
+```tsx fragment uses=users,hashtags,commands
+const options: Option[] = [
+    {markup: '@[__value__](user)', overlay: {trigger: '@', data: users}},
+    {markup: '#[__value__](hashtag)', overlay: {trigger: '#', data: hashtags}},
+    {markup: '/[__value__](command)', overlay: {trigger: '/', data: commands}},
+]
 ```
 
 ### Multi-Character Triggers
 
-```tsx
-options={[
-  {
-    markup: '{{__value__}}',
-    overlay: {
-      trigger: '{{',
-      data: ['name', 'email', 'date']
-    }
-  }
-]}
+```tsx fragment
+const options: Option[] = [
+    {
+        markup: '{{__value__}}',
+        overlay: {trigger: '{{', data: ['name', 'email', 'date']},
+    },
+]
 ```
 
 ## Per-Option Custom Overlays
 
 Use different overlay components for different triggers:
 
-```tsx
+```tsx fragment
 import {MarkedInput} from '@markput/react'
 
 function UserOverlay() {
@@ -433,19 +594,22 @@ import {useState, useEffect} from 'react'
 
 function AsyncOverlay() {
     const {select, match} = useOverlay()
-    const [users, setUsers] = useState([])
+    const [users, setUsers] = useState<{id: string; name: string}[]>([])
     const [loading, setLoading] = useState(true)
+
+    // `match` is undefined while no trigger is open
+    const query = match?.value ?? ''
 
     useEffect(() => {
         setLoading(true)
         // Fetch users based on typed text
-        fetch(`/api/users?q=${match.value}`)
+        fetch(`/api/users?q=${query}`)
             .then(res => res.json())
             .then(data => {
                 setUsers(data)
                 setLoading(false)
             })
-    }, [match.value])
+    }, [query])
 
     if (loading) {
         return <div className="overlay">Loading...</div>
@@ -471,7 +635,7 @@ function AsyncOverlay() {
 
 Use `showOverlayOn` prop:
 
-```tsx
+```tsx sketch="one prop, four values — the alternatives are shown on one element, not written on one"
 <MarkedInput
     value={value}
     onChange={setValue}
@@ -502,7 +666,7 @@ import {useOverlay} from '@markput/react'
 import {useState, useEffect} from 'react'
 
 function RichUserOverlay() {
-    const {select, match, style, ref} = useOverlay()
+    const {select, match, style, ref} = useOverlay<HTMLDivElement>()
     const [selected, setSelected] = useState(0)
 
     const users = [
@@ -511,11 +675,13 @@ function RichUserOverlay() {
         {id: '3', name: 'Charlie Brown', avatar: '🧑', role: 'Manager'},
     ]
 
-    const filtered = users.filter(u => u.name.toLowerCase().includes(match.value.toLowerCase()))
+    // `match` is undefined while no trigger is open
+    const query = match?.value ?? ''
+    const filtered = users.filter(u => u.name.toLowerCase().includes(query.toLowerCase()))
 
     useEffect(() => {
         setSelected(0)
-    }, [match.value])
+    }, [query])
 
     useEffect(() => {
         const handleKey = (e: KeyboardEvent) => {
@@ -586,70 +752,24 @@ function RichUserOverlay() {
 
 ### Example: Notion-style Slash Commands
 
+This one is no longer an example of a custom overlay, because it is not custom any more — see
+[The Row Menu](#the-row-menu). The list, the filtering and the write all moved into core:
+
 ```tsx
-function CommandOverlay() {
-    const {select, match, style, ref} = useOverlay()
-    const [selected, setSelected] = useState(0)
-
-    const commands = [
-        {value: 'h1', label: 'Heading 1', icon: '📝', description: 'Large heading'},
-        {value: 'h2', label: 'Heading 2', icon: '📄', description: 'Medium heading'},
-        {value: 'bold', label: 'Bold', icon: '🔤', description: 'Make text bold'},
-        {value: 'italic', label: 'Italic', icon: '📐', description: 'Italicize text'},
-        {value: 'code', label: 'Code', icon: '💻', description: 'Code block'},
-    ]
-
-    const filtered = commands.filter(
-        cmd =>
-            cmd.label.toLowerCase().includes(match.value.toLowerCase()) ||
-            cmd.value.toLowerCase().includes(match.value.toLowerCase())
-    )
-
-    return (
-        <div
-            ref={ref}
-            style={{
-                position: 'absolute',
-                left: style.left,
-                top: style.top,
-                background: 'white',
-                border: '1px solid #ddd',
-                borderRadius: '6px',
-                boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-                minWidth: '300px',
-                zIndex: 1000,
-            }}
-        >
-            {filtered.map((cmd, index) => (
-                <div
-                    key={cmd.value}
-                    onClick={() => select({value: cmd.value, meta: cmd.label})}
-                    style={{
-                        padding: '10px 14px',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '12px',
-                        background: index === selected ? '#f0f0f0' : 'transparent',
-                    }}
-                >
-                    <span style={{fontSize: '20px'}}>{cmd.icon}</span>
-                    <div style={{flex: 1}}>
-                        <div style={{fontWeight: 500, marginBottom: '2px'}}>{cmd.label}</div>
-                        <div style={{fontSize: '12px', color: '#666'}}>{cmd.description}</div>
-                    </div>
-                </div>
-            ))}
-        </div>
-    )
-}
+const options = [
+    {overlay: {trigger: '/'}},
+    {markup: '# __slot__', row: {Component: 'h1'}, menu: {label: 'Heading 1', keywords: ['h1']}},
+    {markup: '## __slot__', row: {Component: 'h2'}, menu: {label: 'Heading 2', keywords: ['h2']}},
+    {markup: '- __slot__', row: {Component: 'li', continues: true}, menu: {label: 'Bulleted list'}},
+    {markup: '```__meta__\n__value__```', row: {Component: 'pre'}, menu: {label: 'Code', keywords: ['fence']}},
+]
 ```
 
 ## Best Practices
 
 ### ✅ Do
 
-```tsx
+```tsx sketch="a checklist of one-line reminders, each a different shape"
 // Attach ref for outside click detection
 <div ref={ref}>overlay content</div>
 
@@ -674,7 +794,7 @@ useEffect(() => {
 
 ### ❌ Don't
 
-```tsx
+```tsx sketch="the anti-pattern list: every line here is deliberately wrong"
 // Don't forget ref
 <div>overlay</div>  // Won't close on outside click
 
@@ -700,7 +820,7 @@ import {useOverlay} from '@markput/react'
 import type {OverlayHandler} from '@markput/react'
 
 function TypedOverlay() {
-    const overlay: OverlayHandler = useOverlay()
+    const overlay: OverlayHandler<HTMLDivElement> = useOverlay<HTMLDivElement>()
 
     const handleSelect = (value: string) => {
         overlay.select({value, meta: 'optional'})

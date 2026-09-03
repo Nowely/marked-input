@@ -6,7 +6,7 @@
 # @markput/core
 
 The dependency-free TypeScript runtime behind Markput: the token tree, the string
-boundary, the DOM binding, selection, keyboard, clipboard, block layout and the
+boundary, the DOM binding, selection, keyboard, clipboard, the rows and the
 overlay.
 
 **This package is not published.** It has no build output of its own that a user
@@ -24,8 +24,8 @@ Everything below describes the core's INTERNAL contract with those adapters.
 | module                    | owns                                                                                                                                                                                  |
 | ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `src/features/tokens/`    | the token tree (the source of truth), the string boundary, transactions, adoption, the commit pipeline, the DOM binding and the SELECTION (stored node anchors plus their DOM driver) |
-| `src/features/keyboard/`  | `beforeinput` / keydown handling, arrow navigation, block editing                                                                                                                     |
-| `src/features/block/`     | block layout, drag and per-row UI state                                                                                                                                               |
+| `src/features/keyboard/`  | `beforeinput` / keydown handling, arrow navigation, row editing                                                                                                                       |
+| `src/features/rows/`      | row controls, drag and per-row UI state                                                                                                                                               |
 | `src/features/overlay/`   | trigger matching and suggestion navigation                                                                                                                                            |
 | `src/features/clipboard/` | copy / cut / paste serialization                                                                                                                                                      |
 | `src/features/slots/`     | slot resolution for mark and overlay components                                                                                                                                       |

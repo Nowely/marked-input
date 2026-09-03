@@ -62,13 +62,19 @@ describe('caretDom', () => {
 			document.body.removeChild(el)
 		})
 
-		it('creates a fallback text node when the surface is empty', () => {
+		/**
+		 * AN EMPTY SURFACE ANSWERS ITSELF AND STAYS EMPTY. It used to have an empty `Text` appended
+		 * to it, and that node is what a zero-length `Text` in a blank row costs: Chromium's own
+		 * vertical caret movement steps over the row from then on, in both directions — so the
+		 * caret's first visit to a blank row is what made the row unreachable by an arrow key.
+		 */
+		it('leaves an empty surface empty and names the surface itself', () => {
 			const el = document.createElement('span')
 			document.body.appendChild(el)
 			caretDom.collapseTo(caretDom.findTextBoundary(el, 0))
-			expect(el.firstChild?.nodeType).toBe(Node.TEXT_NODE)
+			expect(el.childNodes).toHaveLength(0)
 			const range = window.getSelection()?.getRangeAt(0)
-			expect(range?.startContainer).toBe(el.firstChild)
+			expect(range?.startContainer).toBe(el)
 			expect(range?.startOffset).toBe(0)
 			document.body.removeChild(el)
 		})

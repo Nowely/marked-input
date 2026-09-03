@@ -1,4 +1,5 @@
 import {inExplicitEditableIsland} from '../../../shared/checkers'
+import {entryAnchor} from '../tree/anchors'
 import type {Id, NodeAnchor, TreeNode} from '../tree/types'
 import {textLength, textOffsetWithin} from './textOffsets'
 import type {ElementBindings, TokenHandle} from './TokenHandle'
@@ -38,6 +39,12 @@ export type AnchorContext = {
 	locate(node: Node): Lookup | undefined
 	/** Stable id → live node (TokenModel.find): ids outlive the bind window. */
 	find(id: Id): TreeNode | undefined
+	/**
+	 * The nearest LIVE node above a DOM node, walking PAST any control root — {@link locate} stops
+	 * at one and answers `{kind: 'control'}`, losing whatever it was painted inside. See
+	 * {@link frozenBoundary} for the one branch that needs it, and {@link DomModel.tokenAbove}.
+	 */
+	above(node: Node): TreeNode | undefined
 }
 
 /**
@@ -59,6 +66,7 @@ export function anchorFromBoundary(
 	}
 
 	const lookup = ctx.locate(node)
+	if (lookup?.kind === 'control') return frozenBoundary(ctx, node, affinity)
 	if (lookup?.kind !== 'token') return undefined
 
 	// The IDENTITY bridge (spec S2 D2): `handle.id` is generation-independent, so
@@ -72,8 +80,14 @@ export function anchorFromBoundary(
 	// ABOVE the text-surface branch below: a token bound with both a `textElement` and a
 	// `childSequenceHost` must resolve host boundaries here, or a host boundary on a
 	// text-bearing token would be read as a text offset.
+	//
+	// The ROW host is tested FIRST: a row registers its own element as its inline host, so the
+	// two coincide, and the child-rows host must not be read as that same sequence.
+	if (node instanceof HTMLElement && node === lookup.bindings.rowSequenceHost) {
+		return fromHostAnchor(ctx, node, offset, owner, affinity, owner.kind === 'row' ? owner.rows() : [])
+	}
 	if (node instanceof HTMLElement && node === lookup.bindings.childSequenceHost) {
-		return fromHostAnchor(ctx, node, offset, owner, affinity)
+		return fromHostAnchor(ctx, node, offset, owner, affinity, owner.kind === 'mark' ? owner.children() : [])
 	}
 
 	const textElement = lookup.bindings.textElement
@@ -105,6 +119,40 @@ export function anchorFromBoundary(
 	}
 
 	return undefined
+}
+
+/**
+ * A RANGE EDGE THAT LANDED ON FROZEN PRESENTATION — a to-do's tick box, a callout's icon, the
+ * interior of an atomic row — resolved to the LEADING EDGE of the node that presentation is
+ * painted in, which is the only position in it the model can name.
+ *
+ * IT DOES NOT DEPEND ON WHAT A CONSUMER PAINTS, and that is the whole point. Every other branch
+ * above answers off a node the adapter BOUND — a row element, a slot host, a text surface — so a
+ * decoration that is none of those declined, and a decline is not a neutral answer here: it fails
+ * the whole pair closed, and `SelectionDriver`'s control arm then reads the gesture as a LANDING
+ * and collapses the caret into the row the decoration belongs to. MEASURED on
+ * `'one⏎- [ ] todo item⏎> [!warning] boom'`: Chromium ends a triple-click of the to-do at
+ * `(the callout's icon span, 0)`, the pair failed, the caret was claimed into the callout and the
+ * next two characters landed there — `'> [!warning] ZZboom'` with the to-do untouched. The callout
+ * was the only kind of twelve that reached this door, which is exactly what makes it the
+ * consumer's paint rather than a rule: a bullet's dot and a to-do's box are the row's own first
+ * child, so Chromium names the ROW element instead.
+ *
+ * ONE ANSWER FOR BOTH RANGED AFFINITIES, and it is the row's ENTRY rather than a near/far split:
+ * no offset inside frozen presentation is nameable, so there is no "which half" to read. The high
+ * edge then stops BEFORE that row (the callout keeps its opener) and the low edge starts AT it;
+ * {@link contentSpan} snaps both onto whole lines afterwards, so neither can name a byte of
+ * structure.
+ *
+ * `'nearest'` — the COLLAPSED reader — still declines, and deliberately. A caret has no extent, so
+ * "the row this landed in" is a question about the GESTURE and not about a boundary:
+ * `TokenModel.#claimRow` answers it with the row's entry where a caret may sit and with a block
+ * selection where none may, and it is the only reading that can tell those apart.
+ */
+function frozenBoundary(ctx: AnchorContext, node: Node, affinity: BoundaryAffinity): NodeAnchor | undefined {
+	if (affinity === 'nearest') return undefined
+	const owner = ctx.above(node)
+	return owner && leadingEdge(owner)
 }
 
 /**
@@ -164,16 +212,35 @@ function fromHostAnchor(
 	host: HTMLElement,
 	offset: number,
 	owner: TreeNode,
-	affinity: BoundaryAffinity
+	affinity: BoundaryAffinity,
+	children: readonly TreeNode[]
 ): NodeAnchor | undefined {
 	const childCount = host.childNodes.length
 	if (offset > 0 && offset < childCount) return childBoundaryAnchor(ctx, host, offset, owner, affinity)
-	const children = owner.kind === 'mark' ? owner.children() : []
 	// `.at`, not an index read: `noUncheckedIndexedAccess` is off, so the empty case would
 	// type as a `TreeNode` and the fallback below would be linted away as impossible.
 	const edge = offset <= 0 ? children.at(0) : children.at(-1)
-	if (!edge) return offset <= 0 ? {before: owner} : {after: owner}
-	return offset <= 0 ? {before: edge} : {after: edge}
+	if (!edge) return offset <= 0 ? leadingEdge(owner) : {after: owner}
+	if (offset <= 0) return leadingEdge(edge)
+	return {after: edge}
+}
+
+/**
+ * A NODE'S LEADING EDGE, and for a ROW that is its ENTRY rather than `{before}`: a row's lead and
+ * its opener are structural bytes, so `{before: row}` names the position AHEAD of the indent and
+ * the marker, where a caret may not sit and an edit lands outside the row it was made in.
+ *
+ * ONE rule, and it has to be asked of the OWNER as well as of an edge child. A row registers its
+ * OWN element as its inline host (`Row.tsx`/`Row.vue` hand the same element to `consign` and to
+ * `children`), and {@link anchorFromBoundary} hands that arm an EMPTY child list — so a boundary
+ * at the row element's offset 0 fell through to the owner fallback with the rule unapplied.
+ * MEASURED on `'- the slash menu⏎⇥- dragging rows'`: Chromium puts a Home keypress at
+ * `(rowElement, 0)`, and the next character emitted `'- the slash menu⏎Y⇥- dragging rows'` — the
+ * row lost its kind and its nesting to one keystroke, and a Backspace there left the opener
+ * standing in the middle of the merged line.
+ */
+function leadingEdge(node: TreeNode): NodeAnchor {
+	return node.kind === 'row' ? entryAnchor(node) : {before: node}
 }
 
 /** The interior of {@link fromChildAnchor}, including its inverted-affinity fallback. */

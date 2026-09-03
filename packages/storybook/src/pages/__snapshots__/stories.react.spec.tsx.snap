@@ -77,6 +77,332 @@ exports[`Component: stories > Material stories > Story Overridden 1`] = `
 </div>"
 `;
 
+exports[`Component: stories > Notion stories > Story Avatars 1`] = `
+"<div>
+  <div>
+    <section>
+      <div>Avatar / AvatarStack</div>
+      <div>
+        <span title="Kara Vance">KV</span>
+        <span title="Ines Duarte">ID</span>
+        <span title="Milo Freeman">MF</span>
+        <span title="Priya Raman">PR</span>
+        <span title="Tomas Alvarez">TA</span>
+        <span title="Wen Li">WL</span>
+      </div>
+      <div>
+        <span>
+          <span title="Kara Vance">KV</span>
+          <span title="Ines Duarte">ID</span>
+          <span>+4 others</span>
+        </span>
+        <span>
+          <span title="Kara Vance">KV</span>
+          <span title="Ines Duarte">ID</span>
+          <span title="Milo Freeman">MF</span>
+        </span>
+      </div>
+    </section>
+  </div>
+</div>"
+`;
+
+exports[`Component: stories > Notion stories > Story Bookmark 1`] = `
+"<div>
+  <div>
+    <section>
+      <div>BookmarkCard</div>
+      <div>
+        <span>
+          <span>Auth migration — rollout plan</span>
+          <span>How the auth migration changes token lifetimes, and what breaks if it slips past the launch date.</span>
+          <span>https://example.com/apollo/auth-migration</span>
+        </span>
+        <span></span>
+      </div>
+    </section>
+  </div>
+</div>"
+`;
+
+exports[`Component: stories > Notion stories > Story Callouts 1`] = `
+"<div>
+  <div>
+    <section>
+      <div>Callout</div>
+      <div>
+        <span>💡</span>
+        <div>Neutral: the default wash, for a note with no urgency.</div>
+      </div>
+      <div>
+        <span>ℹ️</span>
+        <div>Info: the auth migration lands on the 14th.</div>
+      </div>
+      <div>
+        <span>✅</span>
+        <div>Success: beta sign-off received from both regions.</div>
+      </div>
+      <div>
+        <span>⚠️</span>
+        <div>Warning: launch gating on the auth migration.</div>
+      </div>
+      <div>
+        <span>🚨</span>
+        <div>Danger: the vendor SLA is still unsigned.</div>
+      </div>
+    </section>
+  </div>
+</div>"
+`;
+
+exports[`Component: stories > Notion stories > Story Chips 1`] = `
+"<div>
+  <div>
+    <section>
+      <div>Chip</div>
+      <div>
+        <span>Plain</span>
+        <span>Planned</span>
+        <span>Blocked</span>
+        <span>In progress</span>
+        <span>Done</span>
+        <span>Platform</span>
+        <span>Design</span>
+      </div>
+    </section>
+  </div>
+</div>"
+`;
+
+exports[`Component: stories > Notion stories > Story Chrome 1`] = `
+"<div>
+  <div>
+    <section>
+      <div>PageChrome / CoverBand</div>
+      <div>
+        <span>Product</span>
+        <span>/</span>
+        <span>Launches</span>
+        <span>/</span>
+        <span>Apollo</span>
+        <div>
+          <span>Edited 14m ago</span>
+          <button type="button">Share</button>
+          <button aria-label="More actions" type="button">…</button>
+        </div>
+      </div>
+      <div></div>
+      <div>🚀</div>
+      <div>Apollo — Q2 launch plan</div>
+    </section>
+  </div>
+</div>"
+`;
+
+exports[`Component: stories > Notion stories > Story Comments 1`] = `
+"<div>
+  <div>
+    <section>
+      <div>CommentThread</div>
+      <div>
+        <div>
+          <span title="Kara Vance">KV</span>
+          <div>
+            <span>Kara Vance</span>
+            <span>2h ago</span>
+          </div>
+          <div>Can we confirm the EU quota before Friday?</div>
+        </div>
+        <div>
+          <span title="Milo Freeman">MF</span>
+          <div>
+            <span>Milo Freeman</span>
+            <span>41m ago</span>
+          </div>
+          <div>Asked the vendor this morning — expecting an answer tomorrow.</div>
+        </div>
+        <button type="button">Reply…</button>
+      </div>
+    </section>
+  </div>
+</div>"
+`;
+
+exports[`Component: stories > Notion stories > Story Effort 1`] = `
+"<div>
+  <div>
+    <section>
+      <div>EffortBar</div>
+      <div>
+        <span title="Effort, not started">
+          <span></span>
+        </span>
+        <span title="Effort, a third">
+          <span></span>
+        </span>
+        <span title="Effort, most">
+          <span></span>
+        </span>
+        <span title="Effort, complete">
+          <span></span>
+        </span>
+        <span title="Effort, clamped">
+          <span></span>
+        </span>
+      </div>
+    </section>
+  </div>
+</div>"
+`;
+
+exports[`Component: stories > Notion stories > Story Metrics 1`] = `
+"<div>
+  <div>
+    <section>
+      <div>MetricCard / CardGrid</div>
+      <div>
+        <div>
+          <span>Beta users</span>
+          <span>4,120</span>
+        </div>
+        <div>
+          <span>p95 latency</span>
+          <span>184ms</span>
+        </div>
+        <div>
+          <span>Crash-free</span>
+          <span>99.4%</span>
+        </div>
+        <div>
+          <span>Open bugs</span>
+          <span>37</span>
+        </div>
+      </div>
+    </section>
+  </div>
+</div>"
+`;
+
+exports[`Component: stories > Notion stories > Story Properties 1`] = `
+"<div>
+  <div>
+    <section>
+      <div>PropertiesPanel</div>
+      <div>
+        <span>Status</span>
+        <span>
+          <span>In progress</span>
+        </span>
+        <span>Owner</span>
+        <span>
+          <span title="Kara Vance">KV</span>
+          Kara Vance
+        </span>
+        <span>Team</span>
+        <span>
+          <span>
+            <span title="Kara Vance">KV</span>
+            <span title="Ines Duarte">ID</span>
+            <span>+4 others</span>
+          </span>
+        </span>
+        <span>Timeline</span>
+        <span>Apr 8 → Jun 30</span>
+        <span>Tags</span>
+        <span>
+          <span>Platform</span>
+          <span>Design</span>
+          <span>Q2</span>
+        </span>
+        <span>Spec</span>
+        <span>
+          <a href="https://example.com/apollo/spec">apollo/spec</a>
+        </span>
+        <span>Confidence</span>
+        <span>82%</span>
+        <button type="button">+ Add a property</button>
+      </div>
+    </section>
+  </div>
+</div>"
+`;
+
+exports[`Component: stories > Notion stories > Story SprintBoard 1`] = `
+"<div>
+  <div>
+    <section>
+      <div>Board / BoardColumn / BoardCard</div>
+      <div>
+        <div>
+          <div>
+            <span>To do</span>
+            <span>3</span>
+          </div>
+          <div draggable="true">
+            <span>Sign the vendor SLA</span>
+            <span>Legal</span>
+          </div>
+          <div draggable="true">
+            <span>EU region quota</span>
+            <span>Infra</span>
+          </div>
+          <div draggable="true">
+            <span>Launch copy review</span>
+          </div>
+        </div>
+        <div>
+          <div>
+            <span>In progress</span>
+            <span>2</span>
+          </div>
+          <div draggable="true">
+            <span>Auth migration</span>
+            <span>Platform</span>
+          </div>
+          <div draggable="true">
+            <span>p95 latency budget</span>
+            <span>Perf</span>
+          </div>
+        </div>
+        <div>
+          <div>
+            <span>Shipped</span>
+            <span>1</span>
+          </div>
+          <div draggable="true">
+            <span>Beta invites</span>
+            <span>Growth</span>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+</div>"
+`;
+
+exports[`Component: stories > Notion stories > Story Tabs 1`] = `
+"<div>
+  <div>
+    <section>
+      <div>ViewTabs</div>
+      <div>
+        <div role="tablist">
+          <button aria-selected="true" role="tab" type="button">Table</button>
+          <button aria-selected="false" role="tab" type="button">Board</button>
+          <button aria-selected="false" role="tab" type="button">Timeline</button>
+          <button aria-selected="false" role="tab" type="button">Calendar</button>
+        </div>
+        <div>
+          <button type="button">Filter</button>
+          <button type="button">Sort</button>
+          <button type="button">New</button>
+        </div>
+      </div>
+    </section>
+  </div>
+</div>"
+`;
+
 exports[`Component: stories > Rsuite stories > Story Overridden 1`] = `
 "<div contenteditable="true">
   <span>Type the '@' to begin creating a </span>

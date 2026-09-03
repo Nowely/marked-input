@@ -13,7 +13,10 @@ export {Store} from './src/store'
 // patch literal at the call site, `Parameters<MarkNode['update']>[0]` covers a declaration, and
 // nothing in this repo or either adapter imported the name. Both are still declared inline in the
 // built `.d.ts`, so no shape a consumer sees changed — only the ability to import the name.
-export type {Anchors, MarkNode, NodeAnchor, TextNode, TreeNode} from './src/features/tokens'
+export type {Anchors, MarkNode, NodeAnchor, RowNode, TextNode, TreeNode} from './src/features/tokens'
+// `RowNode.moveTo`'s parameter: a consumer wiring its own drag has to build one, and the row it
+// names is a `RowNode` — so the type is unbuildable without both names.
+export type {RowPlacement} from './src/features/tokens'
 
 // String-domain utilities (spec §2.3: keep)
 export {annotate, denote} from './src/features/tokens'
@@ -23,23 +26,43 @@ export {annotate, denote} from './src/features/tokens'
 // dropped it with `Token`/`TextToken` and that was a public-API weakening the spec did not
 // intend; S2.9 restores this one only — see the note at the bottom of this file.
 export type {MarkToken, Markup} from './src/features/tokens'
+// `RowConfig` is `TokenModel.rowConfig`'s type, and `store.tokens` is public: without the
+// export the row parse policy a consumer can already read is not nameable.
+export type {RowConfig} from './src/features/tokens'
 
 // Adapter utilities (spec §2.3: keep)
 export {cx} from './src/shared/utils/cx'
 export {key} from './src/shared/classes'
-export {filterSuggestions, navigateSuggestions} from './src/features/overlay'
-// `BLOCK_MENU_ITEMS` is the block menu's content contract; both adapters' BlockControls maps it.
-// `RowBox` is what `store.block.boxOf()` answers — the coordinates both layers paint at.
-export {BLOCK_MENU_ITEMS, getAlwaysShowHandle} from './src/features/block'
-export type {RowBox} from './src/features/block'
+// `suggestionLabel` rides with `filterSuggestions`: `overlay.data` rows may separate the label
+// from the value they write, and both adapters' Suggestions render and key by the label.
+export {filterSuggestions, navigateSuggestions, suggestionLabel} from './src/features/overlay'
+// `ROW_MENU_ITEMS` is the row menu's content contract; both adapters' RowControls maps it.
+// `RowBox` is what `store.rows.boxOf()` answers — the coordinates both layers paint at.
+export {ROW_MENU_ITEMS, getAlwaysShowHandle} from './src/features/rows'
+export type {RowBox} from './src/features/rows'
 export type {
 	OverlayMatch,
 	OverlayTrigger,
 	CoreOption,
+	// `CoreOption.row`'s type: a consumer declaring a row kind separately needs the name.
+	RowSpec,
+	// `CoreOption.menu`'s type and what `overlay.list.rows` hands a list component: a consumer
+	// writing that component declares both.
+	MenuSpec,
+	OverlayRow,
+	// `overlay.choose`'s parameter: both adapters re-declare it on `OverlayHandler`, so the
+	// union is spelled once rather than three times.
+	OverlayPick,
 	CSSProperties,
+	// The two slot key sets, and both adapters EXTEND them rather than restating them: that is
+	// what keeps a key core reads from being a key an adapter's type rejects. `CoreSlotProps`
+	// was the one not exported, so `slotProps.row` shipped readable-but-undeclarable.
 	CoreSlots,
+	CoreSlotProps,
 	DataAttributes,
 	DraggableConfig,
+	// `CoreOption.overlay.data`'s row type: a consumer building that list separately needs it.
+	Suggestion,
 	Slot,
 	// NOT dead, and invisible to grep: both adapters carry
 	// `declare module '@markput/core' { interface SlotRegistry {…} }` (react/vue
@@ -60,7 +83,7 @@ export type {Computed, SignalValues} from './src/shared/signals'
 export {readSelected} from './src/shared/readSelected'
 export type {Selectable, ObjectSelector} from './src/shared/readSelected'
 // `readSelected`'s sibling on the subscription side: the per-node repaint target all four
-// adapter Token/Block components pass to `useMarkput`, hoisted so the field contract has one
+// adapter Token/Row components pass to `useMarkput`, hoisted so the field contract has one
 // owner instead of a copy per adapter.
 export {renderSubscription} from './src/features/tokens'
 

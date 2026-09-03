@@ -4,7 +4,7 @@ import type {ComponentType, CSSProperties, Ref} from 'react'
 import {useImperativeHandle, useLayoutEffect, useState} from 'react'
 
 import {StoreContext} from '../lib/providers/StoreContext'
-import type {MarkProps, Option, OverlayProps, SlotProps, Slots} from '../types'
+import type {MarkProps, Option, OverlayProps, SlotProps, Slots, SpanProps} from '../types'
 import {Container} from './Container'
 import {OverlayRenderer} from './OverlayRenderer'
 
@@ -29,7 +29,7 @@ export interface MarkedInputProps<TMarkProps = MarkProps, TOverlayProps extends 
 	/** Ref to the editor API (spec §2.3) */
 	ref?: Ref<MarkputHandle>
 	/** Global component used for rendering text tokens (default: built-in Span) */
-	Span?: ComponentType<MarkProps>
+	Span?: ComponentType<SpanProps>
 	/** Global component used for rendering markups (fallback for option.Mark) */
 	Mark?: ComponentType<TMarkProps>
 	/** Global component used for rendering overlays (fallback for option.Overlay) */
@@ -73,20 +73,43 @@ export interface MarkedInputProps<TMarkProps = MarkProps, TOverlayProps extends 
 	onChange?: (value: string) => void
 	/** Read-only mode */
 	readOnly?: boolean
-	/** Layout mode: 'inline' renders tokens in a single flow, 'block' stacks each token as its own row.
-	 * @default 'inline'
-	 */
-	layout?: 'inline' | 'block'
 	/**
-	 * The structural row separator for block layout (issue 08): editor-level, never part of
-	 * any markup. Inline layout ignores it.
+	 * The structural row separator (issue 08, ADR-0011): editor-level, never part of any markup,
+	 * and the whole of what makes a document rows. Each piece between two separators is a row,
+	 * with its own drag grip and row menu.
 	 *
-	 * An empty string separates nothing: the editor reports it and renders one rowless
-	 * document, with the row controls off.
-	 * @default '\n\n'
+	 * `null` says the value never splits: one document, no rows, no row controls — a plain
+	 * annotated text field.
+	 *
+	 * An empty string separates nothing: the editor reports it and renders the document as if it
+	 * were `null`.
+	 * @default '\n'
 	 */
-	separator?: string
-	/** Enable drag interaction on block rows. Only effective when layout='block'.
+	separator?: string | null
+	/**
+	 * The indent unit a NESTED row leads with (ADR-0010): editor-level like `separator`, and
+	 * structural in the same sense — a leading run of it at a row's own start belongs to no
+	 * markup and no caret may enter it.
+	 *
+	 * `''` turns nesting off, and with it row TYPING on every indented line: a line whose first
+	 * character is not an opener is a paragraph. Pass it when the document stores leading
+	 * indentation as content.
+	 * @default '\t'
+	 */
+	indent?: string
+	/**
+	 * Does the editor keep its own undo stack (ADR-0012). Ctrl/Cmd+Z undoes and Shift+Ctrl/Cmd+Z
+	 * redoes, in both value modes — in a controlled editor an entry is recorded only once the
+	 * parent has echoed the value back, so an emission your `onChange` declines leaves nothing
+	 * behind.
+	 *
+	 * `false` turns both keys back into no-ops. It does NOT hand undo to the browser: the input
+	 * guard has swallowed native undo since ADR-0006, because a native undo would edit DOM the
+	 * model owns.
+	 * @default true
+	 */
+	history?: boolean
+	/** Enable drag interaction on rows. Ineffective when `separator` is `null`.
 	 * @default false
 	 */
 	draggable?: boolean | DraggableConfig

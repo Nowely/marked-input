@@ -64,9 +64,9 @@ earlier text, pass it.
 optional draggable: boolean | DraggableConfig;
 ```
 
-Defined in: [react/markput/src/components/MarkedInput.tsx:92](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/components/MarkedInput.tsx#L92)
+Defined in: [react/markput/src/components/MarkedInput.tsx:115](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/components/MarkedInput.tsx#L115)
 
-Enable drag interaction on block rows. Only effective when layout='block'.
+Enable drag interaction on rows. Ineffective when `separator` is `null`.
 
 #### Default
 
@@ -76,20 +76,51 @@ false
 
 ***
 
-### layout?
+### history?
 
 ```ts
-optional layout: "inline" | "block";
+optional history: boolean;
 ```
 
-Defined in: [react/markput/src/components/MarkedInput.tsx:79](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/components/MarkedInput.tsx#L79)
+Defined in: [react/markput/src/components/MarkedInput.tsx:111](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/components/MarkedInput.tsx#L111)
 
-Layout mode: 'inline' renders tokens in a single flow, 'block' stacks each token as its own row.
+Does the editor keep its own undo stack (ADR-0012). Ctrl/Cmd+Z undoes and Shift+Ctrl/Cmd+Z
+redoes, in both value modes — in a controlled editor an entry is recorded only once the
+parent has echoed the value back, so an emission your `onChange` declines leaves nothing
+behind.
+
+`false` turns both keys back into no-ops. It does NOT hand undo to the browser: the input
+guard has swallowed native undo since ADR-0006, because a native undo would edit DOM the
+model owns.
 
 #### Default
 
 ```ts
-'inline'
+true
+```
+
+***
+
+### indent?
+
+```ts
+optional indent: string;
+```
+
+Defined in: [react/markput/src/components/MarkedInput.tsx:99](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/components/MarkedInput.tsx#L99)
+
+The indent unit a NESTED row leads with (ADR-0010): editor-level like `separator`, and
+structural in the same sense — a leading run of it at a row's own start belongs to no
+markup and no caret may enter it.
+
+`''` turns nesting off, and with it row TYPING on every indented line: a line whose first
+character is not an opener is a paragraph. Pass it when the document stores leading
+indentation as content.
+
+#### Default
+
+```ts
+'\t'
 ```
 
 ***
@@ -181,21 +212,25 @@ Ref to the editor API (spec §2.3)
 ### separator?
 
 ```ts
-optional separator: string;
+optional separator: string | null;
 ```
 
 Defined in: [react/markput/src/components/MarkedInput.tsx:88](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/components/MarkedInput.tsx#L88)
 
-The structural row separator for block layout (issue 08): editor-level, never part of
-any markup. Inline layout ignores it.
+The structural row separator (issue 08, ADR-0011): editor-level, never part of any markup,
+and the whole of what makes a document rows. Each piece between two separators is a row,
+with its own drag grip and row menu.
 
-An empty string separates nothing: the editor reports it and renders one rowless
-document, with the row controls off.
+`null` says the value never splits: one document, no rows, no row controls — a plain
+annotated text field.
+
+An empty string separates nothing: the editor reports it and renders the document as if it
+were `null`.
 
 #### Default
 
 ```ts
-'\n\n'
+'\n'
 ```
 
 ***
@@ -257,7 +292,7 @@ slots={{ container: 'div' }}
 ### Span?
 
 ```ts
-optional Span: ComponentType<MarkProps>;
+optional Span: ComponentType<SpanProps>;
 ```
 
 Defined in: [react/markput/src/components/MarkedInput.tsx:32](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/components/MarkedInput.tsx#L32)

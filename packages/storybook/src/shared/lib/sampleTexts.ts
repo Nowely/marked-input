@@ -1,9 +1,9 @@
 /**
  * Sample text for drag mode: rows are spans between the structural separator
- * (`'\n\n'`, ADR-0009), so each blank line ends a row. List items use loose-list
- * format so every item is its own row under the default separator — a tight list
- * is one row; a `separator: '\n'` editor splits per line instead (the TodoList
- * story does exactly that).
+ * (ADR-0009), and the Drag stories configure `'\n\n'`, so each blank line ends a
+ * row. List items use loose-list format so every item is its own row there — under
+ * a tight list `'\n\n'` would make the whole list one row, while the DEFAULT `'\n'`
+ * splits per line (the TodoList story does exactly that).
  */
 export const DRAG_MARKDOWN = `# Welcome to **Marked Input**
 

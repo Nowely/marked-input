@@ -128,7 +128,10 @@ Implementation is a separate effort after this map.
   identity rather than UI state. The surviving half — whether MARKS want
   per-node state — is now [09](issues/09-per-node-state-for-marks.md).
 - [The layout switch survives as a PROP and dies as a MODE](issues/05-layout-switch-fate.md)
-  (2026-08-24, Option A, implemented) — `TokenModel.rowSeparator`
+  (2026-08-24, Option A, implemented) — **SUPERSEDED 2026-08-25 by ADR-0011: the
+  prop is deleted too, `rowConfig` replaces `rowSeparator`, and the declared
+  clock behaviour below is withdrawn with the computed it described. See the
+  ticket's own `## Comments`.** `TokenModel.rowSeparator`
   (`layout.isBlock() ? separator() : undefined`) is the SOLE reader of the enum;
   the parse fork, the four feature gates and the grip gutter all ask it, and
   React's `Container` picks a wrapper per NODE, which deletes the `n as BlockRow`
@@ -146,6 +149,15 @@ Implementation is a separate effort after this map.
   stale sites fixed (the census found 3), backlog 09 and 15 both closed as
   non-reproducing, and `anchorAt`'s `side` param is now measured
   production-dead.
+- [Is a Row a Token?](issues/06-is-a-row-a-token.md) — YES; `Token = text | mark |
+  row`, the smallest edit that makes `CONTEXT.md` agree with `architecture.md` and
+  ADR-0009. No ADR. Its blocker dissolved rather than being decided: a vocabulary
+  census proved `slots.block` resolved ONLY the row with no kind while
+  `slotProps.block` reached every row, so the two were never a pair, and the whole
+  "block" surface is renamed (`slots.paragraph`, `slotProps.row`, `RowMenu`,
+  `ROW_MENU_ITEMS`, `RowController`, `store.rows`, `.Row`, `.RowControls`). All
+  three owed glossary repairs are made, plus `MarkToken`, which is published and
+  was called parser-local.
 
 ## Not yet specified
 
@@ -381,10 +393,11 @@ leak, the prop crashes, the overlay hole). Five tickets resolved, four open.
 **Blocked on the maintainer, and blocking the map's own destination:** the
 component surface, [02](issues/02-one-render-path.md), is PAUSED. Direction is
 taken — `slots`/`slotProps` dissolve into `Container` / `Row` / `containerProps`
-and `Mark={Tag}` is untouched — but two sub-questions are deliberately open:
-`Row` versus `Block`, and whether `Overlay` is renamed. [06](issues/06-is-a-row-a-token.md)
-(the glossary) waits on the first of those, and [08](issues/08-assemble-the-spec.md)
-waits on both. Nothing else can finish the map.
+and `Mark={Tag}` is untouched — and ONE of its two sub-questions is now settled:
+`Row` beat `Block` everywhere, executed 2026-08-26 as a rename series with the
+glossary behind it. What is still open is whether `Overlay` is renamed.
+[06](issues/06-is-a-row-a-token.md) is RESOLVED on the back of the first.
+[08](issues/08-assemble-the-spec.md) still waits on the second.
 
 **Takeable without unpausing anything:** [09](issues/09-per-node-state-for-marks.md)
 — would a Mark ever want per-node state? It may well close with a record, the way

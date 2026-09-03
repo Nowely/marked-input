@@ -1,7 +1,7 @@
 import type {CSSProperties} from '@markput/core'
 import type {MarkProps} from '@markput/react'
 import {useMark, useMarkInfo} from '@markput/react'
-import type {ComponentType, Ref} from 'react'
+import type {ComponentType, RefCallback} from 'react'
 import {createElement} from 'react'
 
 // The exact sibling, not the seam name: oxlint does not honour `moduleSuffixes`.
@@ -19,8 +19,10 @@ import type {MarkContext, MarkSpec} from './marks.shared'
  * `ref` is forwarded because a consumer's `Span` IS the text Surface and so cannot be wrapped the
  * way a Mark is — core writes into it directly, and it has to be consigned to be found. A Mark's
  * own ref is unused (markput wraps it), but this factory serves both and forwarding costs nothing.
+ * It is `SpanProps`' own callback rather than the wider `Ref`, because that is what the editor
+ * hands over and a `Ref` also admits `null`, which a generated mark can never be handed.
  */
-export type StyledMarkProps = MarkProps & {style?: CSSProperties; ref?: Ref<HTMLElement>}
+export type StyledMarkProps = MarkProps & {style?: CSSProperties; ref?: RefCallback<HTMLElement>}
 
 /**
  * A mark that is one element, its decoration, and at most a click. Anything past that — a second
@@ -78,7 +80,7 @@ export function countRenders(spec: MarkSpec = {tag: 'mark'}) {
  */
 export const Mark = defineMark({tag: 'mark'})
 
-/** The same in a `<span>` — a block row's mark, a bare nested shell, an unstyled `Span` slot. */
+/** The same in a `<span>` — a row's mark, a bare nested shell, an unstyled `Span` slot. */
 export const Span = defineMark({tag: 'span'})
 
 /** The marks the `Base` and `Dynamic` pages both mount. */

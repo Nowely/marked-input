@@ -29,9 +29,14 @@ const BASE_SEED = 17_082_026
 const ITERATIONS = 200
 
 /** Paragraph rows (issue 08): the structural separator forms the rows, no markup needed. */
-const parseRows = (value: string) => parser.parseRows(value, '\n\n')
+const ROW_CONFIG = {separator: '\n\n', indent: '\t'}
+const parseRows = (value: string) => parser.parseRows(value, ROW_CONFIG)
 
-const buildTree = (value: string) => createTokenTree(parseRows(value))
+const buildTree = (value: string) => {
+	const tree = createTokenTree(parseRows(value))
+	tree.config(ROW_CONFIG)
+	return tree
+}
 
 interface Case {
 	seed: number
@@ -66,12 +71,20 @@ function expectedOrder<T>(items: readonly T[], from: number, to: number): T[] {
 	return next
 }
 
+/**
+ * The SPLICE a legal move plans. `'unchanged'` — the mover's answer for a placement the rows
+ * already hold — is not one of these: every case below moves a row somewhere it is not.
+ */
+function spliced(plan: ReturnType<typeof movePlan>, what: string): {window: Window; text: string} {
+	if (!plan || plan === 'unchanged') throw new Error(`movePlan refused a legal move: ${what}`)
+	return plan
+}
+
 function planned(c: Case): {tree: ReturnType<typeof buildTree>; window: Window; next: string; ids: number[]} {
 	const tree = buildTree(c.source)
 	const roots = tree.roots()
 	const ids = roots.map(node => node.id)
-	const plan = movePlan(roots, roots[c.from], c.to)
-	if (!plan) throw new Error(`movePlan refused a legal move: ${label(c)}`)
+	const plan = spliced(movePlan(roots, [roots[c.from]], {parent: null, index: c.to}, ROW_CONFIG), label(c))
 	const value = tree.value()
 	const next = value.slice(0, plan.window.start) + plan.text + value.slice(plan.window.end)
 	return {tree, window: plan.window, next, ids}
@@ -116,7 +129,7 @@ describe('pairing: a verified claim moves identity', () => {
 			// The §7.1 output-equivalence oracle. It is what catches a position the permuted
 			// branch forgot to rewrite: ids aside, the whole tree must equal a fresh parse of
 			// its own projection.
-			expect(stripIds(snapshot(tree.roots())), label(c)).toEqual(parseRows(tree.value()))
+			expect(stripIds(snapshot(tree.roots(), ROW_CONFIG.separator)), label(c)).toEqual(parseRows(tree.value()))
 			expect(tree.value(), label(c)).toBe(next)
 		}
 	})
@@ -192,8 +205,8 @@ describe('pairing: the content gate', () => {
 		const tree = buildTree(source)
 		const roots = tree.roots()
 		const ids = roots.map(node => node.id)
-		const plan = movePlan(roots, roots[0], 2)
-		if (!plan?.window.pairing) throw new Error('expected a plan carrying a pairing')
+		const plan = spliced(movePlan(roots, [roots[0]], {parent: null, index: 2}, ROW_CONFIG), 'the content gate')
+		if (!plan.window.pairing) throw new Error('expected a plan carrying a pairing')
 		const value = tree.value()
 		const next = value.slice(0, plan.window.start) + plan.text + value.slice(plan.window.end)
 
@@ -205,5 +218,30 @@ describe('pairing: the content gate', () => {
 		// Discarded, so adoption fell back to its ordinary walks: the ids stay in place and the
 		// contents rotate under them — today's behaviour, unchanged.
 		expect(tree.roots().map(node => node.id)).toEqual(ids)
+	})
+})
+/**
+ * The docstring's central claim about the mover, made checkable: the splice is the narrowest
+ * CHANGED RANGE of lines, which under nesting is tighter than the common ancestor's span. Nothing
+ * else in the suite sees it — `moveTo` carries the caret through adoption's verified-move
+ * short-circuit rather than through the window map, so widening `low`/`high` to the whole
+ * pre-order emits the same bytes, keeps every id and leaves the full suite at 1691 green. Measured,
+ * then pinned here rather than left as a paragraph.
+ */
+describe('move: the window is the narrowest changed range', () => {
+	it('splices two sibling lines, not the parent whose span covers them all', () => {
+		const tree = buildTree('p\n\n\tq\n\n\tr\n\n\ts\n\n\tt')
+		const parent = tree.roots()[0]
+		if (parent.kind !== 'row') throw new Error('expected a row')
+		const [, r, s] = parent.rows()
+
+		// `r` and `s` trade places: two of the parent's four children move, and the other two do not.
+		const plan = spliced(movePlan(tree.roots(), [r], {parent, index: 2}, ROW_CONFIG), 'the narrow window')
+
+		expect(plan.window.start).toBe(r.lineRange().start)
+		expect(plan.window.end).toBe(s.lineRange().end)
+		expect(plan.text).toBe('\ts\n\n\tr\n\n')
+		// The ancestor's span is the whole document, which is what the narrow window is tighter than.
+		expect(parent.position).toEqual({start: 0, end: tree.value().length})
 	})
 })

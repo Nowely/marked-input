@@ -1,17 +1,20 @@
+import {preorderRows} from './rows'
 import type {Anchors, MarkNode, NodeAnchor, RowNode, TextNode, TreeNode} from './types'
 
 /**
  * Right-affinity resolution: the last text node (document order) containing the offset.
  *
- * ONE reading, no `side` parameter, and that is a parser invariant rather than a preference:
- * every non-text node's START offset is covered by a text node, so the fallback below can
- * only ever answer for an INTERIOR or an END, where no second reading exists. `TreeBuilder`
- * emits a text token immediately before every match, at every nesting level
- * (`buildSinglePass`: `roots.push` / `container.token.children.push` of
- * `createTextToken(textPos, match.start)`), so a mark's start is always the end of its
- * preceding sibling; `RowBuilder.groupRows` forces a row's first child to be a text token
- * starting at the row's own start; and `adopt` pairs one node per token in token order, so
- * the live tree keeps the parse's shape.
+ * ONE reading, no `side` parameter, and for INLINE content that is a parser invariant rather
+ * than a preference: `TreeBuilder` emits a text token immediately before every match, at every
+ * nesting level (`buildSinglePass`: `roots.push` / `container.token.children.push` of
+ * `createTextToken(textPos, match.start)`), so a mark's start is always the end of its preceding
+ * sibling, and `adopt` pairs one node per token in token order.
+ *
+ * A ROW is the one owner whose own start is NOT covered by a text child, because its opener is
+ * structural rather than content: `'# Title'` has no text over offsets 0–1. Those offsets answer
+ * the row's own body start — the first position a caret may legally occupy in that row — which
+ * is what keeps `selection.selectAll`'s seed (`deps.anchorAt(0)`) at the top of the document
+ * instead of at the end of the first heading.
  */
 export function anchorAt(roots: readonly TreeNode[], offset: number): NodeAnchor {
 	let text: {node: TextNode; offset: number} | undefined
@@ -32,12 +35,15 @@ export function anchorAt(roots: readonly TreeNode[], offset: number): NodeAnchor
 	}
 	visit(roots)
 	if (text) return text
-	// A mark interior is not anchorable (spec §2.3), so a slotless mark answers with its
-	// boundary — and a row's separator span answers the same way: no text covers it, so the
-	// row itself does, failing closed exactly like a block row's trailing `\n\n` always has.
-	// `{after}` unconditionally: an owner's own START never reaches here (see above), and the
-	// interior and the end have no second reading.
-	if (owner) return {after: owner}
+	if (owner) {
+		// A row's LEAD and OPENER are structural bytes no caret may enter, so an offset inside
+		// them belongs at the row's body start rather than past the whole row.
+		if (owner.kind === 'row' && offset < owner.slotRange().start) return entryAnchor(owner)
+		// A mark interior is not anchorable (spec §2.3), so a slotless mark answers with its
+		// boundary — and a row's separator span and closing literal answer the same way, failing
+		// closed exactly like a row's trailing `\n\n` always has.
+		return {after: owner}
+	}
 	return offset <= 0 ? 'start' : 'end'
 }
 
@@ -58,6 +64,21 @@ export function offsetOfAnchor(roots: readonly TreeNode[], anchor: NodeAnchor): 
 	if ('node' in anchor) return anchor.node.position.start + anchor.offset
 	if ('before' in anchor) return anchor.before.position.start
 	return anchor.after.position.end
+}
+
+/**
+ * AN ANCHOR PAIR AS THE OFFSET RANGE IT NAMES, low end first — the tree's own coordinate space,
+ * and the one spelling of it. A pair carries no order: `anchor` is where the gesture began and
+ * `head` is where it ended, so a backward sweep names its high edge first and every caller that
+ * wants a SPAN has to sort them. Six did it by hand.
+ *
+ * ORDER IS LOST HERE, deliberately — a caller that needs the direction (which edge the user
+ * dragged from) reads the two anchors itself rather than asking for a range.
+ */
+export function spanOf(roots: readonly TreeNode[], anchors: Anchors): {start: number; end: number} {
+	const a = offsetOfAnchor(roots, anchors.anchor)
+	const b = offsetOfAnchor(roots, anchors.head)
+	return {start: Math.min(a, b), end: Math.max(a, b)}
 }
 
 /**
@@ -86,37 +107,80 @@ export function adjacentMark(roots: readonly TreeNode[], anchor: NodeAnchor, dir
 }
 
 /**
- * The ROW SEPARATOR a collapsed delete at `anchor` removes, as the anchors spanning it —
+ * The ROW BOUNDARY a collapsed delete at `anchor` removes, as the anchors spanning it —
  * {@link adjacentMark}'s swallow for the row world. `undefined` when the anchor sits at no row
- * boundary, which is EVERY anchor in inline layout: only a block parse builds RowNodes, so the
- * arm is inert there by construction rather than by a layout test.
+ * boundary, which is EVERY anchor in a document with no rows: only a row parse builds RowNodes,
+ * so the arm is inert there by construction rather than by a mode test.
  *
- * It exists because {@link stepAnchor} cannot express this edit: a separator is the row's
- * `terminator`, it has no anchorable interior, and a step into it fails closed. Removing the
- * whole span IS the row merge — reparse decides what the joined text becomes (issue 08's
- * markdown-like policy), which is the same answer `RowNode.mergeWith` gives.
+ * THE BOUNDARY IS THE SEPARATOR PLUS EVERY STRUCTURAL BYTE BEFORE THE NEXT ROW'S CONTENT — its
+ * LEAD, and its OPENER when it has one. None of them is text the joined row may keep: a merge
+ * that took only the separator left the indent behind as text, and one that took lead but not
+ * opener could not be named at all, because no anchor sits between the two. It walks PRE-ORDER
+ * rows at every depth, because that is the order the join puts the separators in — a parent's
+ * boundary is with its first child, not with its next sibling.
  *
- * ASYMMETRIC, and that asymmetry is block layout's own long-standing answer rather than an
- * oversight. Backspace takes only the separator ENDING at the anchor, so at a row's content end
- * it still deletes the character before it. Delete takes that one too, ahead of the separator
+ * It exists because {@link stepAnchor} cannot express this edit: the boundary has no anchorable
+ * interior, and a step into it fails closed. Removing the whole span IS the row merge — reparse
+ * decides what the joined text becomes (issue 08's markdown-like policy), which is the same
+ * answer `RowNode.mergeWith` gives.
+ *
+ * ASYMMETRIC, and that asymmetry is the row model's own long-standing answer rather than an
+ * oversight. Backspace takes only the boundary ENDING at the anchor, so at a row's content end
+ * it still deletes the character before it. Delete takes that one too, ahead of the boundary
  * STARTING at the anchor: Delete pressed at a row START merges that row into the previous one
  * (`Drag.spec`'s 'Delete at start of row'), and the earlier-row reading is what an empty row
- * between two separators needs to keep answering the row before it.
+ * between two boundaries needs to keep answering the row before it.
+ *
+ * "Ending at the anchor" is the next row's CONTENT start, not its line start: for a typed row the
+ * two differ by the opener, and the caret can only ever sit at the first of them — so matching on
+ * the line start left a Backspace at a typed row's first position matching no boundary at all.
+ *
+ * AND A BOUNDARY WHOSE LOW EDGE IS NOT ANCHORABLE IS NO MERGE AT ALL. That edge is the previous
+ * row's content end, which for a RAW CLOSED body is the last byte of its closing literal — markup,
+ * so {@link anchorAt} answers the row's own end instead and the pair collapses onto the high edge.
+ * Handing that pair back names a span of nothing: `'```js⏎code⏎```⏎plain'` with the caret at the
+ * start of `plain` cancelled the key and wrote an empty replacement, which left the value, the kind
+ * and the caret exactly where they were — and TOOK AN UNDO STEP for it, so the next Mod+Z appeared
+ * to do nothing too. Refusing here is what `handleDeleteKey` already documents for the other
+ * direction — there is no merge to offer across such a boundary — and it is what lets that arm SAY
+ * so instead of writing nothing.
  */
-export function separatorSpan(roots: readonly TreeNode[], anchor: NodeAnchor, direction: -1 | 1): Anchors | undefined {
+export function boundarySpan(
+	roots: readonly TreeNode[],
+	anchor: NodeAnchor,
+	direction: -1 | 1,
+	separator: string | undefined
+): Anchors | undefined {
+	if (separator === undefined) return undefined
 	const offset = offsetOfAnchor(roots, anchor)
-	// The document-final row owns no separator, so it can never be the one removed here.
-	const terminated = roots.filter((root): root is RowNode => root.kind === 'row' && root.terminator !== '')
-	const row =
-		terminated.find(candidate => candidate.position.end === offset) ??
-		(direction === 1
-			? terminated.find(candidate => candidate.position.end - candidate.terminator.length === offset)
-			: undefined)
-	if (!row) return undefined
-	// A row's children end with a TEXT token by the parser's edge invariant
-	// (`RowBuilder.groupRows`), so its content end is anchorable and {@link anchorAt} round-trips
-	// on it; the head is the row's own trailing edge, which sits past the separator.
-	return {anchor: anchorAt(roots, row.position.end - row.terminator.length), head: {after: row}}
+	const rows = preorderRows(roots).map(entry => entry.row)
+	// The document-final row is followed by nothing, so it can never open a boundary here —
+	// structural now that the join, not the row, decides who carries a separator.
+	const boundaries = rows.slice(0, -1).map((row, index) => rowBoundary(row, rows[index + 1], separator))
+	const boundary =
+		boundaries.find(candidate => candidate.end === offset) ??
+		(direction === 1 ? boundaries.find(candidate => candidate.start === offset) : undefined)
+	if (!boundary) return undefined
+	const low = anchorAt(roots, boundary.start)
+	if (offsetOfAnchor(roots, low) !== boundary.start) return undefined
+	return {anchor: low, head: anchorAt(roots, boundary.end)}
+}
+
+/**
+ * THE bytes between two rows adjacent in PRE-ORDER: the separator, the next row's LEAD and its
+ * OPENER — everything before the next row's own content, and none of it text the joined row may
+ * keep. Removing this span IS the row merge, which is why it is one function rather than a rule
+ * written twice: {@link boundarySpan} and `RowNode.mergeWith` address the same boundary from
+ * different ends, and answering differently is what let a Delete and a `mergeWith` at one
+ * boundary produce two documents.
+ *
+ * The start is the first row's own content end: a row's line ends where its first child row
+ * starts, or at its own span's end, and either way the separator is the last thing in it. The end
+ * is the next row's SLOT start, which is exactly where its first inline child — the one
+ * {@link entryAnchor} names — begins, so the caret has an anchor on both edges.
+ */
+export function rowBoundary(row: RowNode, next: RowNode, separator: string): {start: number; end: number} {
+	return {start: row.lineRange().end - separator.length, end: next.slotRange().start}
 }
 
 /**
@@ -125,7 +189,7 @@ export function separatorSpan(roots: readonly TreeNode[], anchor: NodeAnchor, di
  * raw offsets until S2.5.
  *
  * FAILS CLOSED on an unanchorable neighbour, and that is the one deliberate behavior change:
- * a position inside a mark's MARKUP (the `{` of `#[v]{inner}`, a block row's trailing
+ * a position inside a mark's MARKUP (the `{` of `#[v]{inner}`, a row's trailing
  * `\n\n`) is not anchorable, so {@link anchorAt} answers with the mark's own boundary
  * instead. The old numeric step spliced that position anyway and re-parsed the mark into
  * plain text; answering `undefined` leaves the browser default, which at the edge of a
@@ -150,4 +214,53 @@ export function anchorEquals(a: NodeAnchor | undefined, b: NodeAnchor | undefine
 	if ('node' in a) return 'node' in b && a.node === b.node && a.offset === b.offset
 	if ('before' in a) return 'before' in b && a.before === b.before
 	return 'after' in b && a.after === b.after
+}
+
+/**
+ * Where the caret ENTERS a node: inside its body when it has one, else at the node's start.
+ *
+ * ONE rule, replacing three that disagreed about a freshly inserted node (backlog issue 04):
+ * two of them answered the node's start and one answered past its end, and on a markup with a
+ * literal prefix the start is several characters away from anywhere typing is legal.
+ *
+ * The body's first text child, not its RANGE: a body always parses with at least one text child,
+ * and an anchor names a node rather than a coordinate.
+ *
+ * Lives here rather than in `siblings.ts` because {@link anchorAt} asks it: a row's opener is
+ * structural, so the offsets inside it resolve to the row's entry.
+ */
+export function entryAnchor(node: TreeNode): NodeAnchor {
+	// A ROW has a body too, and one arm answers it: `children()` is INLINE-THEN-ROWS, so a row's
+	// first child IS its first inline child — a caret entering a row belongs on that row's line,
+	// and its child rows are separate rows with entries of their own.
+	const hasBody = node.kind === 'row' || (node.kind === 'mark' && node.descriptor.hasSlot)
+	// `.at`, not `[]`: `noUncheckedIndexedAccess` is off, so an index read types as
+	// non-nullable and the empty-children guard would be linted away as impossible.
+	const first = hasBody ? node.children().at(0) : undefined
+	if (first?.kind === 'text') return {node: first, offset: 0}
+	// A CARVED row has no inline child of its own: its first position is inside its first cell, and
+	// the descent is recursive because that cell may be carved in turn.
+	if (first?.kind === 'row') return entryAnchor(first)
+	return {before: node}
+}
+
+/**
+ * A row's own body with `span` CUT OUT of it — the body text a retype writes when the caller has
+ * a span to remove in the same splice. The slash menu is that caller: it strips its own trigger
+ * and applies a kind at once, because two verbs cannot compose in controlled mode.
+ *
+ * Anchors in, TEXT out, so the arithmetic stays here (ADR-0003): the caller holds a span it got
+ * from a match and a row it got from {@link rowOf}, and neither of those is an offset.
+ *
+ * `undefined` — fail closed — for a span that is not inside this row's own body, which is
+ * {@link splitPlan}'s rule read at the other end: a caret in another row cannot address this
+ * one's content.
+ */
+export function slotWithout(roots: readonly TreeNode[], row: RowNode, span: Anchors): string | undefined {
+	const slot = row.slotRange()
+	const from = offsetOfAnchor(roots, span.anchor)
+	const to = offsetOfAnchor(roots, span.head)
+	if (from < slot.start || to > slot.end) return undefined
+	const body = row.slot()
+	return body.slice(0, from - slot.start) + body.slice(to - slot.start)
 }

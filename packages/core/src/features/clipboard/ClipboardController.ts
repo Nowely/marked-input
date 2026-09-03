@@ -19,6 +19,20 @@ export class ClipboardController {
 			listen(container, 'cut', e => {
 				const anchors = this.#handleCopy(e)
 				if (!anchors) return
+				// A cut takes what the copy above put on the clipboard, and over whole rows that is
+				// their LINES — openers included, which is what `valueBetween` projected. Removing
+				// the span between the anchors left the first row's opener behind as an empty row
+				// of that kind, so cut and copy disagreed about what was selected.
+				//
+				// ONE SHAPE WHERE THEY STILL DISAGREE, and it is this call's doing: the copy above
+				// projects the RAW anchors, `replaceRows` excludes the subtrees the frame paints no
+				// box for (`TokenModel.#hiddenWithin`), so a cut over a cover holding a collapsed
+				// toggle clipboards the hidden body AND leaves it — measured `'beforeheadbody'` on
+				// the clipboard with `'\tbody\nafter'` still in the value. It fails in the safe
+				// direction, a duplicate on paste rather than a loss. The fix is the copy path's
+				// own clip, which is wider than this branch: `selectedContent`/`valueBetween` serve
+				// plain `copy` too. Ticket 40 in `docs/scratch/notion-like/issues/`.
+				if (this.tokens.replaceRows(anchors, null)) return
 				edit.replace(anchors.anchor, anchors.head, '')
 			})
 		})

@@ -1,0 +1,564 @@
+---
+editUrl: false
+next: false
+prev: false
+title: "RowNode"
+---
+
+Defined in: [core/src/features/tokens/tree/types.ts:92](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L92)
+
+A first-class row (issue 08): the only root kind a document with rows has, carved by the row scanner
+from the structural separator and TYPED by its own opener (ADR-0010). Never a child of a mark
+or another row. A paragraph is a Row with no kind at all — its children are the plain text and
+inline marks of the whole line.
+
+## Properties
+
+### children
+
+```ts
+readonly children: Signal<readonly TreeNode[]>;
+```
+
+Defined in: [core/src/features/tokens/tree/types.ts:111](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L111)
+
+INLINE children first, then CHILD ROWS. ONE list, so every generic walk in `tree/`, `bind`
+and `transactions` stays untouched by nesting; [inline](/api/interfaces/rownode/#inline) and [rows](/api/interfaces/rownode/#rows) are the two
+named halves the caret mapping and the renderer need.
+
+***
+
+### descriptor
+
+```ts
+readonly descriptor: Signal<MarkupDescriptor | undefined>;
+```
+
+Defined in: [core/src/features/tokens/tree/types.ts:103](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L103)
+
+THE row's kind: the compiled markup its opener matched, `undefined` for a paragraph.
+
+A SIGNAL, unlike [MarkNode.descriptor](/api/interfaces/marknode/#descriptor), and that difference is the design: a mark IS
+its markup, so adopting across descriptors would leave a node disagreeing with the parse; a
+row HAS a kind, and a turn-into must keep the row's identity — its id, its element, its
+drag grip — while the kind changes underneath it.
+
+***
+
+### id
+
+```ts
+readonly id: number;
+```
+
+Defined in: [core/src/features/tokens/tree/types.ts:94](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L94)
+
+***
+
+### kind
+
+```ts
+readonly kind: "row";
+```
+
+Defined in: [core/src/features/tokens/tree/types.ts:93](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L93)
+
+***
+
+### lead
+
+```ts
+readonly lead: Signal<string>;
+```
+
+Defined in: [core/src/features/tokens/tree/types.ts:132](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L132)
+
+Structural bytes BEFORE the body: the indent run this row is nested by. It is the ROUND-TRIP
+BYTES and depth is the TREE, and there is no function from one to the other — an
+over-indented paste keeps its surplus here while the clamp renders it shallower.
+
+A SIGNAL rather than a plain field beside [position](/api/interfaces/rownode/#position), and the difference is not
+cosmetic: the projection EMITS the lead, so a re-indent that leaves every child object in
+place would otherwise change no signal at all and `value` would keep answering the string
+from before the Tab.
+
+***
+
+### meta
+
+```ts
+readonly meta: Signal<string | undefined>;
+```
+
+Defined in: [core/src/features/tokens/tree/types.ts:105](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L105)
+
+The kind's metadata gap — a todo's checked flag, a fence's language.
+
+***
+
+### position
+
+```ts
+position: object;
+```
+
+Defined in: [core/src/features/tokens/tree/types.ts:137](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L137)
+
+INCLUDES the trailing separator on every row but the document-final one, and the row's
+whole SUBTREE. See [lineRange](/api/interfaces/rownode/#linerange) for the row's own line alone.
+
+#### end
+
+```ts
+end: number;
+```
+
+#### start
+
+```ts
+start: number;
+```
+
+## Methods
+
+### addSibling()
+
+```ts
+addSibling(): boolean;
+```
+
+Defined in: [core/src/features/tokens/tree/types.ts:251](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L251)
+
+Open a BLANK row after this row's whole subtree, at this row's own DEPTH — "add below", as a
+verb rather than as a separator a caller splices.
+
+The lead is the whole of what it carries, and it cannot be written outside this layer: which
+side of the separator it goes on depends on whether this row's subtree ENDS THE DOCUMENT —
+an ordinary row's span is already past its own separator, while the document-final row must
+be terminated before the new line can follow it. `insertAfter(separator)` carried neither,
+so a row added under a nested one landed at depth 0 and cut the list in two.
+
+PAST THE SUBTREE, which is [splitAt](/api/interfaces/rownode/#splitat)'s placement rule and forced by the same encoding:
+a row written between this one and its children, at this one's lead, adopts every one of
+them. The KIND is deliberately not carried — "add a row" opens a blank one, and whether a
+kind continues is Enter's question.
+
+`false` for an editor with no separator, for a dead row, and for a CARVED PIECE — a cell is a
+Row and [rows](/api/interfaces/rownode/#rows) on a carved row hands a consumer exactly these, but it has no line of its
+own to open one beside, so the bytes would land inside the line it is a piece of.
+
+#### Returns
+
+`boolean`
+
+***
+
+### duplicate()
+
+```ts
+duplicate(): boolean;
+```
+
+Defined in: [core/src/features/tokens/tree/types.ts:254](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L254)
+
+#### Returns
+
+`boolean`
+
+***
+
+### inline()
+
+```ts
+inline(): readonly TreeNode[];
+```
+
+Defined in: [core/src/features/tokens/tree/types.ts:113](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L113)
+
+The row's own inline content — Text and Mark nodes only, at least one text child.
+
+#### Returns
+
+readonly [`TreeNode`](/api/type-aliases/treenode/)[]
+
+***
+
+### insertAfter()
+
+```ts
+insertAfter(text): boolean;
+```
+
+Defined in: [core/src/features/tokens/tree/types.ts:255](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L255)
+
+#### Parameters
+
+| Parameter | Type |
+| ------ | ------ |
+| `text` | `string` |
+
+#### Returns
+
+`boolean`
+
+***
+
+### lineRange()
+
+```ts
+lineRange(): object;
+```
+
+Defined in: [core/src/features/tokens/tree/types.ts:142](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L142)
+
+The row's own LINE — its lead, its body and its own separator, the nested subtree
+excluded. Derived, because a row's line ends exactly where its first child row begins.
+
+#### Returns
+
+`object`
+
+##### end
+
+```ts
+end: number;
+```
+
+##### start
+
+```ts
+start: number;
+```
+
+***
+
+### mergeWith()
+
+```ts
+mergeWith(next): boolean;
+```
+
+Defined in: [core/src/features/tokens/tree/types.ts:256](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L256)
+
+#### Parameters
+
+| Parameter | Type |
+| ------ | ------ |
+| `next` | [`TreeNode`](/api/type-aliases/treenode/) |
+
+#### Returns
+
+`boolean`
+
+***
+
+### moveTo()
+
+```ts
+moveTo(placement): boolean;
+```
+
+Defined in: [core/src/features/tokens/tree/types.ts:274](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L274)
+
+Move this row AND ITS SUBTREE to `placement`, keeping every row's identity — the moved
+subtree's, its old siblings' and its new siblings'. The subtree is re-indented to sit under
+its new parent, which NORMALIZES a surplus indent run exactly as [setDepth](/api/interfaces/rownode/#setdepth) does.
+
+`false` for a placement inside the moved row's OWN subtree — a row cannot become its own
+descendant — and for a dead row on either end, an index outside the destination's child
+list, a no-op, an editor with no separator to rejoin rows by, and a nested placement in an
+editor with nesting off.
+
+And `false` for a placement the ENCODING cannot express, which is one answer with three
+faces: nothing can be placed under an EMPTY row, a row carrying children cannot be re-led
+into an empty one — a blank row is non-empty only while it carries an indent — and a move
+cannot change where a row it never touched parses. The last is reachable only past a row
+whose lead carries a surplus indent run some earlier paste left on it, and the move is
+refused rather than allowed to rewrite that row.
+
+#### Parameters
+
+| Parameter | Type |
+| ------ | ------ |
+| `placement` | [`RowPlacement`](/api/type-aliases/rowplacement/) |
+
+#### Returns
+
+`boolean`
+
+***
+
+### option()
+
+```ts
+option(): number | undefined;
+```
+
+Defined in: [core/src/features/tokens/tree/types.ts:121](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L121)
+
+The public view of the kind: the index of the option that declared it, which is the same
+identity `resolveSlot` already resolves a mark's component by. `undefined` for a paragraph.
+Derived from [descriptor](/api/interfaces/rownode/#descriptor), so the two cannot disagree.
+
+#### Returns
+
+`number` \| `undefined`
+
+***
+
+### range()
+
+```ts
+range(): object;
+```
+
+Defined in: [core/src/features/tokens/tree/types.ts:151](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L151)
+
+See [TextNode.range](/api/interfaces/textnode/#range).
+
+#### Returns
+
+`object`
+
+##### end
+
+```ts
+end: number;
+```
+
+##### start
+
+```ts
+start: number;
+```
+
+***
+
+### remove()
+
+```ts
+remove(): boolean;
+```
+
+Defined in: [core/src/features/tokens/tree/types.ts:253](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L253)
+
+See NodeCommands.
+
+#### Returns
+
+`boolean`
+
+***
+
+### rows()
+
+```ts
+rows(): readonly RowNode[];
+```
+
+Defined in: [core/src/features/tokens/tree/types.ts:115](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L115)
+
+The rows nested under this one.
+
+#### Returns
+
+readonly `RowNode`[]
+
+***
+
+### setDepth()
+
+```ts
+setDepth(depth): boolean;
+```
+
+Defined in: [core/src/features/tokens/tree/types.ts:168](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L168)
+
+Re-indent this row to `depth`, rewriting its whole lead AND ITS SUBTREE'S — the descendants
+travel with it, re-led by the same depth delta, because nesting is indentation and nothing
+else and a child left at its old lead is measured against a parent that moved.
+
+`false` for a no-op, for an editor with nesting off, and for a re-indent the SCAN would read
+back as a different tree: a depth deeper than the row before it grants, a blank row outdented
+to a root — which EMPTIES it, and an empty row takes no children — and a row after the subtree
+that a raised ceiling would re-parent. The rows AFTER the subtree are not otherwise protected:
+outdenting a row leaves the siblings following it at a depth its new depth now grants, so they
+become its children, which is the encoding's answer rather than a choice.
+
+It NORMALIZES a surplus indent run — see [lead](/api/interfaces/rownode/#lead): the bytes a paste preserved are lost
+the first time a row or its ancestor is re-indented, which is the price of depth having one
+reading.
+
+#### Parameters
+
+| Parameter | Type |
+| ------ | ------ |
+| `depth` | `number` |
+
+#### Returns
+
+`boolean`
+
+***
+
+### slot()
+
+```ts
+slot(): string;
+```
+
+Defined in: [core/src/features/tokens/tree/types.ts:149](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L149)
+
+The interior's TEXT, joined from the live inline children.
+
+#### Returns
+
+`string`
+
+***
+
+### slotRange()
+
+```ts
+slotRange(): object;
+```
+
+Defined in: [core/src/features/tokens/tree/types.ts:147](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L147)
+
+The row's own editable interior — everything its opener and closing literal enclose.
+DERIVED from the INLINE children's outer edges, which is exactly what the parse put there.
+
+#### Returns
+
+`object`
+
+##### end
+
+```ts
+end: number;
+```
+
+##### start
+
+```ts
+start: number;
+```
+
+***
+
+### splitAt()
+
+```ts
+splitAt(at): boolean;
+```
+
+Defined in: [core/src/features/tokens/tree/types.ts:231](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L231)
+
+Split this row at `at`: the body before the anchor stays, the body after it becomes a new row
+at the same lead, whose kind is this one when the kind `continues` and a plain row otherwise.
+A continuing kind carries its `meta` into the tail with it, so splitting a checked to-do
+gives two checked to-dos.
+
+The tail lands after this row's whole SUBTREE, not after its line, and that is forced rather
+than chosen: nesting is indentation and nothing else, so a row written directly under this
+one at this one's lead would adopt every child it has. Placing it past the subtree is the
+only reading under which a split never re-parents a row it was not asked about. The one
+exception is the head that EMPTIES — an empty row takes no children — where the subtree
+follows the tail instead, which is Enter at a row's start.
+
+`false` for a non-row, for an editor with no separator to split at, and for an anchor outside
+this row's own body — a caret in another row cannot address this one's split point.
+
+#### Parameters
+
+| Parameter | Type |
+| ------ | ------ |
+| `at` | [`NodeAnchor`](/api/type-aliases/nodeanchor/) |
+
+#### Returns
+
+`boolean`
+
+***
+
+### turnInto()
+
+```ts
+turnInto(option, patch?): boolean;
+```
+
+Defined in: [core/src/features/tokens/tree/types.ts:188](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L188)
+
+Retype this row: its kind becomes the one `option` declares, or a paragraph for `undefined`.
+The splice is the row's own LINE, so its id, its element and its child rows are untouched —
+which is what a row HAVING a kind rather than being one buys (ADR-0007).
+
+`patch.text` REPLACES the body, and it exists so a caller can strip a span and retype in ONE
+splice: the slash menu removes its own trigger and applies the kind in a single commit,
+which two verbs could not do without an intermediate state the parse would see.
+
+`false` for an option this editor compiles no row kind from — a mark option, one whose
+markup was reported and dropped, or one that is not in `options` at all — and for a no-op.
+
+REPARSE DECIDES what comes back, as it does for a merge: a body carrying the separator
+becomes two rows, and a body whose own start matches a longer opener types as THAT kind.
+ONE consequence is worth naming, because it is the one case where the child rows are NOT
+untouched: retyping a row at depth 0 whose body is empty leaves an empty LINE, and an empty
+row takes no children, so the scan promotes them to roots. The encoding cannot express an
+empty parent; the surplus indent survives verbatim in each child's `lead`.
+
+#### Parameters
+
+| Parameter | Type |
+| ------ | ------ |
+| `option` | `CoreOption` \| `undefined` |
+| `patch?` | `RowPatch` |
+
+#### Returns
+
+`boolean`
+
+***
+
+### writeRows()
+
+```ts
+writeRows(span, rows): boolean;
+```
+
+Defined in: [core/src/features/tokens/tree/types.ts:214](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/tree/types.ts#L214)
+
+Write `rows` into this row's body at `span`, opening one row per piece past the first: the
+body before the span keeps `rows[0]`, the body after it follows `rows.at(-1)` in the last row
+this opens, and every piece between them becomes a row of its own. [splitAt](/api/interfaces/rownode/#splitat) is the
+degenerate case — one cut and nothing written at it — and this is what a multi-line PASTE
+lands through, so a clip's lines take the row rules rather than a second copy of them.
+
+A STRING is this editor's OWN markup — the convention TokenModel.replaceRows already
+reads at a row selection — whose lines are whole rows and are written verbatim; an ARRAY is
+pieces, opened at this row's lead and kind. See splitPlan.
+
+A SPAN MAY LEAVE THIS ROW and close in a later one, which is what a paste over a cross-row
+selection is: the rows between the two ends are consumed, and the last covered row's tail
+follows the last piece — in a row carrying THAT row's kind at THIS row's lead.
+
+`false` for fewer than two pieces, for an editor with no rows, for a span whose low end is
+outside this row's own body, for one whose high end is in the structure between two lines,
+and — because the tail is written at this row's lead — for one closing in a row that has
+children of its own or before a row that would then land at a different depth.
+
+IT DOES NOT VALIDATE A CARVED ROW'S OWN DELIMITERS. A carved row takes this verb — that is how
+Enter splits a table line — but its cells are not lines of the document, so a span reaching the
+delimiter between two of them is refused one layer up, where the selection is resolved off the
+structural bytes it landed on. Handed such a span directly, this writes it.
+
+#### Parameters
+
+| Parameter | Type |
+| ------ | ------ |
+| `span` | `Anchors` |
+| `rows` | `string` \| readonly `string`[] |
+
+#### Returns
+
+`boolean`

@@ -24,6 +24,8 @@ const sidebarConfig = [
 		label: 'Guides',
 		items: [
 			{label: 'Configuration', slug: 'guides/configuration', badge: wipBadge},
+			{label: 'Rows and Nesting', slug: 'guides/rows'},
+			{label: 'Row Kinds', slug: 'guides/row-kinds'},
 			{label: 'Dynamic Marks', slug: 'guides/dynamic-marks', badge: wipBadge},
 			{label: 'Nested Marks', slug: 'guides/nested-marks', badge: wipBadge},
 			{label: 'Overlay Customization', slug: 'guides/overlay-customization', badge: wipBadge},

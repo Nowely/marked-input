@@ -265,7 +265,12 @@ describe('Component: MarkedInput', () => {
 	it('reverts a prop to its default when the caller stops passing it', async () => {
 		// The adapter owes core a FULL sync on every render: `readOnly` that disappears between
 		// renders must revert to its default, not keep the value it last had.
-		const {host, rerender} = await mountComponent({Mark, defaultValue: 'hello @[x](1)', readOnly: true})
+		const {host, rerender} = await mountComponent({
+			separator: null,
+			Mark,
+			defaultValue: 'hello @[x](1)',
+			readOnly: true,
+		})
 		expect(host).toHaveAttribute('contenteditable', 'false')
 
 		// The same mount with `readOnly` simply ABSENT — the shape a tabbed story has.
