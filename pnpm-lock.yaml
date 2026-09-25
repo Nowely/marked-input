@@ -61,8 +61,8 @@ catalogs:
       specifier: ^2.3.0
       version: 2.3.0
     vitest-browser-vue:
-      specifier: ^2.1.0
-      version: 2.1.0
+      specifier: ^3.1.0
+      version: 3.1.0
     vue:
       specifier: ^3.5.43
       version: 3.5.43
@@ -273,7 +273,7 @@ importers:
         version: 2.3.0(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(vitest@4.1.11)
       vitest-browser-vue:
         specifier: 'catalog:'
-        version: 2.1.0(vitest@4.1.11)(vue@3.5.43(typescript@6.0.3))
+        version: 3.1.0(vitest@4.1.11)(vue@3.5.43(typescript@6.0.3))
       vue-tsc:
         specifier: 'catalog:'
         version: 3.3.11(typescript@6.0.3)
@@ -5896,10 +5896,10 @@ packages:
       '@types/react-dom':
         optional: true
 
-  vitest-browser-vue@2.1.0:
-    resolution: {integrity: sha512-K3H/oxIOY4EjXx2bxwrLsPg4jTMvzpRW6Jb6T8XZRoxUvmDVwGkd8mua130F8GZezE7H5QYoXd/S8hYijw7j5g==}
+  vitest-browser-vue@3.1.0:
+    resolution: {integrity: sha512-HTWGzixoI9sSPb9LVuPOKtGy7URS6ipAIOiLD9ofdW/zgT3XGngXbMAJ3U9H/w1A6LWj4waGpYZsd3RPm8zPkw==}
     peerDependencies:
-      vitest: ^4.0.0-0
+      vitest: ^4.0.0 || ^5.0.0
       vue: ^3.0.0
 
   vitest@4.1.11:
@@ -9608,7 +9608,7 @@ snapshots:
       '@one-ini/wasm': 0.1.1
       commander: 10.0.1
       minimatch: 9.0.9
-      semver: 7.7.4
+      semver: 7.8.5
 
   electron-to-chromium@1.5.439: {}
 
@@ -12265,7 +12265,7 @@ snapshots:
       '@types/react': 19.3.0
       '@types/react-dom': 19.3.0(@types/react@19.3.0)
 
-  vitest-browser-vue@2.1.0(vitest@4.1.11)(vue@3.5.43(typescript@6.0.3)):
+  vitest-browser-vue@3.1.0(vitest@4.1.11)(vue@3.5.43(typescript@6.0.3)):
     dependencies:
       '@vue/test-utils': 2.4.6
       vitest: 4.1.11(@types/node@24.13.6)(@vitest/browser-playwright@4.1.11)(@vitest/coverage-v8@4.1.11)(@vitest/ui@4.1.11)(vite@8.3.1(@types/node@24.13.6)(esbuild@0.28.1)(jiti@2.6.1)(yaml@2.9.1))
