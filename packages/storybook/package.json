@@ -30,7 +30,7 @@
     "@markput/core": "workspace:*",
     "@markput/react": "workspace:*",
     "@markput/vue": "workspace:*",
-    "@mui/material": "^7.3.7",
+    "@mui/material": "^9.4.0",
     "antd": "^6.6.5",
     "react": "catalog:",
     "react-dom": "catalog:",
