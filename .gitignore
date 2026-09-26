@@ -5,7 +5,7 @@ coverage
 storybook-static
 package-lock.json
 .pnpm-store/**
-.vitest-attachments/
+.vitest/
 .worktrees/
 # Agent worktrees — transient copies of the repo, must not be scanned or committed
 .claude/worktrees/
