@@ -1,4 +1,6 @@
-import {bench, describe} from 'vitest'
+import {describe} from 'vitest'
+
+import {benchRung} from './__testing__/benchRung'
 
 /**
  * WHAT A CARET WRITE COSTS, and what that cost is charged against.
@@ -111,22 +113,22 @@ function lazy(build: () => () => void): () => void {
 
 for (const spans of [10, 200, 2000]) {
 	describe(`${spans} spans`, () => {
-		bench(
+		benchRung(
 			'editable, clean layout',
 			lazy(() => caretWriter(spans, true, 'none')),
 			options
 		)
-		bench(
+		benchRung(
 			'editable, dirtied OWN span',
 			lazy(() => caretWriter(spans, true, 'own')),
 			options
 		)
-		bench(
+		benchRung(
 			'editable, dirtied FAR span',
 			lazy(() => caretWriter(spans, true, 'far')),
 			options
 		)
-		bench(
+		benchRung(
 			'plain host, dirtied FAR span',
 			lazy(() => caretWriter(spans, false, 'far')),
 			options

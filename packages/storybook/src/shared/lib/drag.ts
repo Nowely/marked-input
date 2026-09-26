@@ -49,8 +49,16 @@ export async function dragRowTo(
 	{clientX, clientY}: {clientX: number; clientY: number}
 ) {
 	const grip = await gripOfRow(host, from)
+	// With every actionability check on: the drag below is forced, and the grip must still be
+	// something a real pointer can hit.
+	await userEvent.hover(grip)
 	const box = target.getBoundingClientRect()
 	await userEvent.dragAndDrop(grip, page.elementLocator(target), {
 		targetPosition: {x: clientX - box.left, y: clientY - box.top},
+		// The release point is the contract and `target` only anchors it. At the points these specs
+		// aim for the editor container is often topmost, and under Vitest 5 Playwright's hit-target
+		// check refuses such a release ("intercepts pointer events"). `force` skips the check and
+		// leaves the drop to the browser; the specs assert what the drop did.
+		force: true,
 	})
 }

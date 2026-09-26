@@ -1,7 +1,7 @@
 import * as fs from 'fs'
 import * as path from 'path'
 
-import {bench, describe} from 'vitest'
+import {afterAll, describe, test} from 'vitest'
 
 import {Parser} from './parser/Parser'
 
@@ -35,7 +35,6 @@ try {
 } catch {
 	resultsPath = ''
 }
-let isCollecting = false // Prevent duplicate collection
 let hasSaved = false // Prevent duplicate saves
 
 // Utility functions
@@ -304,6 +303,10 @@ const incrementalBase500 = generateInertText(500)
 const incrementalTailValue = incrementalBase500 + 'x'
 
 describe('Parser Performance Benchmark Suite', () => {
+	afterAll(() => {
+		if (testResults.length > 0) saveResults()
+	})
+
 	// Scalability tests
 	const sizes = [10, 50, 100, 500]
 
@@ -312,24 +315,12 @@ describe('Parser Performance Benchmark Suite', () => {
 		const iterations = size <= 100 ? 10 : 5
 
 		describe(`Scalability: ${size} marks`, () => {
-			bench(
-				`Parser (${size} marks)`,
-				() => {
+			test(`Parser (${size} marks)`, async ({bench}) => {
+				await bench(`Parser (${size} marks)`, () => {
 					parser.parse(input)
-				},
-				{
-					time: 1000,
-					iterations,
-					teardown() {
-						// Collect results after this benchmark completes
-						if (!isCollecting) {
-							isCollecting = true
-							collectResult(`${size} marks`, 'scalability', input, iterations)
-							isCollecting = false
-						}
-					},
-				}
-			)
+				}).run({time: 1000, iterations})
+				collectResult(`${size} marks`, 'scalability', input, iterations)
+			})
 		})
 	})
 
@@ -351,24 +342,12 @@ describe('Parser Performance Benchmark Suite', () => {
 
 	scenarios.forEach(({name, text}) => {
 		describe(`Real-world: ${name}`, () => {
-			bench(
-				`Parser: ${name}`,
-				() => {
+			test(`Parser: ${name}`, async ({bench}) => {
+				await bench(`Parser: ${name}`, () => {
 					parser.parse(text)
-				},
-				{
-					time: 1000,
-					iterations: 20,
-					teardown() {
-						// Collect results after this benchmark completes
-						if (!isCollecting) {
-							isCollecting = true
-							collectResult(name, 'realWorld', text, 20)
-							isCollecting = false
-						}
-					},
-				}
-			)
+				}).run({time: 1000, iterations: 20})
+				collectResult(name, 'realWorld', text, 20)
+			})
 		})
 	})
 
@@ -376,47 +355,16 @@ describe('Parser Performance Benchmark Suite', () => {
 	// typing cost (inline parsing is always a full parse) and the regression
 	// tripwire. Parses the POST-EDIT value (incrementalTailValue).
 	describe('Typing cost: 500 marks full parse per keystroke', () => {
-		bench(
-			'full parse — 500 marks per keystroke',
-			() => {
+		test('full parse — 500 marks per keystroke', async ({bench}) => {
+			await bench('full parse — 500 marks per keystroke', () => {
 				incrementalParser.parse(incrementalTailValue)
-			},
-			{
-				time: 1000,
-				iterations: 5,
-				teardown() {
-					if (!isCollecting) {
-						isCollecting = true
-						collectResultFn(
-							'typing: full parse per keystroke (500 marks)',
-							'incremental',
-							() => incrementalParser.parse(incrementalTailValue),
-							5
-						)
-						isCollecting = false
-					}
-				},
-			}
-		)
-	})
-
-	// Save results at the end - using a final bench to ensure it runs
-	describe('📊 Results', () => {
-		bench(
-			'Save to JSON',
-			() => {
-				// Benchmark that saves results
-			},
-			{
-				setup() {
-					// Save happens once in setup
-					if (testResults.length > 0) {
-						saveResults()
-					}
-				},
-				time: 1,
-				iterations: 1,
-			}
-		)
+			}).run({time: 1000, iterations: 5})
+			collectResultFn(
+				'typing: full parse per keystroke (500 marks)',
+				'incremental',
+				() => incrementalParser.parse(incrementalTailValue),
+				5
+			)
+		})
 	})
 })

@@ -436,9 +436,9 @@ export function signal(opts?: {
 		flags: ReactiveFlags.Mutable,
 	}
 
-	// oxlint-disable-next-line typescript/no-unsafe-type-assertion -- bound oper matches Signal<unknown> shape; TS can't verify the overloaded call signature
 	const rawOper = (signalOper as (this: SignalNode<unknown>, ...value: [unknown] | []) => unknown).bind(
 		node
+		// oxlint-disable-next-line typescript/no-unsafe-type-assertion -- bound oper matches Signal<unknown> shape; TS can't verify the overloaded call signature
 	) as Signal<unknown>
 
 	const realize = initFn
@@ -571,7 +571,6 @@ export function event<T = void>(): Event<T> {
 		flags: ReactiveFlags.Mutable,
 	}
 
-	// oxlint-disable-next-line typescript/no-unsafe-type-assertion -- callable matches Event<T> interface but TS can't verify the call signature
 	const callable = function eventCallable(payload: T) {
 		node.payload = payload
 		node.seq++
@@ -591,6 +590,7 @@ export function event<T = void>(): Event<T> {
 				flush()
 			}
 		}
+		// oxlint-disable-next-line typescript/no-unsafe-type-assertion -- callable matches Event<T> interface but TS can't verify the call signature
 	} as unknown as Event<T>
 
 	callable.read = (eventReadOper as (this: EventNode<T>) => T | undefined).bind(node)

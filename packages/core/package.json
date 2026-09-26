@@ -19,7 +19,7 @@
     "test:ui": "pnpm -w exec vitest --ui --project core",
     "test:coverage": "pnpm -w exec vitest run --project core --coverage",
     "coverage": "pnpm -w exec vitest run --project core --coverage",
-    "bench": "pnpm -w exec vitest bench --run --project core"
+    "bench": "pnpm -w exec vitest bench --run --project core --reporter=verbose"
   },
   "devDependencies": {
     "@faker-js/faker": "catalog:",

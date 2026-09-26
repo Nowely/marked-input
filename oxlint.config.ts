@@ -74,6 +74,14 @@ export default defineConfig({
 		'react/no-children-prop': 'allow',
 		'react/exhaustive-deps': 'off',
 		'react/react-in-jsx-scope': 'off',
+		// TODO(react-compiler): oxlint 1.79 split `react/react-compiler` into per-category rules, and these five
+		// land in categories this config enables wholesale. Off until we decide how far the adapter follows the
+		// React Compiler's rules — findings, analysis and options in docs/scratch/react-compiler-rules/.
+		'react/refs': 'off',
+		'react/immutability': 'off',
+		'react/globals': 'off',
+		'react/set-state-in-effect': 'off',
+		'react/exhaustive-effect-dependencies': 'off',
 		'react-perf/jsx-no-new-object-as-prop': 'off',
 		'react-perf/jsx-no-new-function-as-prop': 'off',
 		'jsx_a11y/click-events-have-key-events': 'off',

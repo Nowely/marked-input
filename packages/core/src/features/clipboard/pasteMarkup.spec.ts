@@ -8,11 +8,11 @@ function makeContainer(): HTMLElement {
 }
 
 function makePasteEvent(markup: string): ClipboardEvent {
-	// oxlint-disable-next-line no-unsafe-type-assertion -- minimal stub; only clipboardData.getData is accessed
 	return {
 		clipboardData: {
 			getData: (mime: string) => (mime === MARKPUT_MIME ? markup : ''),
 		},
+		// oxlint-disable-next-line no-unsafe-type-assertion -- minimal stub; only clipboardData.getData is accessed
 	} as unknown as ClipboardEvent
 }
 
