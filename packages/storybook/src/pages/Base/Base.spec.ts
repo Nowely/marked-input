@@ -253,7 +253,7 @@ describe('Component: MarkedInput', () => {
 		await focusAtOffset(firstSpan, 5)
 		await userEvent.keyboard('X')
 
-		expect(host).toHaveTextContent(/^EnterX the/)
+		expect(host).toMatchTextContent(/^EnterX the/)
 		expect(findEditingHost(document.body)).toBe(host)
 		await expect.element(host).toHaveFocus()
 		expect(caretIsInside(textSurfaces(host)[0])).toBe(true)

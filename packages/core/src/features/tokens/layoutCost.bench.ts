@@ -1,4 +1,6 @@
-import {bench, describe} from 'vitest'
+import {describe} from 'vitest'
+
+import {benchRung} from './__testing__/benchRung'
 
 /**
  * IS THE LAYOUT ITSELF THE COST, OR ONLY THE FACT THAT WE FORCE IT?
@@ -134,27 +136,27 @@ function lazy(build: () => () => void): () => void {
 
 for (const spans of [200, 2000]) {
 	describe(`${spans} spans`, () => {
-		bench(
+		benchRung(
 			'mutate + selection.collapse',
 			lazy(() => writer(spans, 'collapse')),
 			options
 		)
-		bench(
+		benchRung(
 			'mutate + forced reflow',
 			lazy(() => writer(spans, 'reflow')),
 			options
 		)
-		bench(
+		benchRung(
 			'mutate only, layout left to the frame',
 			lazy(() => writer(spans, 'nothing')),
 			options
 		)
-		bench(
+		benchRung(
 			'collapse, 1 span per block',
 			lazy(() => writer(spans, 'collapse', 1)),
 			options
 		)
-		bench(
+		benchRung(
 			'collapse, 20 spans per block',
 			lazy(() => writer(spans, 'collapse', 20)),
 			options

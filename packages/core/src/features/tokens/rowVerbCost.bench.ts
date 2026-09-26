@@ -1,6 +1,7 @@
-import {bench, describe} from 'vitest'
+import {describe} from 'vitest'
 
 import {Store} from '../../store/Store'
+import {benchRung} from './__testing__/benchRung'
 import {preorderRows} from './tree/rows'
 import type {RowNode, TreeNode} from './tree/types'
 
@@ -282,37 +283,37 @@ function lazy<T>(build: () => () => T): () => T {
 for (const doc of docs) {
 	// oxlint-disable-next-line vitest/valid-title -- one ladder per document, named from the table above
 	describe(doc.name, () => {
-		bench(
+		benchRung(
 			'W1 preorderRows',
 			lazy(() => walkRung(storeFor(doc))),
 			options
 		)
-		bench(
+		benchRung(
 			'W2 rowOf @mid',
 			lazy(() => rowOfRung(storeFor(doc))),
 			options
 		)
-		bench(
+		benchRung(
 			'W3 boundarySpan',
 			lazy(() => boundaryRung(storeFor(doc))),
 			options
 		)
-		bench(
+		benchRung(
 			'W4 rowSelectionText @caret',
 			lazy(() => spanRung(storeFor(doc))),
 			options
 		)
-		bench(
+		benchRung(
 			'W5 rowSelectionText @ranged',
 			lazy(() => rangedSpanRung(storeFor(doc))),
 			options
 		)
-		bench(
+		benchRung(
 			'K1 plain keystroke',
 			lazy(() => keystrokeRung(storeFor(doc))),
 			options
 		)
-		bench(
+		benchRung(
 			'V1 Enter (splitAt)',
 			lazy(() =>
 				rebuilding(doc, store => {
@@ -322,7 +323,7 @@ for (const doc of docs) {
 			),
 			options
 		)
-		bench(
+		benchRung(
 			'V2 Tab (indentRows)',
 			lazy(() =>
 				rebuilding(doc, store => {
@@ -332,7 +333,7 @@ for (const doc of docs) {
 			),
 			options
 		)
-		bench(
+		benchRung(
 			'V3 Backspace merge',
 			lazy(() =>
 				rebuilding(doc, store => {
@@ -343,12 +344,12 @@ for (const doc of docs) {
 			),
 			options
 		)
-		bench(
+		benchRung(
 			'S1 settle pass',
 			lazy(() => settleRung(doc)),
 			options
 		)
-		bench(
+		benchRung(
 			'P1 refuse',
 			lazy(() => {
 				const store = storeFor(doc)

@@ -1,7 +1,8 @@
-import {bench, describe} from 'vitest'
+import {describe} from 'vitest'
 
 import {batch} from '../../shared/signals'
 import {Store} from '../../store/Store'
+import {benchRung} from './__testing__/benchRung'
 import {domModelOf} from './__testing__/mountFixtures'
 import {Parser} from './parser/Parser'
 import type {Markup, RowToken, Token} from './parser/types'
@@ -560,74 +561,74 @@ function lazy(build: () => Keystroke): () => void {
 for (const doc of docs) {
 	// oxlint-disable-next-line vitest/valid-title -- one ladder per document, named from the table above
 	describe(doc.name, () => {
-		bench(
+		benchRung(
 			'L1 splice',
 			lazy(() => spliceKeystroke(doc)),
 			options
 		)
-		bench(
+		benchRung(
 			'L2 +parse',
 			lazy(() => parseKeystroke(doc)),
 			options
 		)
-		bench(
+		benchRung(
 			'L3 +adopt',
 			lazy(() => adoptKeystroke(doc)),
 			options
 		)
-		bench(
+		benchRung(
 			'L3 +adopt @head',
 			lazy(() => adoptKeystroke(doc, doc.head)),
 			options
 		)
-		bench(
+		benchRung(
 			'L3 +adopt @tail',
 			lazy(() => adoptKeystroke(doc, doc.tail)),
 			options
 		)
-		bench(
+		benchRung(
 			'L4 core commit',
 			lazy(() => coreCommitKeystroke(doc)),
 			options
 		)
-		bench(
+		benchRung(
 			'L4 core, no caret',
 			lazy(() => coreCommitKeystroke(doc, false)),
 			options
 		)
 		// The mounted rungs need a DOM; the ladder still measures L1–L4 without one.
 		if (typeof document === 'undefined') return
-		bench(
+		benchRung(
 			'M1 mount (one ref per element)',
 			lazy(() => mountRung(doc)),
 			options
 		)
-		bench(
+		benchRung(
 			'L5 full keystroke',
 			lazy(() => fullKeystroke(doc)),
 			options
 		)
-		bench(
+		benchRung(
 			'L5 mounted, no caret',
 			lazy(() => fullKeystroke(doc, false)),
 			options
 		)
-		bench(
+		benchRung(
 			'L6 focused keystroke',
 			lazy(() => focusedKeystroke(doc)),
 			options
 		)
-		bench(
+		benchRung(
 			'L5b stored selection, no post-edit caret',
 			lazy(() => storedSelectionKeystroke(doc)),
 			options
 		)
-		bench(
+		benchRung(
 			'C1 caret write only',
 			lazy(() => caretOnlyKeystroke(doc)),
 			options
 		)
-		bench(
+		benchRung(
 			'C2 caret write on dirty layout',
 			lazy(() => caretOnlyKeystroke(doc, true)),
 			options
