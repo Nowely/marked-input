@@ -24,6 +24,10 @@ Oxlint and Oxfmt, which the catalog derives from it. Lint and format settings
 live in the `lint` and `fmt` blocks of the root `vite.config.ts`, beside `test`.
 Toolchain imports go through `vite-plus` and `vite-plus/test`, not `vite` or
 `vitest`; the `vite-plus/prefer-vite-plus-imports` lint rule enforces it.
+`pnpm run lint:check` (`vp lint`) also type-checks the linted `.ts`/`.tsx`
+files with TS 7. `pnpm run typecheck` keeps what that check cannot see: `vue-tsc`
+for SFCs and Storybook's Vue program, `astro check`, and core's `tsc` for the
+lint-ignored vendored `alien-signals`.
 
 ## Commands
 

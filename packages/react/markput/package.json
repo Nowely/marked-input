@@ -27,7 +27,6 @@
     }
   },
   "scripts": {
-    "typecheck": "tsc --noEmit",
     "build": "vp build && node prepack.js",
     "publish": "pnpm publish dist --no-git-checks --json --access public --provenance"
   },

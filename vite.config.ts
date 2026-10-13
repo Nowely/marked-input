@@ -262,6 +262,8 @@ export default defineConfig({
 				},
 			},
 		],
+		// The type check below covers linted files only, so the vendored alien-signals is type-checked by
+		// core's own `tsc --noEmit` and nowhere else; the website by `astro check`.
 		ignorePatterns: ['packages/website/**', 'packages/core/src/shared/signals/alien-signals/**'],
 		settings: {
 			jsdoc: {
@@ -280,7 +282,8 @@ export default defineConfig({
 		},
 		options: {
 			typeAware: true,
-			typeCheck: false,
+			// tsgolint's TS 7 check of `.ts`/`.tsx`. It cannot read SFCs, so `vue-tsc` stays in `typecheck`.
+			typeCheck: true,
 			denyWarnings: true,
 			reportUnusedDisableDirectives: 'deny',
 		},
