@@ -30,7 +30,8 @@ jobs:
             contents: write
             id-token: write
         steps:
-            - uses: nowely/action-setup-node@v1
+            - uses: actions/checkout@v4
+            - uses: voidzero-dev/setup-vp@v1.21.1
             - name: Sync version to packages
               run: |
                   node -e "
@@ -43,7 +44,7 @@ jobs:
                       fs.writeFileSync(f, JSON.stringify(pkg, null, 2) + '\n');
                     }
                   "
-            - run: pnpm build:react && pnpm build:vue
+            - run: vp run build:react && vp run build:vue
             - run: echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" > ~/.npmrc
             - run: pnpm -F @markput/react run publish && pnpm -F @markput/vue run publish
             - name: Sync main to latest release

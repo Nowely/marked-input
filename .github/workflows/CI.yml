@@ -25,44 +25,61 @@ jobs:
         name: Run Tests
         runs-on: ubuntu-latest
         steps:
-            - name: Setup Environment
-              uses: nowely/action-setup-node@v1
+            - uses: actions/checkout@v4
+
+            - name: Setup Vite+
+              uses: voidzero-dev/setup-vp@v1.21.1
+              with:
+                  cache: true
 
             - name: Install Playwright Browsers
-              run: pnpm exec playwright install --with-deps chromium
+              run: vp exec playwright install --with-deps chromium
 
             - name: Run Tests
-              run: pnpm test
+              run: vp test
 
     typecheck:
         name: Type Check
         runs-on: ubuntu-latest
         steps:
-            - name: Setup Environment
-              uses: nowely/action-setup-node@v1
+            - uses: actions/checkout@v4
+
+            - name: Setup Vite+
+              uses: voidzero-dev/setup-vp@v1.21.1
+              with:
+                  cache: true
 
             - name: Run Typecheck
-              run: pnpm run typecheck
+              run: vp run typecheck
 
     lint:
         name: Lint Code
         runs-on: ubuntu-latest
         steps:
-            - name: Setup Environment
-              uses: nowely/action-setup-node@v1
+            - uses: actions/checkout@v4
 
+            - name: Setup Vite+
+              uses: voidzero-dev/setup-vp@v1.21.1
+              with:
+                  cache: true
+
+            # Lint rules plus the TS 7 type check; formatting is its own job below.
             - name: Run Lint
-              run: pnpm run lint:check
+              run: vp check --no-fmt
 
     build:
         name: Build Package
         runs-on: ubuntu-latest
         steps:
-            - name: Setup Environment
-              uses: nowely/action-setup-node@v1
+            - uses: actions/checkout@v4
+
+            - name: Setup Vite+
+              uses: voidzero-dev/setup-vp@v1.21.1
+              with:
+                  cache: true
 
             - name: Run Build
-              run: pnpm run build
+              run: vp run build
 
             - name: Smoke Test Packed Tarballs
               run: ./scripts/smoke-pack.sh
@@ -70,8 +87,12 @@ jobs:
         name: Check Formatting
         runs-on: ubuntu-latest
         steps:
-            - name: Setup Environment
-              uses: nowely/action-setup-node@v1
+            - uses: actions/checkout@v4
+
+            - name: Setup Vite+
+              uses: voidzero-dev/setup-vp@v1.21.1
+              with:
+                  cache: true
 
             - name: Check Code Formatting
-              run: pnpm run format:check
+              run: vp fmt --check
