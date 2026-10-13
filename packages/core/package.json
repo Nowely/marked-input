@@ -10,7 +10,6 @@
     "./styles.module.css": "./styles.module.css"
   },
   "scripts": {
-    "typecheck": "tsc --noEmit",
     "build": "vp pack",
     "build:watch": "vp pack --watch",
     "test": "pnpm -w exec vp test run --project core",
@@ -25,7 +24,6 @@
     "@faker-js/faker": "catalog:",
     "csstype": "catalog:",
     "playwright": "catalog:",
-    "typescript": "catalog:",
     "vite": "catalog:",
     "vite-plus": "catalog:",
     "vitest": "catalog:"

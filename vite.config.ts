@@ -262,8 +262,9 @@ export default defineConfig({
 				},
 			},
 		],
-		// The type check below covers linted files only, so the vendored alien-signals is type-checked by
-		// core's own `tsc --noEmit` and nowhere else; the website by `astro check`.
+		// The type check below covers linted files only. The vendored alien-signals is still type-checked:
+		// core's runtime imports it, so it is part of every program that compiles core, and `vue-tsc` in the
+		// Vue adapter and Storybook reports its errors. The website goes through `astro check`.
 		ignorePatterns: ['packages/website/**', 'packages/core/src/shared/signals/alien-signals/**'],
 		settings: {
 			jsdoc: {

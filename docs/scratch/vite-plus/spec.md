@@ -18,7 +18,7 @@ mostly consolidation. The migration was chosen for that consolidation. It landed
 | --- | --- | --- |
 | `chore(deps): align …` | standalone vite 8.3.3, vitest 5.0.3, oxlint 1.87, oxfmt 0.72: what 1.1.0 bundles | oxfmt re-indents two records in `docs/records/` |
 | `build: switch the toolchain to Vite+ 1.1` | `vite-plus` replaces five pins; lint/fmt config into `vite.config.ts`; imports → `vite-plus/test`; scripts → `vp` | none: `dist/` byte-identical, same test counts |
-| `build: type-check … with TS 7` | `typeCheck: true`; solution-style Storybook tsconfig; `*.vue` shims; `tsc` dropped where covered | a `.ts` type error now also fails `lint:check` |
+| `build: type-check … with TS 7` | `typeCheck: true`; solution-style Storybook tsconfig; `*.vue` shims; `tsc` dropped where covered (core's in a follow-up) | a `.ts` type error now also fails `lint:check` |
 | `build: build the libraries with vp pack` | tsdown via `pack` blocks, `scripts/adapterPack.ts`; both `prepack.js` go | CSS-module hash suffixes change; JS differs in codegen only |
 | `build: run the pre-commit hook through vp` | `.vite-hooks/pre-commit` → `vp staged --hide-unstaged`; `staged: {'*': 'vp check --fix'}` | the hook checks the staged files, Markdown included |
 | `ci: … setup-vp` | `setup-vp@v1.21.1`, `packageManager: pnpm@10.28.0`, `.node-version` 22 | job names unchanged |
@@ -32,9 +32,11 @@ Each commit message carries its own evidence and edge cases.
   lines with Oxfmt defaults. Moving those configs into `vite.config.ts` first made it produce a clean
   diff (405 insertions, 173 deletions outside the lockfile).
 - **TS 7 is not the obstacle to `vp check` type-checking.** Outside Storybook it reports nothing on
-  our `.ts`/`.tsx`. Its real limits, measured with planted errors: it skips SFCs, and it skips
-  lint-ignored files (the vendored `alien-signals`). So `typecheck` keeps `vue-tsc`, `astro check`
-  and core's `tsc`.
+  our `.ts`/`.tsx`, and it catches `@ts-expect-error` and `expectTypeOf` pins. Its real limits,
+  measured with planted errors: it skips SFCs, and it skips lint-ignored files. So `typecheck`
+  keeps `vue-tsc` and `astro check`. The lint-ignored vendored `alien-signals` needs nothing extra:
+  `vue-tsc` reports errors there from both the Vue adapter and Storybook, because core imports it.
+  Core's own `tsc` was dropped on that evidence.
 - **`vp pack` handles the declarations.** One tsdown build produces `index.d.ts`, byte-identical
   to `prepack.js`'s; the duplicate-module problem did not appear.
 

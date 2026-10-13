@@ -1,4 +1,4 @@
-// `expectTypeOf` erases at runtime: this file is enforced by `pnpm run typecheck`, not by the vitest run.
+// `expectTypeOf` erases at runtime: this file is enforced by the type check in `pnpm run lint:check`, not by the vitest run.
 import {describe, expectTypeOf, it} from 'vite-plus/test'
 
 import type {Signal} from '../../../shared/signals'

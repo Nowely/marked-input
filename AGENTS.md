@@ -25,9 +25,10 @@ live in the `lint` and `fmt` blocks of the root `vite.config.ts`, beside `test`.
 Toolchain imports go through `vite-plus` and `vite-plus/test`, not `vite` or
 `vitest`; the `vite-plus/prefer-vite-plus-imports` lint rule enforces it.
 `pnpm run lint:check` (`vp lint`) also type-checks the linted `.ts`/`.tsx`
-files with TS 7. `pnpm run typecheck` keeps what that check cannot see: `vue-tsc`
-for SFCs and Storybook's Vue program, `astro check`, and core's `tsc` for the
-lint-ignored vendored `alien-signals`.
+files with TS 7, `@ts-expect-error` and `expectTypeOf` pins included.
+`pnpm run typecheck` keeps what that check cannot see: `vue-tsc` for SFCs and
+Storybook's Vue program, and `astro check`. The lint-ignored vendored
+`alien-signals` is type-checked through `vue-tsc`, which compiles core.
 
 ## Commands
 
