@@ -12,6 +12,19 @@ export const READABLE_MINIFY = {
 	outputOptions: {comments: {legal: true, annotation: true, jsdoc: false}},
 } satisfies PackUserConfig
 
+const REPO_ROOT = join(import.meta.dirname, '..')
+
+/**
+ * CSS-module class names in Vite's `_[local]_[hash]` shape. lightningcss hashes the file's ABSOLUTE
+ * path unless it is given a project root, and tsdown passes none: a build in CI (where releases are
+ * made) and one on a laptop would name every class differently. Hashing the repo-relative path
+ * makes the names the same wherever the package is built.
+ */
+export const CSS_MODULES = {
+	modules: {generateScopedName: '_[local]_[hash]'},
+	lightningcss: {projectRoot: REPO_ROOT},
+} satisfies PackUserConfig['css']
+
 /**
  * The `pack` block of a published adapter. `pnpm publish dist` publishes the output directory as a
  * package of its own, so it gets everything a tarball needs: bundled JS with its stylesheet, one
@@ -38,8 +51,8 @@ export function adapterPack(
 			sourcemap: false,
 		},
 		// One stylesheet, imported by the entry itself, so a consumer's bundler picks it up unasked.
-		css: {fileName: 'index.css', inject: true, minify: true, modules: {generateScopedName: '_[local]_[hash]'}},
-		copy: [join(packageDir, '../../../README.md')],
+		css: {fileName: 'index.css', inject: true, minify: true, ...CSS_MODULES},
+		copy: [join(REPO_ROOT, 'README.md')],
 		hooks: {
 			// `vue/compiler-sfc` picks its compiler-core build from NODE_ENV when it loads, and only the
 			// production one drops template comments and `v-if` placeholder text. `vite build` set it;
