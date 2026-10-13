@@ -52,8 +52,26 @@ jobs:
                   node-version: '22'
                   cache: true
 
-            - name: Install Playwright Browsers
+            # The browser download is cached per Playwright version; its system packages are not
+            # (apt state lives outside the cache), so a hit still runs `install-deps`.
+            - name: Read Playwright version
+              id: playwright
+              run: echo "version=$(node -p "require('playwright/package.json').version")" >> "$GITHUB_OUTPUT"
+
+            - name: Cache Playwright browsers
+              id: playwright-cache
+              uses: actions/cache@v6
+              with:
+                  path: ~/.cache/ms-playwright
+                  key: playwright-${{ runner.os }}-${{ runner.arch }}-chromium-${{ steps.playwright.outputs.version }}
+
+            - name: Install Playwright browsers
+              if: steps.playwright-cache.outputs.cache-hit != 'true'
               run: vp exec playwright install --with-deps chromium
+
+            - name: Install Playwright system dependencies
+              if: steps.playwright-cache.outputs.cache-hit == 'true'
+              run: vp exec playwright install-deps chromium
 
             - name: Run Tests
               run: vp test
