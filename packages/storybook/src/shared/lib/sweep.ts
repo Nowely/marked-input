@@ -1,4 +1,4 @@
-import {cdp} from 'vitest/browser'
+import {cdp} from 'vite-plus/test/browser'
 
 // `CDPSession` ships as an EMPTY interface for a provider to fill in, so the one command this file
 // sends is declared here. Narrow on purpose: it is the harness's whole vocabulary.

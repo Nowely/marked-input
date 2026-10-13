@@ -1,6 +1,6 @@
 import type {Markup} from '@markput/core'
-import {describe, expect, it, vi} from 'vitest'
-import {page, userEvent} from 'vitest/browser'
+import {describe, expect, it, vi} from 'vite-plus/test'
+import {page, userEvent} from 'vite-plus/test/browser'
 
 import {caretIsInside, firstChild, getElement, rowsOf} from '../../shared/lib/dom'
 import {ADD_ROW, dragRowTo, GRIP, gripOfRow} from '../../shared/lib/drag'

@@ -1,5 +1,5 @@
-import {afterEach, describe, it, expect, vi} from 'vitest'
-import {userEvent} from 'vitest/browser'
+import {afterEach, describe, it, expect, vi} from 'vite-plus/test'
+import {userEvent} from 'vite-plus/test/browser'
 
 import {watch} from '../../../shared/signals'
 import {Store} from '../../../store/Store'

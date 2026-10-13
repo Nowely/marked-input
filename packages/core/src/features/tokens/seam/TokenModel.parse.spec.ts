@@ -1,4 +1,4 @@
-import {describe, it, expect, afterEach, beforeEach, vi} from 'vitest'
+import {describe, it, expect, afterEach, beforeEach, vi} from 'vite-plus/test'
 
 import {watch} from '../../../shared/signals'
 import type {CoreOption} from '../../../shared/types'

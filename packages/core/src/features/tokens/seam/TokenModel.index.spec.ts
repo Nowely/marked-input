@@ -1,4 +1,4 @@
-import {describe, it, expect, vi} from 'vitest'
+import {describe, it, expect, vi} from 'vite-plus/test'
 
 import {effect, watch} from '../../../shared/signals/index.js'
 import {Store} from '../../../store/Store'

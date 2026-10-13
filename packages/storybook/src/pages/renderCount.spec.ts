@@ -1,6 +1,6 @@
 import type {MarkNode} from '@markput/core'
-import {describe, expect, it} from 'vitest'
-import {page, userEvent} from 'vitest/browser'
+import {describe, expect, it} from 'vite-plus/test'
+import {page, userEvent} from 'vite-plus/test/browser'
 
 import {getElement, rowsOf} from '../shared/lib/dom'
 import {focusAtEnd} from '../shared/lib/focus'

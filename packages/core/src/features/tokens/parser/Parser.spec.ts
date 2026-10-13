@@ -1,5 +1,5 @@
 import {faker} from '@faker-js/faker'
-import {beforeEach, describe, expect, it} from 'vitest'
+import {beforeEach, describe, expect, it} from 'vite-plus/test'
 
 import {countMarks, dedent, findMaxDepth, tokensToDebugTree} from './__testing__/tokensToDebugTree'
 import {Parser} from './Parser'

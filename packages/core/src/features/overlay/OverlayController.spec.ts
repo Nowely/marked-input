@@ -1,4 +1,4 @@
-import {describe, it, expect, afterEach, beforeEach, vi} from 'vitest'
+import {describe, it, expect, afterEach, beforeEach, vi} from 'vite-plus/test'
 
 import type {CoreOption, OverlayMatch} from '../../shared/types'
 import {Store} from '../../store/Store'

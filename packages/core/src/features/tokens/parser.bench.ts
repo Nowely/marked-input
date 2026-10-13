@@ -1,7 +1,7 @@
 import * as fs from 'fs'
 import * as path from 'path'
 
-import {afterAll, describe, test} from 'vitest'
+import {afterAll, describe, test} from 'vite-plus/test'
 
 import {Parser} from './parser/Parser'
 

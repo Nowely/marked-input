@@ -1,4 +1,4 @@
-import {describe, expect, it} from 'vitest'
+import {describe, expect, it} from 'vite-plus/test'
 
 import {ROW_CONTROLS, rowsOf} from '../../shared/lib/dom'
 import {defineMark, Mark} from '../../shared/lib/marks'

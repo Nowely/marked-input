@@ -1,4 +1,4 @@
-import {describe, expect, it, vi} from 'vitest'
+import {describe, expect, it, vi} from 'vite-plus/test'
 
 /**
  * `mutableScope` is module state, so a batch that fails to restore it disables the readonly gate

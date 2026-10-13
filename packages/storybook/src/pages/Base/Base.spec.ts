@@ -1,6 +1,6 @@
 import type {Markup} from '@markput/core'
-import {describe, expect, it, vi} from 'vitest'
-import {page, userEvent} from 'vitest/browser'
+import {describe, expect, it, vi} from 'vite-plus/test'
+import {page, userEvent} from 'vite-plus/test/browser'
 
 import {caretIsInside, editingHost, findEditingHost, getElement, textSurfaces} from '../../shared/lib/dom'
 import {focusAtEnd, focusAtOffset, focusAtStart} from '../../shared/lib/focus'

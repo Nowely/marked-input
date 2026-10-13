@@ -2,12 +2,12 @@
 
 oxlint 1.79.0 (2026-08-18) split its single `react/react-compiler` rule (added in 1.70.0) into one
 rule per React Compiler check, each filed under a category. Five of them land in categories
-`oxlint.config.ts` enables wholesale (`correctness`, `suspicious`, both as `warn`), and
+the lint config (then `oxlint.config.ts`, now the `lint` block of `vite.config.ts`) enables wholesale (`correctness`, `suspicious`, both as `warn`), and
 `denyWarnings` turns every warning into a failure. Upgrading oxlint from 1.76 to 1.85 therefore
 surfaced 17 findings that 1.76 never reported.
 
 **Decision, 2026-09-26:** the five rules are `off` under `TODO(react-compiler)` in
-`oxlint.config.ts`, and this folder holds what is needed to come back to them. Nothing else in
+the lint config, and this folder holds what is needed to come back to them. Nothing else in
 the upgrade depended on them.
 
 ## What the rules protect

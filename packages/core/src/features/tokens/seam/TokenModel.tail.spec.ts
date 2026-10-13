@@ -1,4 +1,4 @@
-import {describe, expect, it} from 'vitest'
+import {describe, expect, it} from 'vite-plus/test'
 
 import type {CoreOption} from '../../../shared/types'
 import {Store} from '../../../store/Store'

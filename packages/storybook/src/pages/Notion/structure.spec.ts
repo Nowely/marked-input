@@ -1,6 +1,6 @@
 import type {CoreOption} from '@markput/core'
 import {Store} from '@markput/core'
-import {describe, expect, it} from 'vitest'
+import {describe, expect, it} from 'vite-plus/test'
 
 import {rowsToDebugTree} from '../../../../core/src/features/tokens/parser/__testing__/tokensToDebugTree'
 import type {RowToken, Token} from '../../../../core/src/features/tokens/parser/types'

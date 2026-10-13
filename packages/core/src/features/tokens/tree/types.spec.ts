@@ -1,5 +1,5 @@
 // `expectTypeOf` erases at runtime: this file is enforced by `pnpm run typecheck`, not by the vitest run.
-import {describe, expectTypeOf, it} from 'vitest'
+import {describe, expectTypeOf, it} from 'vite-plus/test'
 
 import type {Signal} from '../../../shared/signals'
 import type {MarkupDescriptor} from '../parser/core/MarkupDescriptor'

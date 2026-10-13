@@ -1,5 +1,5 @@
 import {composeStories} from '@storybook/react-vite'
-import {describe, expect, it} from 'vitest'
+import {describe, expect, it} from 'vite-plus/test'
 import {render} from 'vitest-browser-react'
 
 import {snapshotHtml} from '../shared/lib/htmlSnapshot'

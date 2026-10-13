@@ -1,4 +1,4 @@
-import {afterEach, describe, expect, it, vi} from 'vitest'
+import {afterEach, describe, expect, it, vi} from 'vite-plus/test'
 
 import {watch} from '../../../shared/signals/index.js'
 import {Host, PropsModel} from '../../state'

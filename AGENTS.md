@@ -19,11 +19,17 @@ Default branch: `next`. Use `pnpm` for all installs and scripts. Shared
 dependency versions live in the pnpm catalog in `pnpm-workspace.yaml`; tooling
 used by a single package is pinned in that package's `package.json`.
 
+The toolchain is Vite+ (`vite-plus`, the `vp` CLI): one pin for Vite, Vitest,
+Oxlint and Oxfmt, which the catalog derives from it. Lint and format settings
+live in the `lint` and `fmt` blocks of the root `vite.config.ts`, beside `test`.
+Toolchain imports go through `vite-plus` and `vite-plus/test`, not `vite` or
+`vitest`; the `vite-plus/prefer-vite-plus-imports` lint rule enforces it.
+
 ## Commands
 
 - Setup: `pnpm install`, then `pnpm exec playwright install chromium` when
   browser tests are needed.
-- Focused test: `pnpm -w exec vitest run path/to/file.spec.ts`.
+- Focused test: `pnpm -w exec vp test run path/to/file.spec.ts`.
 - Full checks: `pnpm test`, `pnpm run build`, `pnpm run typecheck`,
   `pnpm run lint:check`, `pnpm run format:check`.
 - Fixers: `pnpm run lint`, `pnpm run format`.
@@ -176,10 +182,10 @@ reason. Do not claim work is done, tests pass, or a branch is merge-ready until
 you have actually run these and seen them green. If you ran only focused checks,
 say so explicitly — do not imply everything passed.
 
-For docs-only changes, run `pnpm exec oxfmt --check <changed-files>` or note
-that the file is excluded by `oxfmt.config.ts`. For website docs changes that
-touch MDX, frontmatter, navigation, or config, also run
-`pnpm -F @markput/website run build`.
+For docs-only changes, run `pnpm exec vp fmt --check <changed-files>` or note
+that the file is excluded by the `fmt` block's `ignorePatterns` in
+`vite.config.ts`. For website docs changes that touch MDX, frontmatter,
+navigation, or config, also run `pnpm -F @markput/website run build`.
 
 Update docs under `packages/website/src/content/docs/` whenever public API,
 behavior, or settled architecture changes.

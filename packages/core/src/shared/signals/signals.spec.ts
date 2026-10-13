@@ -1,4 +1,4 @@
-import {describe, it, expect, beforeEach, afterEach, vi} from 'vitest'
+import {describe, it, expect, beforeEach, afterEach, vi} from 'vite-plus/test'
 
 import {shallow} from '../utils/shallow'
 import {signal, computed, watch, event, batch, effect, effectScope, listen, isReactive} from './signal'

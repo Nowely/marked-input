@@ -1,4 +1,4 @@
-import {beforeEach, describe, expect, it} from 'vitest'
+import {beforeEach, describe, expect, it} from 'vite-plus/test'
 import {defineComponent, h} from 'vue'
 
 import {editingHost, rowsOf} from '../../shared/lib/dom'

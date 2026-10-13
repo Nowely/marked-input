@@ -28,7 +28,7 @@
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
-    "build": "vite build && node prepack.js",
+    "build": "vp build && node prepack.js",
     "publish": "pnpm publish dist --no-git-checks --json --access public --provenance"
   },
   "devDependencies": {
@@ -38,7 +38,8 @@
     "react": "catalog:",
     "rolldown-plugin-dts": "catalog:",
     "typescript": "catalog:",
-    "vite": "catalog:"
+    "vite": "catalog:",
+    "vite-plus": "catalog:"
   },
   "peerDependencies": {
     "react": ">=19.0.0"

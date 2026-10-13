@@ -1,4 +1,4 @@
-import {describe, expect, it, vi} from 'vitest'
+import {describe, expect, it, vi} from 'vite-plus/test'
 
 import {Store} from '../../../store/Store'
 import {anchorsAt, caretAt, enableStructuralStore, mountInline, selectionRange} from '../__testing__/mountFixtures'

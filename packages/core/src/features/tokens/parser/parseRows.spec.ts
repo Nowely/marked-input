@@ -1,4 +1,4 @@
-import {describe, expect, it} from 'vitest'
+import {describe, expect, it} from 'vite-plus/test'
 
 import {rowsToDebugTree} from './__testing__/tokensToDebugTree'
 import {Parser} from './Parser'

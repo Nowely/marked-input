@@ -1,4 +1,4 @@
-import {describe, expect, it} from 'vitest'
+import {describe, expect, it} from 'vite-plus/test'
 
 import type {Store} from '../../store/Store'
 import type {TreeNode} from '../tokens'

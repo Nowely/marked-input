@@ -1,4 +1,4 @@
-import {afterEach, describe, expect, it, vi} from 'vitest'
+import {afterEach, describe, expect, it, vi} from 'vite-plus/test'
 
 import {Store} from '../../../store/Store'
 import {mountStructuralInline} from '../__testing__/mountFixtures'

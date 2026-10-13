@@ -28,7 +28,7 @@
   },
   "scripts": {
     "typecheck": "vue-tsc --noEmit",
-    "build": "vite build && node prepack.js",
+    "build": "vp build && node prepack.js",
     "publish": "pnpm publish dist --no-git-checks --json --access public --provenance"
   },
   "devDependencies": {
@@ -37,6 +37,7 @@
     "rolldown-plugin-dts": "catalog:",
     "typescript": "catalog:",
     "vite": "catalog:",
+    "vite-plus": "catalog:",
     "vue": "catalog:",
     "vue-tsc": "catalog:"
   },
