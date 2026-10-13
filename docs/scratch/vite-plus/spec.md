@@ -69,12 +69,27 @@ exited 0: "4 config updates applied, 117 files had imports rewritten". The diff:
 2. **The whole touched tree is reformatted with Oxfmt defaults.** The migrator's final `vp fmt`
    runs with `fmt: {}`: double quotes, semicolons, spaced braces. 125 files, about 22k lines of
    churn, almost all of it formatting.
-3. **`typeCheck: true` does not fit this repo.** It is tsgolint's TypeScript 7 checker, and we build
-   with TS 6 (see `TODO(ts7)` in `oxlint.config.ts`). It also checks Storybook through the
-   editor-only `packages/storybook/tsconfig.json`, which resolves `*.vue.ts` seam imports to their
-   React siblings, and reports 11 errors that `vue-tsc -p tsconfig.vue.json` does not have. So
-   `vp check` cannot replace `pnpm run typecheck` (tsc + vue-tsc + astro check).
-4. `vp lint .` then exits 1: those 13 errors, plus 17 warnings from rules our config turns off.
+3. **`typeCheck: true` covers only part of `pnpm run typecheck`.** It runs tsgolint's TypeScript 7
+   checker. TS 7 itself is not the obstacle: the move to TS 7 is held back only by tools that need
+   the TS compiler API, and outside Storybook the checker reports nothing on our `.ts`/`.tsx`
+   files. Two things stop it from replacing `typecheck`:
+   - **It does not see inside SFCs.** A `const x: number = 'a'` planted in a `.ts` file is reported
+     (TS2322). The same line in `Atomic.vue`'s `<script setup lang="ts">` is not. `vue-tsc` stays,
+     and so does `astro check` (`.astro` was not probed). Those are the same compiler-API tools
+     that hold back the TS 7 move.
+   - **Storybook's split programs.** tsgolint picks the editor-only
+     `packages/storybook/tsconfig.json`, which resolves `*.vue.ts` seam imports to their React
+     siblings. That gives 11 errors that `vue-tsc -p tsconfig.vue.json` does not have. A
+     solution-style `tsconfig.json` (`files: []`, references to `tsconfig.vue.json` and
+     `tsconfig.react.json`) brings this down to one error: a `.vue` import that fails to resolve
+     (TS2307). The migrator's `*.vue` shim is outside the Vue program's `include`. That layout,
+     however, checks shared files under one framework only and changes what the editor resolves.
+     It is an option, not a fix.
+
+   So `vp check` could take over `tsc --noEmit` for `core`, the React adapter and the React app.
+   `vue-tsc` and `astro check` stay in `typecheck`.
+4. `vp lint .` then exits 1: 13 errors (the 2 orphaned configs, the 11 Storybook ones), plus 17
+   warnings from rules our config turns off.
 
 ### What works unchanged
 
@@ -96,8 +111,9 @@ Not checked: byte-identity of the published `dist/`, `vp staged`/`vp hooks`, a G
   when a Vite+ release moves them — 1.1.0 already moves all three past `next`.
 - One config file: `lint`, `fmt` and `staged` next to `test` in `vite.config.ts`.
 - Hooks without Husky: `vp staged` bundles lint-staged 17 and keeps `--hide-unstaged`.
-- `vp run` task caching and `vp check` (fmt + lint in one pass). `vp check`'s type-check half is
-  out of reach until the TS 7 move.
+- `vp run` task caching and `vp check`: fmt, lint and a TS 7 type check of the `.ts`/`.tsx` files in
+  one pass. That is also an early TS 7 signal before the move. SFCs and `.astro` still go through
+  `vue-tsc` and `astro check`.
 - `vp pack` (tsdown 0.23) as a possible replacement for vite lib mode + `prepack.js`. tsdown runs
   `rolldown-plugin-dts` too, so whether it gets past the duplicate-module issue the `prepack.js`
   comment describes would need its own spike.
@@ -107,11 +123,11 @@ Not checked: byte-identity of the published `dist/`, `vp staged`/`vp hooks`, a G
 No migration now. Nothing we use is deprecated, our tools are already on the versions Vite+
 bundles, and the gain is mostly consolidation. Each part of that gain comes with hand work: config
 merging, about 120 files of import churn, overrides that move Astro and Storybook onto Vite+ core,
-and a `vp check` we cannot fully use before TS 7.
+and a `vp check` that replaces only the `tsc` part of `typecheck`.
 
-Revisit when one of these happens: the TS 7 migration (then `vp check` could take over
-`typecheck`), a library-build rework (then `vp pack` is a real candidate), or the upstream
-tools start shipping features only through Vite+.
+The TS 7 move is not a trigger: SFCs and `.astro` stay with `vue-tsc` and `astro check` either way.
+Revisit when one of these happens: a library-build rework (then `vp pack` is a real candidate),
+or the upstream tools start shipping features only through Vite+.
 
 ## If we do it: order of work
 
@@ -120,7 +136,8 @@ Each step green on its own:
 1. Declare `packageManager: pnpm@10.28.0`, so `vp` stops choosing a pnpm version.
 2. Make `oxlint.config.ts` and `oxfmt.config.ts` export plain objects, and import them into
    `vite.config.ts` as `lint` and `fmt` (the "composing configuration files" pattern in the Vite+
-   monorepo guide). Keep `typeAware: true, typeCheck: false`.
+   monorepo guide). Keep `typeAware: true`. Turn on `typeCheck` only once Storybook's tsconfig
+   question is settled; until then it fails on the 11 errors above.
 3. Run `vp migrate --no-interactive --no-hooks --no-agent --no-editor`. With our `fmt` block in
    place, its formatting pass should be a no-op. Review the overrides and the `env.d.ts` shims;
    drop the ones that change nothing.
