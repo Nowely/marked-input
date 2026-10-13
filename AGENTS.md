@@ -32,7 +32,11 @@ lint-ignored vendored `alien-signals`.
 ## Commands
 
 - Setup: `pnpm install`, then `pnpm exec playwright install chromium` when
-  browser tests are needed.
+  browser tests are needed. `pnpm install` also installs the pre-commit hook
+  (`vp config`), which runs `vp staged`: `vp check --fix` on the staged files.
+  A clone set up while the hook was Husky's keeps `core.hooksPath` at
+  `.husky/_`, which `vp config` leaves alone; run
+  `git config --unset core.hooksPath && pnpm install` once.
 - Focused test: `pnpm -w exec vp test run path/to/file.spec.ts`.
 - Full checks: `pnpm test`, `pnpm run build`, `pnpm run typecheck`,
   `pnpm run lint:check`, `pnpm run format:check`.

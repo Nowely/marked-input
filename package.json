@@ -33,7 +33,7 @@
     "git:restart": "git fetch --prune origin && git fetch origin next:next && git switch -C \"$(git branch --show-current)\" next && git push --force-with-lease -u origin HEAD",
     "preinstall": "npx only-allow pnpm",
     "publish": "vp run --filter @markput/react publish",
-    "prepare": "husky"
+    "prepare": "vp config --no-agent"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "catalog:",
@@ -41,22 +41,11 @@
     "@vitest/browser-playwright": "catalog:",
     "@vitest/coverage-v8": "catalog:",
     "@vitest/ui": "catalog:",
-    "husky": "^9.1.7",
-    "lint-staged": "^17.6.0",
     "playwright": "catalog:",
     "typescript": "catalog:",
     "vite": "catalog:",
     "vite-plus": "catalog:",
     "vitest": "catalog:"
-  },
-  "lint-staged": {
-    "*.{js,jsx,ts,tsx,vue}": [
-      "pnpm run lint",
-      "pnpm run format"
-    ],
-    "*.{json,css,html}": [
-      "pnpm run format"
-    ]
   },
   "engines": {
     "pnpm": ">=9"

@@ -336,4 +336,8 @@ export default defineConfig({
 			'node_modules/',
 		],
 	},
+	// `vp staged` runs these on the files being committed (`.vite-hooks/pre-commit`).
+	staged: {
+		'*': 'vp check --fix',
+	},
 })
