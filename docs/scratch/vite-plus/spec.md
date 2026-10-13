@@ -1,150 +1,63 @@
-# Vite+ adoption: assessment
+# Vite+ adoption
 
-Status: needs-triage
+Status: ready-for-human
 
-Vite+ 1.0.0 went stable on 2026-09-28 (rc.1 promoted unchanged); 1.1.0 followed on 2026-10-07. It is
-one MIT devDependency, `vite-plus`, with a `vp` CLI over Vite, Rolldown, Vitest, Oxlint, Oxfmt,
-tsdown, lint-staged and its own task runner (Vite Task), plus optional Node/package-manager
-management. Semver covers the `vp` CLI and the config schema; the bundled tools keep their own
-versions. Standalone Vite, Vitest, Oxlint and Oxfmt are still released — Vite+ is not a
-replacement for them, so nothing forces this migration.
+Vite+ 1.0.0 went stable on 2026-09-28; 1.1.0 followed on 2026-10-07. It is one MIT devDependency,
+`vite-plus`, with a `vp` CLI over Vite, Rolldown, Vitest, Oxlint, Oxfmt, tsdown, lint-staged and a
+task runner. Semver covers the CLI and the config schema; the bundled tools keep their own versions.
 
-This note is the result of reading the 1.1.0 docs (`voidzero-dev/vite-plus` `docs/` at 58c2f83) and
-of a dry-run of `vp migrate` 1.1.0 on a throwaway copy of `next` at f603a82 (#303).
+**Decision, 2026-10-13:** migrate fully to 1.1.0. That covers the toolchain, the TS 7 type check in
+`vp check`, library builds with `vp pack`, commit hooks with `vp staged`, and CI on
+`voidzero-dev/setup-vp`. The first version of this note recommended waiting, because the gain is
+mostly consolidation. The migration was chosen for that consolidation. It landed on
+`claude/compassionate-carson-l20jp9` as six commits, each green on its own.
 
-## Where `next` already is
+## What landed
 
-#303 did the hard part of a Vite+ 1.0 upgrade on its own: Vitest 5. The versions line up almost
-one to one:
+| Commit | Change | Observable effect |
+| --- | --- | --- |
+| `chore(deps): align …` | standalone vite 8.3.3, vitest 5.0.3, oxlint 1.87, oxfmt 0.72: what 1.1.0 bundles | oxfmt re-indents two records in `docs/records/` |
+| `build: switch the toolchain to Vite+ 1.1` | `vite-plus` replaces five pins; lint/fmt config into `vite.config.ts`; imports → `vite-plus/test`; scripts → `vp` | none: `dist/` byte-identical, same test counts |
+| `build: type-check … with TS 7` | `typeCheck: true`; solution-style Storybook tsconfig; `*.vue` shims; `tsc` dropped where covered | a `.ts` type error now also fails `lint:check` |
+| `build: build the libraries with vp pack` | tsdown via `pack` blocks, `scripts/adapterPack.ts`; both `prepack.js` go | CSS-module hash suffixes change; JS differs in codegen only |
+| `build: run the pre-commit hook through vp` | `.vite-hooks/pre-commit` → `vp staged --hide-unstaged`; `staged: {'*': 'vp check --fix'}` | the hook checks the staged files, Markdown included |
+| `ci: … setup-vp` | `setup-vp@v1.21.1`, `packageManager: pnpm@10.28.0`, `.node-version` 22 | job names unchanged |
 
-| Tool | `next` | Vite+ 1.0.0 | Vite+ 1.1.0 |
-| --- | --- | --- | --- |
-| vite | 8.3.1 | 8.3.1 | 8.3.3 (as `@voidzero-dev/vite-plus-core`) |
-| vitest | 5.0.2 | 5.0.1 | 5.0.3 |
-| oxlint / oxlint-tsgolint | 1.85.0 / 7.0.2003 | 1.85.0 / 7.0.2003 | 1.87.0 / 7.0.2003 |
-| oxfmt | 0.70.0 | 0.70.0 | 0.72.0 |
-| rolldown | 1.2.11 (via vite) | 1.2.11 | 1.2.12 |
-| tsdown | — (vite lib mode + `prepack.js`) | 0.23.0 | 0.23.0 |
-| hooks | husky 9 + lint-staged 17.6 | `vp hooks` + `vp staged` (lint-staged 17) | same |
+Each commit message carries its own evidence and edge cases.
 
-Runtime floor: `^22.18.0 || ^24.11.0 || >=26.0.0`; `vp staged` needs `^22.22.1 || ^24.11.0` and
-Git ≥ 2.32. Local Node here is 22.22.0. The Node version that `nowely/action-setup-node@v1` gives
-CI is not checked.
+## What the first version of this note got wrong
 
-## What the dry-run did
+- **`vp migrate` is usable here, after one manual step.** It only recognises `.oxlintrc.json`/
+  `.oxfmtrc.json`. On the dry-run it dropped our TS lint and format configs and reformatted ~22k
+  lines with Oxfmt defaults. Moving those configs into `vite.config.ts` first made it produce a clean
+  diff (405 insertions, 173 deletions outside the lockfile).
+- **TS 7 is not the obstacle to `vp check` type-checking.** Outside Storybook it reports nothing on
+  our `.ts`/`.tsx`. Its real limits, measured with planted errors: it skips SFCs, and it skips
+  lint-ignored files (the vendored `alien-signals`). So `typecheck` keeps `vue-tsc`, `astro check`
+  and core's `tsc`.
+- **`vp pack` handles the declarations.** One tsdown build produces `index.d.ts`, byte-identical
+  to `prepack.js`'s; the duplicate-module problem did not appear.
 
-`pnpm dlx --package=vite-plus@1.1.0 vp migrate --no-interactive --no-agent --no-editor --no-hooks`
-exited 0: "4 config updates applied, 117 files had imports rewritten". The diff:
+## Open items
 
-- **Dependencies.** `vite-plus: 1.1.0` joins the catalog and seven manifests. `oxlint`, `oxfmt`,
-  `oxlint-tsgolint` leave the root. The catalog's `vite` becomes
-  `npm:@voidzero-dev/vite-plus-core@1.1.0`; `vitest` and the `@vitest/*` entries are pinned exactly
-  at 5.0.3. `vitest` is added to `core` and `storybook` (browser mode keeps it direct).
-- **Workspace-wide overrides.** `overrides: {vite@*: catalog:, vitest@*: catalog:}` plus
-  `peerDependencyRules.allowAny/allowedVersions` for both. Every Vite consumer now runs on
-  Vite+ core: Astro 7.3.5 drops its own vite 8.1.5, Storybook's builders follow. Peer warnings for
-  vite/vitest are silenced for the whole workspace.
-- **Scripts.** Root `vitest`/`oxlint`/`oxfmt` become `vp test run`/`vp lint`/`vp fmt`; package
-  `vite build`/`vite` become `vp build`/`vp dev`. `pnpm -w exec vitest …` scripts in `core` and
-  `storybook` are left as they are.
-- **Imports.** Every `vitest` import (specs, benches, `benchRung`, website samples) becomes
-  `vite-plus/test`; `vitest/config` and `@vitest/browser-playwright` in `vite.config.ts` become
-  `vite-plus` and `vite-plus/test/browser-playwright`. A `vite-plus/prefer-vite-plus-imports`
-  rule is added at `error` to keep it that way.
-- **Config.** Root `vite.config.ts` gains `lint: {jsPlugins: [vite-plus], rules: {…},
-  options: {typeAware: true, typeCheck: true}}` and an empty `fmt: {}`. Package configs wrap
-  `plugins` in `lazyPlugins(() => […])`. Three `env.d.ts` shims appear (`*.vue` module in
-  storybook and the Vue adapter, `astro/client` in the website).
-- **Left alone.** Husky and lint-staged (by design: `vp migrate` never converts Husky).
-- **Install.** No `packageManager` field, so `vp` installed with pnpm 12.11.2 rather than the 10.28
-  we use. The lockfile stayed at `lockfileVersion: '9.0'`.
+- **CI is unverified.** Pushes to this branch do not trigger it; the first PR run will show it.
+  Both workflows parse and every command passes locally. `Release.yml` is first exercised by the
+  next release: it publishes with `pnpm publish`, through the pnpm setup-vp manages.
+- **Existing clones lose the hook silently** until `git config --unset core.hooksPath && pnpm
+  install`. Husky left `core.hooksPath` at `.husky/_`, and `vp config` does not override another
+  path. AGENTS.md says so; new clones need nothing.
+- **Branch protection.** Required checks on `next` match job names, so the five jobs kept theirs.
+  If the rule is updated, Lint Code + Check Formatting could become one `vp check` job.
+- **Published CSS class names change** (`_Container_3q8ry_1` → `_Container_RR8n2G`). They are hashed
+  and not a contract, but a consumer that targeted them breaks. Worth a line in the release notes.
 
-### What breaks
+## Next worthwhile changes
 
-1. **Our lint and format configs are not migrated.** The migrator only recognises
-   `.oxlintrc.json(c)` and `.oxfmtrc.json(c)` (`packages/cli/src/migration/detector.ts`), not
-   `oxlint.config.ts` / `oxfmt.config.ts`. It removes the `oxlint`/`oxfmt` packages those files
-   import (both now fail with TS2307), and the new `lint`/`fmt` blocks in `vite.config.ts` take
-   over discovery. Our rule set, overrides, `denyWarnings` and formatting options are gone.
-2. **The whole touched tree is reformatted with Oxfmt defaults.** The migrator's final `vp fmt`
-   runs with `fmt: {}`: double quotes, semicolons, spaced braces. 125 files, about 22k lines of
-   churn, almost all of it formatting.
-3. **`typeCheck: true` covers only part of `pnpm run typecheck`.** It runs tsgolint's TypeScript 7
-   checker. TS 7 itself is not the obstacle: the move to TS 7 is held back only by tools that need
-   the TS compiler API, and outside Storybook the checker reports nothing on our `.ts`/`.tsx`
-   files. Two things stop it from replacing `typecheck`:
-   - **It does not see inside SFCs.** A `const x: number = 'a'` planted in a `.ts` file is reported
-     (TS2322). The same line in `Atomic.vue`'s `<script setup lang="ts">` is not. `vue-tsc` stays,
-     and so does `astro check` (`.astro` was not probed). Those are the same compiler-API tools
-     that hold back the TS 7 move.
-   - **Storybook's split programs.** tsgolint picks the editor-only
-     `packages/storybook/tsconfig.json`, which resolves `*.vue.ts` seam imports to their React
-     siblings. That gives 11 errors that `vue-tsc -p tsconfig.vue.json` does not have. A
-     solution-style `tsconfig.json` (`files: []`, references to `tsconfig.vue.json` and
-     `tsconfig.react.json`) brings this down to one error: a `.vue` import that fails to resolve
-     (TS2307). The migrator's `*.vue` shim is outside the Vue program's `include`. That layout,
-     however, checks shared files under one framework only and changes what the editor resolves.
-     It is an option, not a fix.
-
-   So `vp check` could take over `tsc --noEmit` for `core`, the React adapter and the React app.
-   `vue-tsc` and `astro check` stay in `typecheck`.
-4. `vp lint .` then exits 1: 13 errors (the 2 orphaned configs, the 11 Storybook ones), plus 17
-   warnings from rules our config turns off.
-
-### What works unchanged
-
-On the migrated copy, with Chromium pointed at the preinstalled build:
-
-- `vp test`: 123 files, 2522 passed, 6 todo — the same counts #303 recorded on `next`.
-- `pnpm -F @markput/react run build` and `… @markput/vue run build` (`vp build` + `prepack.js`).
-- `pnpm -F @markput/website run build` (Astro on Vite+ core) and both Storybook builds.
-- `pnpm run typecheck`.
-- The `Failed to resolve dependency: react … optimizeDeps.include` lines in the React project
-  appear on unmigrated `next` too.
-
-Not checked: byte-identity of the published `dist/`, `vp staged`/`vp hooks`, a GitHub runner.
-
-## What Vite+ would buy here
-
-- One toolchain pin instead of vite, vitest, oxlint, oxlint-tsgolint and oxfmt kept in step by
-  hand (vite and vitest stay in the catalog, but as values derived from that pin). The other side: we lose tool-by-tool upgrades (how #303 was cut). Oxlint, Oxfmt and Vitest move
-  when a Vite+ release moves them — 1.1.0 already moves all three past `next`.
-- One config file: `lint`, `fmt` and `staged` next to `test` in `vite.config.ts`.
-- Hooks without Husky: `vp staged` bundles lint-staged 17 and keeps `--hide-unstaged`.
-- `vp run` task caching and `vp check`: fmt, lint and a TS 7 type check of the `.ts`/`.tsx` files in
-  one pass. That is also an early TS 7 signal before the move. SFCs and `.astro` still go through
-  `vue-tsc` and `astro check`.
-- `vp pack` (tsdown 0.23) as a possible replacement for vite lib mode + `prepack.js`. tsdown runs
-  `rolldown-plugin-dts` too, so whether it gets past the duplicate-module issue the `prepack.js`
-  comment describes would need its own spike.
-
-## Recommendation
-
-No migration now. Nothing we use is deprecated, our tools are already on the versions Vite+
-bundles, and the gain is mostly consolidation. Each part of that gain comes with hand work: config
-merging, about 120 files of import churn, overrides that move Astro and Storybook onto Vite+ core,
-and a `vp check` that replaces only the `tsc` part of `typecheck`.
-
-The TS 7 move is not a trigger: SFCs and `.astro` stay with `vue-tsc` and `astro check` either way.
-Revisit when one of these happens: a library-build rework (then `vp pack` is a real candidate),
-or the upstream tools start shipping features only through Vite+.
-
-## If we do it: order of work
-
-Each step green on its own:
-
-1. Declare `packageManager: pnpm@10.28.0`, so `vp` stops choosing a pnpm version.
-2. Make `oxlint.config.ts` and `oxfmt.config.ts` export plain objects, and import them into
-   `vite.config.ts` as `lint` and `fmt` (the "composing configuration files" pattern in the Vite+
-   monorepo guide). Keep `typeAware: true`. Turn on `typeCheck` only once Storybook's tsconfig
-   question is settled; until then it fails on the 11 errors above.
-3. Run `vp migrate --no-interactive --no-hooks --no-agent --no-editor`. With our `fmt` block in
-   place, its formatting pass should be a no-op. Review the overrides and the `env.d.ts` shims;
-   drop the ones that change nothing.
-4. Decide on the import rewrite: accept `vite-plus/test`, or keep `vitest` imports, drop
-   `prefer-vite-plus-imports`, and keep `vitest` direct.
-5. Husky + lint-staged → `.vite-hooks/pre-commit` running `vp staged --hide-unstaged` and a
-   `staged` block. This changes the hook committers run, so it gets its own commit.
-6. CI: keep the current jobs on `pnpm run …`, or move to `voidzero-dev/setup-vp` pinned to an
-   exact release. Make sure CI's Node is at least 22.22.1.
-7. Docs: `AGENTS.md` (Commands, Checks, Testing), `packages/core/README.md`.
+- Vitest now suggests `fsModuleCache: true` for the `boundary` and `docs` projects (30 s and 8 s
+  of transforms, redone on every run).
+- `vp run` caches nothing yet: `package.json` scripts are uncached by default. Tasks in a `run`
+  block of `vite.config.ts` (typecheck, build) would make repeated local and CI runs cheaper; CI
+  would also need the Vite Task cache from the setup-vp docs.
+- `packages/react/app` still lists `typescript` though nothing there runs `tsc` any more.
+- Backlog 32 got a measurement from this work: the slash-menu test times out under a full plain
+  run too, at 4.3 s alone against 15 s.
