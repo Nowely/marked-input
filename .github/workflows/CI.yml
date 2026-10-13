@@ -21,8 +21,27 @@ jobs:
               env:
                   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-    tests:
-        name: Run Tests
+    # Formatting, lint rules and the TS 7 type check of `.ts`/`.tsx` in one pass, then what that
+    # pass cannot see: `vue-tsc` for SFCs and Storybook's Vue program, and `astro check`.
+    check:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v4
+
+            - name: Setup Vite+
+              uses: voidzero-dev/setup-vp@v1.21.1
+              with:
+                  node-version: '22'
+                  cache: true
+
+            - name: Format, lint and type-check
+              run: vp check
+
+            - name: Type-check SFCs and Astro
+              if: ${{ !cancelled() }}
+              run: vp run typecheck
+
+    test:
         runs-on: ubuntu-latest
         steps:
             - uses: actions/checkout@v4
@@ -39,39 +58,7 @@ jobs:
             - name: Run Tests
               run: vp test
 
-    typecheck:
-        name: Type Check
-        runs-on: ubuntu-latest
-        steps:
-            - uses: actions/checkout@v4
-
-            - name: Setup Vite+
-              uses: voidzero-dev/setup-vp@v1.21.1
-              with:
-                  node-version: '22'
-                  cache: true
-
-            - name: Run Typecheck
-              run: vp run typecheck
-
-    lint:
-        name: Lint Code
-        runs-on: ubuntu-latest
-        steps:
-            - uses: actions/checkout@v4
-
-            - name: Setup Vite+
-              uses: voidzero-dev/setup-vp@v1.21.1
-              with:
-                  node-version: '22'
-                  cache: true
-
-            # Lint rules plus the TS 7 type check; formatting is its own job below.
-            - name: Run Lint
-              run: vp check --no-fmt
-
     build:
-        name: Build Package
         runs-on: ubuntu-latest
         steps:
             - uses: actions/checkout@v4
@@ -82,22 +69,23 @@ jobs:
                   node-version: '22'
                   cache: true
 
-            - name: Run Build
+            - name: Build
               run: vp run build
 
             - name: Smoke Test Packed Tarballs
               run: ./scripts/smoke-pack.sh
-    format:
-        name: Check Formatting
+
+    # The one check branch protection requires: it passes only when every job above passed, so
+    # adding, splitting or renaming those jobs never touches the repository settings.
+    ci:
+        if: ${{ always() }}
+        needs: [check, test, build]
         runs-on: ubuntu-latest
         steps:
-            - uses: actions/checkout@v4
-
-            - name: Setup Vite+
-              uses: voidzero-dev/setup-vp@v1.21.1
-              with:
-                  node-version: '22'
-                  cache: true
-
-            - name: Check Code Formatting
-              run: vp fmt --check
+            - name: Require every job to succeed
+              run: |
+                  results="${{ join(needs.*.result, ' ') }}"
+                  echo "check, test, build: $results"
+                  for result in $results; do
+                      [ "$result" = success ] || exit 1
+                  done
