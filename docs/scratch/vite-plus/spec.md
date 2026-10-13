@@ -52,8 +52,11 @@ Each commit message carries its own evidence and edge cases.
   install`. Husky left `core.hooksPath` at `.husky/_`, and `vp config` does not override another
   path. AGENTS.md says so. A fresh clone needs nothing: verified, `pnpm install` sets
   `core.hooksPath` to `.vite-hooks/_` and the hook blocked a commit with an `any`.
-- **Published CSS class names change** (`_Container_3q8ry_1` → `_Container_RR8n2G`). They are hashed
+- **Published CSS class names change** (`_Container_3q8ry_1` → `_Container_yR3LcW`). They are hashed
   and not a contract, but a consumer that targeted them breaks. Worth a line in the release notes.
+  The new suffix is stable: lightningcss hashes the absolute path unless given a `projectRoot`, which
+  tsdown does not pass, so `scripts/adapterPack.ts` sets it (`CSS_MODULES`). Builds at two paths
+  were byte-identical afterwards.
 
 ## Done after the first review round
 
@@ -62,13 +65,22 @@ Each commit message carries its own evidence and edge cases.
 - **Playwright cache**: `~/.cache/ms-playwright` keyed by Playwright version. A hit skips the
   browser download (20 s of the first run's test job); `install-deps` still runs.
 - **`actions/checkout@v7`**: v4 drew a Node 20 deprecation warning.
-- **Leftovers**: `typescript` out of the React app; Storybook's `typecheck` is `vue-tsc` directly;
-  `storybook>vite-plus: '1'` in `peerDependencyRules`.
-- **Kept, on evidence**: `vite: catalog:` in core and both adapters. Without it pnpm auto-installs
-  the `vite` peer of `vitest`/`@vitest/mocker` as a real `vite@8.3.4`, because the override does not
-  reach auto-installed peers. That is two Vite copies.
-- **Storybook**: no upgrade. Even 10.6.2 (latest) declares `vite-plus@^0.1.15 || ^0.2.0`, and
-  11.0.0-alpha.6 only adds `^0.3.0`. It only reads `vite-plus/versions`, which 1.x exports.
+- **Leftovers**: `typescript` out of the React app; Storybook's `typecheck` is `vue-tsc` directly.
+- **Kept**: `vite: catalog:` in core and both adapters. Removing it was measured in a scratch clone:
+  - Nothing breaks. Core's suite (68 files, 1466 tests), the three packs and lint pass, and every
+    `vitest` and `@vitest/mocker` that `vite-plus/test` reaches still resolves `vite` to Vite+ core.
+  - pnpm still auto-installs the `vite` peer of the `@vitest/browser-playwright` →
+    `@vitest/browser` → `@vitest/mocker` chain in core and the React adapter as the registry's
+    latest `vite@8.3.4`. The catalog override does not reach auto-installed peers. That copy is a
+    different package and version from Vite+'s (vite 8.3.3 inside `@voidzero-dev/vite-plus-core`).
+    It floats with each lockfile refresh, and no flow we run loads it.
+  - Core and the React adapter also get their own variants of `vite-plus`/`vitest` (different
+    peer sets from the root's), and the lockfile grows by ~390 lines.
+  So it is not a correctness problem today. The three declarations stay because they cost three
+  lines and keep a single Vite in the install.
+- **Storybook**: no upgrade, and no silencing. Even 10.6.2 (latest) declares
+  `vite-plus@^0.1.15 || ^0.2.0`, and 11.0.0-alpha.6 only adds `^0.3.0`. Storybook only reads
+  `vite-plus/versions`, which 1.x exports. The install warning stays visible as a reminder.
 - **`vue-tsc` stays.** Vite+'s Vue support covers compiling SFCs (`@vitejs/plugin-vue`, or
   `unplugin-vue` in `vp pack`), lint rules in `<script>` (Oxlint's `vue` plugin) and formatting.
   It does not type-check them. tsgolint has no Vue language plugin: an error planted in
