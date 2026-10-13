@@ -30,6 +30,7 @@ jobs:
             - name: Setup Vite+
               uses: voidzero-dev/setup-vp@v1.21.1
               with:
+                  node-version: '22'
                   cache: true
 
             - name: Install Playwright Browsers
@@ -47,6 +48,7 @@ jobs:
             - name: Setup Vite+
               uses: voidzero-dev/setup-vp@v1.21.1
               with:
+                  node-version: '22'
                   cache: true
 
             - name: Run Typecheck
@@ -61,6 +63,7 @@ jobs:
             - name: Setup Vite+
               uses: voidzero-dev/setup-vp@v1.21.1
               with:
+                  node-version: '22'
                   cache: true
 
             # Lint rules plus the TS 7 type check; formatting is its own job below.
@@ -76,6 +79,7 @@ jobs:
             - name: Setup Vite+
               uses: voidzero-dev/setup-vp@v1.21.1
               with:
+                  node-version: '22'
                   cache: true
 
             - name: Run Build
@@ -92,6 +96,7 @@ jobs:
             - name: Setup Vite+
               uses: voidzero-dev/setup-vp@v1.21.1
               with:
+                  node-version: '22'
                   cache: true
 
             - name: Check Code Formatting

@@ -32,6 +32,8 @@ jobs:
         steps:
             - uses: actions/checkout@v4
             - uses: voidzero-dev/setup-vp@v1.21.1
+              with:
+                  node-version: '22'
             - name: Sync version to packages
               run: |
                   node -e "

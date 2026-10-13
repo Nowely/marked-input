@@ -21,7 +21,7 @@ mostly consolidation. The migration was chosen for that consolidation. It landed
 | `build: type-check … with TS 7` | `typeCheck: true`; solution-style Storybook tsconfig; `*.vue` shims; `tsc` dropped where covered (core's in a follow-up) | a `.ts` type error now also fails `lint:check` |
 | `build: build the libraries with vp pack` | tsdown via `pack` blocks, `scripts/adapterPack.ts`; both `prepack.js` go | CSS-module hash suffixes change; JS differs in codegen only |
 | `build: run the pre-commit hook through vp` | `.vite-hooks/pre-commit` → `vp staged --hide-unstaged`; `staged: {'*': 'vp check --fix'}` | the hook checks the staged files, Markdown included |
-| `ci: … setup-vp` | `setup-vp@v1.21.1`, `packageManager: pnpm@10.28.0`, `.node-version` 22 | job names unchanged |
+| `ci: … setup-vp` | `setup-vp@v1.21.1` with `node-version: '22'`, `packageManager: pnpm@10.28.0` | job names unchanged |
 
 Each commit message carries its own evidence and edge cases.
 
