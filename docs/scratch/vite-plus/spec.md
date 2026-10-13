@@ -47,19 +47,49 @@ Each commit message carries its own evidence and edge cases.
   next release: it publishes with `pnpm publish`, through the pnpm setup-vp manages.
 - **Existing clones lose the hook silently** until `git config --unset core.hooksPath && pnpm
   install`. Husky left `core.hooksPath` at `.husky/_`, and `vp config` does not override another
-  path. AGENTS.md says so; new clones need nothing.
-- **Branch protection.** Required checks on `next` match job names, so the five jobs kept theirs.
-  If the rule is updated, Lint Code + Check Formatting could become one `vp check` job.
+  path. AGENTS.md says so. A fresh clone needs nothing: verified, `pnpm install` sets
+  `core.hooksPath` to `.vite-hooks/_` and the hook blocked a commit with an `any`.
 - **Published CSS class names change** (`_Container_3q8ry_1` → `_Container_RR8n2G`). They are hashed
   and not a contract, but a consumer that targeted them breaks. Worth a line in the release notes.
 
 ## Next worthwhile changes
 
-- Vitest now suggests `fsModuleCache: true` for the `boundary` and `docs` projects (30 s and 8 s
-  of transforms, redone on every run).
-- `vp run` caches nothing yet: `package.json` scripts are uncached by default. Tasks in a `run`
-  block of `vite.config.ts` (typecheck, build) would make repeated local and CI runs cheaper; CI
-  would also need the Vite Task cache from the setup-vp docs.
-- `packages/react/app` still lists `typescript` though nothing there runs `tsc` any more.
-- Backlog 32 got a measurement from this work: the slash-menu test times out under a full plain
-  run too, at 4.3 s alone against 15 s.
+In rough order of value per effort. Measurements are from a 4-core container.
+
+1. **CI layout.** Five jobs each pay checkout + setup-vp + install for one command. Proposal:
+   `check` (`vp check`, then `vp run typecheck`), `test`, `build` (+ smoke-pack), plus one gate job
+   `ci` with `needs: [check, test, build]` and `if: always()` that fails when any of them did.
+   Branch protection then requires only `ci`, so later job changes never touch repo settings again.
+   The cost is one settings change at merge time: the required checks on `next` must become `ci`.
+   `vp check` is also cheaper than separate lint and fmt jobs: one program for lint rules and
+   types, and Vite+ quotes about 2× for that path.
+2. **Playwright in CI.** `vp exec playwright install --with-deps chromium` downloads the browser and
+   its apt packages on every run. Cache `~/.cache/ms-playwright` keyed by the playwright version and
+   run only `install-deps` on a hit, or run the job in the `mcr.microsoft.com/playwright:v1.63.0`
+   image.
+3. **`vp run` caching for `typecheck`.** `vp run -r --cache typecheck`: 21 s cold, then 3 of 4 tasks
+   replay from cache (the three `vue-tsc` programs, ~23 s of task time saved). `astro check` never
+   caches, because starlight-typedoc rewrites `src/content/docs/api/*.md` during the check. That is
+   a read and a write of the same input. Cheapest step: `--cache` in the root `typecheck` script.
+   CI can reuse the cache across runs too (`node_modules/.vite/task-cache`), but Vite+ marks that
+   experimental and asks for a measurement first.
+4. **`test.fsModuleCache: true`.** Vitest persists transforms in `node_modules/.vitest-cache`. The
+   `boundary` + `docs` projects drop from ~6.9 s to ~5.8 s warm. The browser projects, which are
+   most of the suite, were not measured. A one-line change; a local gain only unless CI caches the
+   directory.
+5. **Dependency leftovers.**
+   - `packages/react/app` lists `typescript`, but nothing runs `tsc` there now.
+   - `vite: catalog:` is still declared by packages that only use `vite-plus`: core and both
+     adapters. Each needs a check that no plugin peers on `vite` (the apps and Storybook do,
+     through `@vitejs/plugin-*` and the Storybook builders).
+   - Storybook's `typecheck` → `typecheck:vue` indirection can be one script.
+   - Storybook 10.6 declares an optional peer `vite-plus@^0.1.15 || ^0.2.0`, so every install warns
+     about 1.1.0. It is harmless (both Storybook builds pass); silence it with
+     `peerDependencyRules.allowedVersions` (`storybook>vite-plus: '1'`) or wait for Storybook. The
+     typedoc warning about TypeScript 6 is older and unrelated.
+6. **Backlog 32.** Split "inserts a block … for every entry it offers" into one test per entry, so
+   each entry gets its own 15 s budget. It takes 4.3 s alone and ran out of time under a full run.
+7. **Existing clones, automatically.** If more than one clone needs the hook fix, `prepare` could
+   drop the stale path itself, cross-platform:
+   `node -e "try{require('child_process').execSync('git config --unset-all core.hooksPath ^\\.husky/_$')}catch{}" && vp config --no-agent`.
+   Remove it once everyone has installed. Not worth it for a single maintainer.
