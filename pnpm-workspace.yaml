@@ -16,7 +16,6 @@ catalog:
     playwright: ^1.63.0
     react: ^19.3.0
     react-dom: ^19.3.0
-    rolldown-plugin-dts: ^0.28.6
     typescript: 6.0.3
     vite: npm:@voidzero-dev/vite-plus-core@1.1.0
     vitest: 5.0.3

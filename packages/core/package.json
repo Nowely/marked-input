@@ -11,8 +11,8 @@
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
-    "build": "vp build",
-    "build:watch": "vp build -w",
+    "build": "vp pack",
+    "build:watch": "vp pack --watch",
     "test": "pnpm -w exec vp test run --project core",
     "test:watch": "pnpm -w exec vp test watch --project core",
     "test:related": "pnpm -w exec vp test run --changed --project core",

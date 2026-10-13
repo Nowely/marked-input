@@ -2,9 +2,7 @@
   "extends": "../../../tsconfig.json",
   "compilerOptions": {
     "jsx": "preserve",
-    "jsxImportSource": "vue",
-    "outDir": "dist",
-    "declarationDir": "dist/types"
+    "jsxImportSource": "vue"
   },
   "include": ["./**/*.ts", "./**/*.vue"],
   "exclude": ["node_modules", "dist"]

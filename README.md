@@ -1,5 +1,5 @@
 <!--
-	Absolute raw URLs: this README is copied into the npm packages by prepack.js,
+	Absolute raw URLs: this README is copied into the npm packages by `vp pack` (scripts/adapterPack.ts),
 	where repo-relative paths resolve to nothing. npm also strips <picture>, so the
 	<img> fallback is the tile variant, readable on both npm themes.
 -->

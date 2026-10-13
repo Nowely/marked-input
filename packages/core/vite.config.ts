@@ -1,18 +1,16 @@
-import path from 'path'
-import {fileURLToPath} from 'url'
-
 import {defineConfig} from 'vite-plus'
 
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = path.dirname(__filename)
+import {BROWSER_TARGET, READABLE_MINIFY} from '../../scripts/adapterPack'
 
+// Core reaches npm only inside the adapters' bundles. This build proves it bundles on its own.
 export default defineConfig({
-	build: {
-		lib: {
-			entry: path.resolve(__dirname, './index.ts'),
-			name: 'MarkputCore',
-			formats: ['es'],
-			fileName: 'index',
-		},
+	pack: {
+		entry: ['index.ts'],
+		platform: 'browser',
+		target: BROWSER_TARGET,
+		...READABLE_MINIFY,
+		// `types` in package.json would otherwise turn declarations on; nothing consumes them.
+		dts: false,
+		css: {fileName: 'index.css', minify: true, modules: {generateScopedName: '_[local]_[hash]'}},
 	},
 })
