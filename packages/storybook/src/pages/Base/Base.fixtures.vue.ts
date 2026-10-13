@@ -40,10 +40,11 @@ export const Overlay = defineComponent({template: `<span>I'm here!</span>`})
  * `depth` would face React's bare `<li>` as attributes.
  *
  * `satisfies Record<keyof RowProps, unknown>` is a COMPILE-TIME PIN on the published type, and the
- * only one there can be: it fails `typecheck:vue` the moment `RowProps` grows a key this list has
- * not, or loses one it has. What it is guarding against is a FALLTHROUGH ATTRIBUTE creeping back
- * onto the type — Vue removes a DECLARED key from `$attrs`, so a `class` or `style` on `RowProps`
- * makes a kind written straight from it lose the editor's own paint, and nothing on screen says so.
+ * only one there can be: it fails Storybook's `typecheck` (`vue-tsc`) the moment `RowProps` grows
+ * a key this list has not, or loses one it has. What it is guarding against is a FALLTHROUGH
+ * ATTRIBUTE creeping back onto the type — Vue removes a DECLARED key from `$attrs`, so a `class` or
+ * `style` on `RowProps` makes a kind written straight from it lose the editor's own paint, and
+ * nothing on screen says so.
  */
 const rowProps = {meta: String, node: {type: null}, depth: Number} satisfies Record<keyof RowProps, unknown>
 

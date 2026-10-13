@@ -2,7 +2,7 @@
   // What the editor and `vp check` (tsgolint) open. It only routes each file to the first referenced
   // program that includes it: React first, so the shared files (`*.stories.ts`, `*.spec.ts`,
   // `shared/lib/*`) are checked as React, and `*.vue.ts` files fall to the Vue program. tsgolint
-  // cannot read SFCs and never sees a shared file as Vue, so `typecheck:vue` (`vue-tsc -p
+  // cannot read SFCs and never sees a shared file as Vue, so `typecheck` (`vue-tsc -p
   // tsconfig.vue.json`) stays; the React program needs nothing beyond `vp check`.
   "files": [],
   "references": [{"path": "./tsconfig.react.json"}, {"path": "./tsconfig.vue.json"}]

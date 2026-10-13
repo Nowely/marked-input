@@ -34,3 +34,6 @@ peerDependencyRules:
     allowedVersions:
         vite: '*'
         vitest: '*'
+        # Storybook reads `vite-plus/versions`, which 1.x still exports; its optional peer range
+        # stops at 0.2 (10.6.2) and 0.3 (11.0 alpha).
+        'storybook>vite-plus': '1'
