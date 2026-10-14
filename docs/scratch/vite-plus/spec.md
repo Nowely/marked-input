@@ -18,7 +18,8 @@ format, test, type check, library builds (`vp pack`), commit hooks (`vp staged`)
 
 ## Open items
 
-- **Required checks on `next`**: `check`, `test`, `build`, replacing the five old job names.
+- **Required checks on `next`**: `Check Code` replaces `Lint Code`, `Type Check` and
+  `Check Formatting`. `Run Tests` and `Build Package` keep their names.
 - **`Release.yml`** first runs on the next release.
 - **Existing clones**: `git config --unset core.hooksPath && pnpm install` once, or the hook stays
   Husky's dead path.

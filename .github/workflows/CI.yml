@@ -22,6 +22,7 @@ jobs:
                   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
     check:
+        name: Check Code
         runs-on: ubuntu-latest
         steps:
             - uses: actions/checkout@v7
@@ -41,6 +42,7 @@ jobs:
               run: pnpm run typecheck
 
     test:
+        name: Run Tests
         runs-on: ubuntu-latest
         steps:
             - uses: actions/checkout@v7
@@ -57,6 +59,7 @@ jobs:
               run: pnpm test
 
     build:
+        name: Build Package
         runs-on: ubuntu-latest
         steps:
             - uses: actions/checkout@v7
