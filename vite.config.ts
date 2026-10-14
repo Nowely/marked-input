@@ -116,6 +116,54 @@ export default defineConfig({
 			}),
 		],
 	},
+	fmt: {
+		arrowParens: 'avoid',
+		bracketSpacing: false,
+		jsxSingleQuote: false,
+		printWidth: 120,
+		proseWrap: 'preserve',
+		semi: false,
+		singleQuote: true,
+		tabWidth: 4,
+		trailingComma: 'es5',
+		useTabs: true,
+		sortImports: {},
+		sortPackageJson: true,
+		overrides: [
+			{
+				files: ['*.json'],
+				options: {
+					useTabs: false,
+					tabWidth: 2,
+				},
+			},
+			{
+				files: ['*.md'],
+				options: {
+					useTabs: false,
+					tabWidth: 4,
+				},
+			},
+			{
+				files: ['packages/website/**/*.{astro,tsx,jsx}'],
+				options: {
+					sortTailwindcss: {
+						stylesheet: 'packages/website/src/styles/global.css',
+					},
+				},
+			},
+		],
+		ignorePatterns: [
+			'pnpm-lock.yaml',
+			'CHANGELOG.md',
+			'dist/',
+			'coverage/',
+			'packages/website/.vercel/',
+			'packages/website/src/content/docs/',
+			'docs/scratch/**/*.md',
+			'node_modules/',
+		],
+	},
 	lint: {
 		plugins: [
 			'eslint',
@@ -285,54 +333,6 @@ export default defineConfig({
 			denyWarnings: true,
 			reportUnusedDisableDirectives: 'deny',
 		},
-	},
-	fmt: {
-		arrowParens: 'avoid',
-		bracketSpacing: false,
-		jsxSingleQuote: false,
-		printWidth: 120,
-		proseWrap: 'preserve',
-		semi: false,
-		singleQuote: true,
-		tabWidth: 4,
-		trailingComma: 'es5',
-		useTabs: true,
-		sortImports: {},
-		sortPackageJson: true,
-		overrides: [
-			{
-				files: ['*.json'],
-				options: {
-					useTabs: false,
-					tabWidth: 2,
-				},
-			},
-			{
-				files: ['*.md'],
-				options: {
-					useTabs: false,
-					tabWidth: 4,
-				},
-			},
-			{
-				files: ['packages/website/**/*.{astro,tsx,jsx}'],
-				options: {
-					sortTailwindcss: {
-						stylesheet: 'packages/website/src/styles/global.css',
-					},
-				},
-			},
-		],
-		ignorePatterns: [
-			'pnpm-lock.yaml',
-			'CHANGELOG.md',
-			'dist/',
-			'coverage/',
-			'packages/website/.vercel/',
-			'packages/website/src/content/docs/',
-			'docs/scratch/**/*.md',
-			'node_modules/',
-		],
 	},
 	staged: {
 		'*': 'vp check --fix',
