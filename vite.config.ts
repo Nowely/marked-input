@@ -132,7 +132,6 @@ export default defineConfig({
 			'promise',
 			'vitest',
 		],
-		// Keeps toolchain imports on `vite-plus`/`vite-plus/test`, the copies `vp` actually runs.
 		jsPlugins: [{name: 'vite-plus', specifier: 'vite-plus/oxlint-plugin'}],
 		categories: {
 			correctness: 'warn',
@@ -262,9 +261,7 @@ export default defineConfig({
 				},
 			},
 		],
-		// The type check below covers linted files only. The vendored alien-signals is still type-checked:
-		// core's runtime imports it, so it is part of every program that compiles core, and `vue-tsc` in the
-		// Vue adapter and Storybook reports its errors. The website goes through `astro check`.
+		// Ignored files skip the type check too: alien-signals is covered by `vue-tsc`, the website by `astro check`.
 		ignorePatterns: ['packages/website/**', 'packages/core/src/shared/signals/alien-signals/**'],
 		settings: {
 			jsdoc: {
@@ -283,7 +280,7 @@ export default defineConfig({
 		},
 		options: {
 			typeAware: true,
-			// tsgolint's TS 7 check of `.ts`/`.tsx`. It cannot read SFCs, so `vue-tsc` stays in `typecheck`.
+			// TS 7 check of `.ts`/`.tsx`; SFCs stay with `vue-tsc` in `typecheck`.
 			typeCheck: true,
 			denyWarnings: true,
 			reportUnusedDisableDirectives: 'deny',
@@ -337,7 +334,6 @@ export default defineConfig({
 			'node_modules/',
 		],
 	},
-	// `vp staged` runs these on the files being committed (`.vite-hooks/pre-commit`).
 	staged: {
 		'*': 'vp check --fix',
 	},

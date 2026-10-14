@@ -19,24 +19,17 @@ Default branch: `next`. Use `pnpm` for all installs and scripts. Shared
 dependency versions live in the pnpm catalog in `pnpm-workspace.yaml`; tooling
 used by a single package is pinned in that package's `package.json`.
 
-The toolchain is Vite+ (`vite-plus`, the `vp` CLI): one pin for Vite, Vitest,
-Oxlint and Oxfmt, which the catalog derives from it. Lint and format settings
-live in the `lint` and `fmt` blocks of the root `vite.config.ts`, beside `test`.
-Toolchain imports go through `vite-plus` and `vite-plus/test`, not `vite` or
-`vitest`; the `vite-plus/prefer-vite-plus-imports` lint rule enforces it.
-`pnpm run lint:check` (`vp lint`) also type-checks the linted `.ts`/`.tsx`
-files with TS 7, `@ts-expect-error` and `expectTypeOf` pins included.
-`pnpm run typecheck` keeps what that check cannot see: `vue-tsc` for SFCs and
-Storybook's Vue program, and `astro check`. The lint-ignored vendored
-`alien-signals` is type-checked through `vue-tsc`, which compiles core.
+The toolchain is Vite+ (`vite-plus`, the `vp` CLI). Lint and format settings
+live in the `lint` and `fmt` blocks of the root `vite.config.ts`. Import from
+`vite-plus` and `vite-plus/test`, not `vite` or `vitest` (a lint rule enforces
+it). `pnpm run lint:check` also type-checks `.ts`/`.tsx` with TS 7;
+`pnpm run typecheck` covers the rest with `vue-tsc` and `astro check`.
 
 ## Commands
 
 - Setup: `pnpm install`, then `pnpm exec playwright install chromium` when
   browser tests are needed. `pnpm install` also installs the pre-commit hook
-  (`vp config`), which runs `vp staged`: `vp check --fix` on the staged files.
-  A clone set up while the hook was Husky's keeps `core.hooksPath` at
-  `.husky/_`, which `vp config` leaves alone; run
+  (`vp staged`). A clone that had the Husky hook needs
   `git config --unset core.hooksPath && pnpm install` once.
 - Focused test: `pnpm -w exec vp test run path/to/file.spec.ts`.
 - Full checks: `pnpm test`, `pnpm run build`, `pnpm run typecheck`,
