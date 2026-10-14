@@ -47,8 +47,5 @@
     "vite-plus": "catalog:",
     "vitest": "catalog:"
   },
-  "engines": {
-    "pnpm": ">=9"
-  },
   "packageManager": "pnpm@10.28.0"
 }
