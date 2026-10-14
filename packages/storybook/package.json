@@ -51,7 +51,6 @@
     "typescript": "catalog:",
     "vite": "catalog:",
     "vite-plus": "catalog:",
-    "vitest": "catalog:",
     "vitest-browser-react": "catalog:",
     "vitest-browser-vue": "catalog:",
     "vue-tsc": "catalog:"

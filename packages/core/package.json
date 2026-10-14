@@ -23,9 +23,7 @@
   "devDependencies": {
     "@faker-js/faker": "catalog:",
     "csstype": "catalog:",
-    "playwright": "catalog:",
     "vite": "catalog:",
-    "vite-plus": "catalog:",
-    "vitest": "catalog:"
+    "vite-plus": "catalog:"
   }
 }
