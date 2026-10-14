@@ -23,7 +23,8 @@ The toolchain is Vite+ (`vite-plus`, the `vp` CLI). Lint and format settings
 live in the `lint` and `fmt` blocks of the root `vite.config.ts`. Import from
 `vite-plus` and `vite-plus/test`, not `vite` or `vitest` (a lint rule enforces
 it). `pnpm run lint:check` also type-checks `.ts`/`.tsx` with TS 7;
-`pnpm run typecheck` covers the rest with `vue-tsc` and `astro check`.
+`pnpm run typecheck` covers the rest with `vue-tsc` and `astro check`. The
+Vite+ docs for the installed version are in `node_modules/vite-plus/docs`.
 
 ## Commands
 
