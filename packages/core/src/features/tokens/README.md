@@ -591,7 +591,7 @@ and refuted. Do not re-propose without new evidence.
 pnpm run bench
 
 # Watch mode for development
-pnpm -w exec vitest bench --project core
+pnpm -w exec vp test bench --project core
 ```
 
 **Note:** Benchmarks measure full-parse performance — the only tripwire is the

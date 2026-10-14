@@ -27,18 +27,16 @@
     }
   },
   "scripts": {
-    "typecheck": "tsc --noEmit",
-    "build": "vite build && node prepack.js",
+    "build": "vp pack",
     "publish": "pnpm publish dist --no-git-checks --json --access public --provenance"
   },
   "devDependencies": {
     "@markput/core": "workspace:*",
     "@types/react": "catalog:",
-    "@vitejs/plugin-react": "catalog:",
     "react": "catalog:",
-    "rolldown-plugin-dts": "catalog:",
     "typescript": "catalog:",
-    "vite": "catalog:"
+    "vite": "catalog:",
+    "vite-plus": "catalog:"
   },
   "peerDependencies": {
     "react": ">=19.0.0"

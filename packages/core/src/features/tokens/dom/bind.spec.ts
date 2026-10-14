@@ -1,4 +1,4 @@
-import {describe, expect, it} from 'vitest'
+import {describe, expect, it} from 'vite-plus/test'
 
 import {markToken, rowToken, textToken} from '../__testing__/tokenFactories'
 import type {RowToken, Token} from '../parser/types'

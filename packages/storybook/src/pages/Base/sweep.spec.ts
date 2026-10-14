@@ -1,5 +1,5 @@
-import {describe, expect, it} from 'vitest'
-import {userEvent} from 'vitest/browser'
+import {describe, expect, it} from 'vite-plus/test'
+import {userEvent} from 'vite-plus/test/browser'
 
 import {rowsOf} from '../../shared/lib/dom'
 import {settle} from '../../shared/lib/focus'

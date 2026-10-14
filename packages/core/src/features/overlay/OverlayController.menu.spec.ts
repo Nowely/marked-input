@@ -1,4 +1,4 @@
-import {describe, expect, it} from 'vitest'
+import {describe, expect, it} from 'vite-plus/test'
 
 import type {CoreOption} from '../../shared/types'
 import {Store} from '../../store/Store'
@@ -393,7 +393,7 @@ describe('choose an option', () => {
 	})
 
 	/**
-	 * The two arms are EXCLUSIVE, and the TYPE is what says so — this pin reddens `typecheck`,
+	 * The two arms are EXCLUSIVE, and the TYPE is what says so — this pin reddens `lint:check`,
 	 * not the runtime. The runtime assertions below are the damage the old optional bag let a
 	 * caller write: `{option, value}` retyped the row and dropped `value` on the floor, and `{}`
 	 * reached the value arm carrying nothing at all.

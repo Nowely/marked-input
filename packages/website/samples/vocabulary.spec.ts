@@ -2,7 +2,7 @@ import {readdirSync, readFileSync} from 'node:fs'
 import {dirname, join, relative} from 'node:path'
 import {fileURLToPath} from 'node:url'
 
-import {describe, expect, it} from 'vitest'
+import {describe, expect, it} from 'vite-plus/test'
 
 /**
  * THE OTHER HALF OF THE ROT GUARD. `samples.spec.ts` type-checks what is inside a FENCE and
@@ -188,7 +188,7 @@ function isProduction(path: string): boolean {
  * `OverlayListModel` — were the ones the check could not see.
  *
  * A FILE NAME IS NOT AN IDENTIFIER, and it is the one shape that reads as one: `package.json` and
- * `oxfmt.config.ts` are dotted, and nothing declares a `json` or a `ts`. Measured — the guides
+ * `vite.config.ts` are dotted, and nothing declares a `json` or a `ts`. Measured — the guides
  * happen to carry none today, but `AGENTS.md` carries four, so leaving it would be a trap for the
  * next page that names a config file.
  */

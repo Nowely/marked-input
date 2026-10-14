@@ -1,4 +1,4 @@
-import {describe, expect, it} from 'vitest'
+import {describe, expect, it} from 'vite-plus/test'
 
 import {consignRendered} from '../features/tokens/__testing__/mountFixtures'
 import type {Markup} from '../features/tokens/parser/types'

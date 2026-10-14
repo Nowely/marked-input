@@ -1,5 +1,5 @@
 import type {RowProps} from '@markput/react'
-import {describe, expect, it, vi} from 'vitest'
+import {describe, expect, it, vi} from 'vite-plus/test'
 
 import {Mark} from '../../shared/lib/marks'
 import {mountComponent} from '../../shared/lib/page'

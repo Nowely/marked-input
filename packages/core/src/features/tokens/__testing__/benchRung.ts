@@ -1,5 +1,5 @@
-import type {BenchRunOptions} from 'vitest'
-import {test} from 'vitest'
+import type {BenchRunOptions} from 'vite-plus/test'
+import {test} from 'vite-plus/test'
 
 /**
  * One benchmark, registered as a test of its own — Vitest 5 runs benchmarks through the `bench`

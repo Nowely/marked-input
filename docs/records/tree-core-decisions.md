@@ -528,7 +528,7 @@ a choice rather than detect a defect.
 - `MarkputApi.value()` — substituting `joinNodes(nodes())` for the delegation survives the
   suite, because props and projection agree at every moment a mounted fixture can observe.
   Closing it needs an unmounted-store case the spec cannot express. (Its sibling, `{0,
-length}` for the `-1` sentinel, stopped being expressible when S2.6 deleted the sentinel.)
+  length}` for the `-1` sentinel, stopped being expressible when S2.6 deleted the sentinel.)
 - `TokenModel.selection`'s `value` dep (S2.9) — it is the PROPS-first `value()`, and
   substituting the tree's own `#tree.value()` survives the whole suite. `isAllSelected` is
   the only consumer and no fixture reads it mid-flight, between a controlled emission and
@@ -575,13 +575,13 @@ length}` for the `-1` sentinel, stopped being expressible when S2.6 deleted the 
 - **The public-invariant wording.** "No export of `@markput/core` takes or returns an
   absolute offset" is true of `MarkputApi`, which is the API proper, and NOT literally true
   of the whole export list: `Store` is a value export, so `store.edit.setValue(text,
-caretOffset?)` and `store.tokens.anchorAt` are reachable from it (`offsetOf` is private —
+  caretOffset?)` and `store.tokens.anchorAt` are reachable from it (`offsetOf` is private —
   `TokenModel.#offsetOf` — and its readers are all inside `tree/`). The `tokens` verb is the
   tree layer's own coordinate boundary and is deliberately kept;
   `EditController` is internal wiring an adapter is not meant to call. State it as
   "`MarkputApi` neither takes nor returns one", not as a claim about every export. The
   invariant is about ABSOLUTE offsets specifically: `MarkputApi.replaceText({node, start,
-end}, text)` takes numbers and always did, and they are NODE-LOCAL (S1 D5). Anyone
+  end}, text)` takes numbers and always did, and they are NODE-LOCAL (S1 D5). Anyone
   re-checking the claim by grepping for `: number` will hit that one first.
 - **Declared DOM identity — the deferred "Cut C", and the next worthwhile change.** Give each
   token element a ref keyed by node id so `element ↔ node` is a map instead of `bind.ts`'s

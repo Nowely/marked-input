@@ -1,5 +1,5 @@
-import {expect} from 'vitest'
-import {userEvent} from 'vitest/browser'
+import {expect} from 'vite-plus/test'
+import {userEvent} from 'vite-plus/test/browser'
 
 import {editingHost} from './dom'
 

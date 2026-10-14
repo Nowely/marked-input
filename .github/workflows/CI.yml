@@ -21,12 +21,36 @@ jobs:
               env:
                   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-    tests:
+    check:
+        name: Check Code
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v7
+
+            - name: Setup Vite+
+              uses: voidzero-dev/setup-vp@v1.21.1
+              with:
+                  cache: true
+
+            - name: Check Formatting
+              run: pnpm run format:check
+
+            - name: Run Lint
+              run: pnpm run lint:check
+
+            - name: Run Typecheck
+              run: pnpm run typecheck
+
+    test:
         name: Run Tests
         runs-on: ubuntu-latest
         steps:
-            - name: Setup Environment
-              uses: nowely/action-setup-node@v1
+            - uses: actions/checkout@v7
+
+            - name: Setup Vite+
+              uses: voidzero-dev/setup-vp@v1.21.1
+              with:
+                  cache: true
 
             - name: Install Playwright Browsers
               run: pnpm exec playwright install --with-deps chromium
@@ -34,44 +58,19 @@ jobs:
             - name: Run Tests
               run: pnpm test
 
-    typecheck:
-        name: Type Check
-        runs-on: ubuntu-latest
-        steps:
-            - name: Setup Environment
-              uses: nowely/action-setup-node@v1
-
-            - name: Run Typecheck
-              run: pnpm run typecheck
-
-    lint:
-        name: Lint Code
-        runs-on: ubuntu-latest
-        steps:
-            - name: Setup Environment
-              uses: nowely/action-setup-node@v1
-
-            - name: Run Lint
-              run: pnpm run lint:check
-
     build:
         name: Build Package
         runs-on: ubuntu-latest
         steps:
-            - name: Setup Environment
-              uses: nowely/action-setup-node@v1
+            - uses: actions/checkout@v7
+
+            - name: Setup Vite+
+              uses: voidzero-dev/setup-vp@v1.21.1
+              with:
+                  cache: true
 
             - name: Run Build
               run: pnpm run build
 
             - name: Smoke Test Packed Tarballs
               run: ./scripts/smoke-pack.sh
-    format:
-        name: Check Formatting
-        runs-on: ubuntu-latest
-        steps:
-            - name: Setup Environment
-              uses: nowely/action-setup-node@v1
-
-            - name: Check Code Formatting
-              run: pnpm run format:check

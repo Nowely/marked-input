@@ -14,7 +14,8 @@
     ".storybook/**/*.vue.ts",
     ".storybook/preview.ts",
     "src/shared/lib/*.ts",
-    "vite.config.ts"
+    "vite.config.ts",
+    "src/env.d.ts"
   ],
   "exclude": ["node_modules", "dist-react", "dist-vue", "**/*.tsx", "**/*.react.ts"]
 }

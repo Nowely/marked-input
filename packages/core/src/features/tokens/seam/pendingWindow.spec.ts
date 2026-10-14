@@ -1,4 +1,4 @@
-import {afterEach, describe, expect, it} from 'vitest'
+import {afterEach, describe, expect, it} from 'vite-plus/test'
 
 import {Store} from '../../../store/Store'
 import {consignRendered} from '../__testing__/mountFixtures'

@@ -4,7 +4,7 @@ Contracts that later work is expected to hold to. Lifted verbatim from the
 repo's former `docs/conventions.md`, which has since been retired.
 
 - S1 public API: spec v2 §2.3's TYPE layer holds — `TreeNode = TextNode |
-MarkNode` one structure, `NodeAnchor` the address. Its VERB layer does not:
+  MarkNode` one structure, `NodeAnchor` the address. Its VERB layer does not:
   the ref handle is `container` + `focus()`, and the twelve read/write members
   (`value`, `nodes`, `find`, `changed`, `insertMark`, `replaceText`,
   `replaceRange`, `setValue`, `tx`, `selection`, `select`, `caret`) were

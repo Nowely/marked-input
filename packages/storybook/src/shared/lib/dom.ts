@@ -1,4 +1,4 @@
-import type {Locator} from 'vitest/browser'
+import type {Locator} from 'vite-plus/test/browser'
 
 export function getElement(locator: Locator): HTMLElement {
 	const el = locator.element()

@@ -1,5 +1,5 @@
-import {beforeEach, describe, expect, it} from 'vitest'
-import {page, userEvent} from 'vitest/browser'
+import {beforeEach, describe, expect, it} from 'vite-plus/test'
+import {page, userEvent} from 'vite-plus/test/browser'
 
 import {ROW_CONTROLS, getElement} from '../../shared/lib/dom'
 import {focusAtEnd} from '../../shared/lib/focus'

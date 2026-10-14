@@ -1,5 +1,5 @@
 import {faker} from '@faker-js/faker'
-import {beforeEach, describe, expect, it} from 'vitest'
+import {beforeEach, describe, expect, it} from 'vite-plus/test'
 
 import {KEYBOARD} from '../../shared/constants'
 import {filterSuggestions, suggestionLabel} from './filterSuggestions'

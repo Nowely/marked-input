@@ -1,5 +1,5 @@
 import {faker} from '@faker-js/faker'
-import {describe, expect, it} from 'vitest'
+import {describe, expect, it} from 'vite-plus/test'
 
 import {toString} from '../parser/__testing__/toString'
 import {Parser} from '../parser/Parser'

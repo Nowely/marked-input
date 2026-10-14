@@ -1,4 +1,4 @@
-import {describe} from 'vitest'
+import {describe} from 'vite-plus/test'
 
 import {batch} from '../../shared/signals'
 import {Store} from '../../store/Store'

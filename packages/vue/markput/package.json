@@ -28,15 +28,15 @@
   },
   "scripts": {
     "typecheck": "vue-tsc --noEmit",
-    "build": "vite build && node prepack.js",
+    "build": "vp pack",
     "publish": "pnpm publish dist --no-git-checks --json --access public --provenance"
   },
   "devDependencies": {
     "@markput/core": "workspace:*",
-    "@vitejs/plugin-vue": "catalog:",
-    "rolldown-plugin-dts": "catalog:",
     "typescript": "catalog:",
+    "unplugin-vue": "^8.0.0",
     "vite": "catalog:",
+    "vite-plus": "catalog:",
     "vue": "catalog:",
     "vue-tsc": "catalog:"
   },

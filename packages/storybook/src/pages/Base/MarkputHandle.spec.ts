@@ -1,4 +1,4 @@
-import {describe, expect, it} from 'vitest'
+import {describe, expect, it} from 'vite-plus/test'
 
 import {Mark} from '../../shared/lib/marks'
 import {mountHandle} from '../../shared/lib/page'

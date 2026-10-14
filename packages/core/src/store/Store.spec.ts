@@ -1,4 +1,4 @@
-import {describe, it, expect, vi} from 'vitest'
+import {describe, it, expect, vi} from 'vite-plus/test'
 
 import {markToken, nodesOf, rowToken, textToken, treeShape} from '../features/tokens/__testing__/tokenFactories'
 import {DEFAULT_OPTIONS} from '../shared/constants'

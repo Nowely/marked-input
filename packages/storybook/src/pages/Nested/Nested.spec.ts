@@ -1,6 +1,6 @@
 import type {Markup} from '@markput/core'
-import {describe, expect, it} from 'vitest'
-import {page, userEvent} from 'vitest/browser'
+import {describe, expect, it} from 'vite-plus/test'
+import {page, userEvent} from 'vite-plus/test/browser'
 
 import {findEditingHost, getElement} from '../../shared/lib/dom'
 import {defineMark, Mark, Span} from '../../shared/lib/marks'

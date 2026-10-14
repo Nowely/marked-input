@@ -1,4 +1,4 @@
-import {describe, expect, it} from 'vitest'
+import {describe, expect, it} from 'vite-plus/test'
 
 /**
  * THE ACCEPTANCE TEST OF THE WHOLE EFFORT, and it is a grep.

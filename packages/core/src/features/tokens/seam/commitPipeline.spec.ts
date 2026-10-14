@@ -1,4 +1,4 @@
-import {afterEach, describe, expect, it, vi} from 'vitest'
+import {afterEach, describe, expect, it, vi} from 'vite-plus/test'
 
 import {batch, watch} from '../../../shared/signals/index.js'
 import {bind} from '../dom/bind'
@@ -117,7 +117,7 @@ function nodeAt(harness: Harness, ...path: number[]): TreeNode | undefined {
 // `Markup`, NOT `string`: `Parser`'s constructor takes `(Markup | undefined)[]`
 // and `Markup` is a template-literal union (parser/types.ts:63), so a
 // `string[]` default fails with TS2345. Vitest stays GREEN on that — only
-// `pnpm run typecheck` catches it, which is why it is in every gate.
+// the type check in `pnpm run lint:check` catches it, which is why it is in every gate.
 function createHarness(markups: Markup[] = ['@[__value__]']) {
 	const parser = new Parser(markups)
 	const tree = createTokenTree([])

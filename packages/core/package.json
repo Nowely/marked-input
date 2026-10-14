@@ -10,22 +10,20 @@
     "./styles.module.css": "./styles.module.css"
   },
   "scripts": {
-    "typecheck": "tsc --noEmit",
-    "build": "vite build",
-    "build:watch": "vite build -w",
-    "test": "pnpm -w exec vitest run --project core",
-    "test:watch": "pnpm -w exec vitest --project core",
-    "test:related": "pnpm -w exec vitest run --changed --project core",
-    "test:ui": "pnpm -w exec vitest --ui --project core",
-    "test:coverage": "pnpm -w exec vitest run --project core --coverage",
-    "coverage": "pnpm -w exec vitest run --project core --coverage",
-    "bench": "pnpm -w exec vitest bench --run --project core --reporter=verbose"
+    "build": "vp pack",
+    "build:watch": "vp pack --watch",
+    "test": "pnpm -w exec vp test run --project core",
+    "test:watch": "pnpm -w exec vp test watch --project core",
+    "test:related": "pnpm -w exec vp test run --changed --project core",
+    "test:ui": "pnpm -w exec vp test watch --ui --project core",
+    "test:coverage": "pnpm -w exec vp test run --project core --coverage",
+    "coverage": "pnpm -w exec vp test run --project core --coverage",
+    "bench": "pnpm -w exec vp test bench --run --project core --reporter=verbose"
   },
   "devDependencies": {
     "@faker-js/faker": "catalog:",
     "csstype": "catalog:",
-    "playwright": "catalog:",
-    "typescript": "catalog:",
-    "vite": "catalog:"
+    "vite": "catalog:",
+    "vite-plus": "catalog:"
   }
 }

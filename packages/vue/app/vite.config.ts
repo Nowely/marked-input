@@ -1,6 +1,6 @@
 import vue from '@vitejs/plugin-vue'
-import {defineConfig} from 'vite'
+import {defineConfig, lazyPlugins} from 'vite-plus'
 
 export default defineConfig({
-	plugins: [vue()],
+	plugins: lazyPlugins(() => [vue()]),
 })

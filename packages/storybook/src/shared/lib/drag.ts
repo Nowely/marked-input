@@ -1,4 +1,4 @@
-import {page, userEvent} from 'vitest/browser'
+import {page, userEvent} from 'vite-plus/test/browser'
 
 /**
  * THE ROW DRAG, DRIVEN BY THE BROWSER — one place, because every spec that fabricated its own

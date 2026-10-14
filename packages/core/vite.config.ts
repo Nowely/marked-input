@@ -1,18 +1,7 @@
-import path from 'path'
-import {fileURLToPath} from 'url'
+import {defineConfig} from 'vite-plus'
 
-import {defineConfig} from 'vite'
-
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = path.dirname(__filename)
+import {CSS} from '../../scripts/adapterPack'
 
 export default defineConfig({
-	build: {
-		lib: {
-			entry: path.resolve(__dirname, './index.ts'),
-			name: 'MarkputCore',
-			formats: ['es'],
-			fileName: 'index',
-		},
-	},
+	pack: {entry: ['index.ts'], platform: 'browser', minify: true, dts: false, css: {...CSS, fileName: 'index.css'}},
 })
