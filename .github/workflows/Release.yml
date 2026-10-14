@@ -32,8 +32,6 @@ jobs:
         steps:
             - uses: actions/checkout@v7
             - uses: voidzero-dev/setup-vp@v1.21.1
-              with:
-                  node-version: '22'
             - name: Sync version to packages
               run: |
                   node -e "
@@ -46,7 +44,7 @@ jobs:
                       fs.writeFileSync(f, JSON.stringify(pkg, null, 2) + '\n');
                     }
                   "
-            - run: vp run build:react && vp run build:vue
+            - run: pnpm build:react && pnpm build:vue
             - run: echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" > ~/.npmrc
             - run: pnpm -F @markput/react run publish && pnpm -F @markput/vue run publish
             - name: Sync main to latest release

@@ -21,7 +21,7 @@ mostly consolidation. The migration was chosen for that consolidation. It landed
 | `build: type-check … with TS 7` | `typeCheck: true`; solution-style Storybook tsconfig; `*.vue` shims; `tsc` dropped where covered (core's in a follow-up) | a `.ts` type error now also fails `lint:check` |
 | `build: build the libraries with vp pack` | tsdown via `pack` blocks, `scripts/adapterPack.ts`; both `prepack.js` go | CSS-module hash suffixes change; JS differs in codegen only |
 | `build: run the pre-commit hook through vp` | `.vite-hooks/pre-commit` → `vp staged --hide-unstaged`; `staged: {'*': 'vp check --fix'}` | the hook checks the staged files, Markdown included |
-| `ci: … setup-vp` | `setup-vp@v1.21.1` with `node-version: '22'`, `packageManager: pnpm@10.28.0` | job names unchanged (until the layout change below) |
+| `ci: … setup-vp` | `setup-vp@v1.21.1`, `packageManager: pnpm@10.28.0` | job names unchanged (until the layout change below) |
 
 Each commit message carries its own evidence and edge cases.
 
@@ -42,9 +42,8 @@ Each commit message carries its own evidence and edge cases.
 
 ## Open items
 
-- **Required checks on `next` must become `ci`** when this merges. CI now runs `check`, `test` and
-  `build` behind one `ci` gate; the five old job names no longer report, so a PR requiring them
-  waits forever. After the switch, job changes never touch branch protection again.
+- **Required checks on `next` must become `check`, `test` and `build`** when this merges. The five
+  old job names no longer report, so a PR requiring them waits forever.
 - **`Release.yml` runs first on the next release.** It publishes with `pnpm publish` through the
   pnpm setup-vp manages, and its `git push origin main --force` relies on `actions/checkout@v7`'s
   credential file.
@@ -60,10 +59,13 @@ Each commit message carries its own evidence and edge cases.
 
 ## Done after the first review round
 
-- **CI layout**: `check` (`vp check` + `vp run typecheck`), `test`, `build`, and the `ci` gate.
-  On the PR's first run the five old jobs took 27–114 s each, ~16 s of it setup-vp.
-- **Playwright cache**: `~/.cache/ms-playwright` keyed by Playwright version. A hit skips the
-  browser download (20 s of the first run's test job); `install-deps` still runs.
+- **CI layout**: three jobs, `check` (format, lint, typecheck), `test` and `build` (+ smoke-pack),
+  each one setup-vp and the package scripts, as before the migration: the workflow says
+  `pnpm run build`, and the script says `vp`. On the PR's first run the five old jobs took
+  27–114 s each, ~16 s of it setup-vp. Tried and dropped in review as over-engineered: a `ci`
+  gate job (standalone required checks are enough), a Playwright browser cache (it saved ~5 s a
+  run, since `install-deps` still runs on a hit), and a Node pin. setup-vp now picks Node itself:
+  with no `.node-version`, `devEngines.runtime` or `engines.node` declared, that is the latest LTS.
 - **`actions/checkout@v7`**: v4 drew a Node 20 deprecation warning.
 - **Leftovers**: `typescript` out of the React app; Storybook's `typecheck` is `vue-tsc` directly.
 - **Kept**: `vite: catalog:` in core and both adapters. Removing it was measured in a scratch clone:

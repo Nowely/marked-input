@@ -21,8 +21,6 @@ jobs:
               env:
                   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-    # Formatting, lint rules and the TS 7 type check of `.ts`/`.tsx` in one pass, then what that
-    # pass cannot see: `vue-tsc` for SFCs and Storybook's Vue program, and `astro check`.
     check:
         runs-on: ubuntu-latest
         steps:
@@ -31,15 +29,16 @@ jobs:
             - name: Setup Vite+
               uses: voidzero-dev/setup-vp@v1.21.1
               with:
-                  node-version: '22'
                   cache: true
 
-            - name: Format, lint and type-check
-              run: vp check
+            - name: Check Formatting
+              run: pnpm run format:check
 
-            - name: Type-check SFCs and Astro
-              if: ${{ !cancelled() }}
-              run: vp run typecheck
+            - name: Run Lint
+              run: pnpm run lint:check
+
+            - name: Run Typecheck
+              run: pnpm run typecheck
 
     test:
         runs-on: ubuntu-latest
@@ -49,32 +48,13 @@ jobs:
             - name: Setup Vite+
               uses: voidzero-dev/setup-vp@v1.21.1
               with:
-                  node-version: '22'
                   cache: true
 
-            # The browser download is cached per Playwright version; its system packages are not
-            # (apt state lives outside the cache), so a hit still runs `install-deps`.
-            - name: Read Playwright version
-              id: playwright
-              run: echo "version=$(node -p "require('playwright/package.json').version")" >> "$GITHUB_OUTPUT"
-
-            - name: Cache Playwright browsers
-              id: playwright-cache
-              uses: actions/cache@v6
-              with:
-                  path: ~/.cache/ms-playwright
-                  key: playwright-${{ runner.os }}-${{ runner.arch }}-chromium-${{ steps.playwright.outputs.version }}
-
-            - name: Install Playwright browsers
-              if: steps.playwright-cache.outputs.cache-hit != 'true'
-              run: vp exec playwright install --with-deps chromium
-
-            - name: Install Playwright system dependencies
-              if: steps.playwright-cache.outputs.cache-hit == 'true'
-              run: vp exec playwright install-deps chromium
+            - name: Install Playwright Browsers
+              run: pnpm exec playwright install --with-deps chromium
 
             - name: Run Tests
-              run: vp test
+              run: pnpm test
 
     build:
         runs-on: ubuntu-latest
@@ -84,26 +64,10 @@ jobs:
             - name: Setup Vite+
               uses: voidzero-dev/setup-vp@v1.21.1
               with:
-                  node-version: '22'
                   cache: true
 
-            - name: Build
-              run: vp run build
+            - name: Run Build
+              run: pnpm run build
 
             - name: Smoke Test Packed Tarballs
               run: ./scripts/smoke-pack.sh
-
-    # The one check branch protection requires: it passes only when every job above passed, so
-    # adding, splitting or renaming those jobs never touches the repository settings.
-    ci:
-        if: ${{ always() }}
-        needs: [check, test, build]
-        runs-on: ubuntu-latest
-        steps:
-            - name: Require every job to succeed
-              run: |
-                  results="${{ join(needs.*.result, ' ') }}"
-                  echo "check, test, build: $results"
-                  for result in $results; do
-                      [ "$result" = success ] || exit 1
-                  done
