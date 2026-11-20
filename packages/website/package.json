@@ -26,5 +26,8 @@
     "typedoc": "^0.28.20",
     "typedoc-plugin-markdown": "^4.14.1",
     "typescript": "catalog:"
+  },
+  "engines": {
+    "node": ">=22.23.4"
   }
 }
