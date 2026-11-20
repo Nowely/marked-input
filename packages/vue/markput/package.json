@@ -34,7 +34,7 @@
   "devDependencies": {
     "@markput/core": "workspace:*",
     "typescript": "catalog:",
-    "unplugin-vue": "^8.0.0",
+    "unplugin-vue": "^8.0.1",
     "vite": "catalog:",
     "vite-plus": "catalog:",
     "vue": "catalog:",
