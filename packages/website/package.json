@@ -11,18 +11,23 @@
     "astro": "astro"
   },
   "dependencies": {
-    "@astrojs/check": "^0.9.10",
-    "@astrojs/react": "^7.0.0",
-    "@astrojs/starlight": "^0.42.4",
-    "@astrojs/vercel": "^11.0.11",
+    "@astrojs/check": "^0.9.12",
+    "@astrojs/react": "^7.1.9",
+    "@astrojs/starlight": "^0.43.1",
+    "@astrojs/vercel": "^11.0.22",
     "@markput/react": "workspace:*",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
-    "astro": "^7.3.5",
+    "astro": "^7.4.13",
     "react": "catalog:",
     "react-dom": "catalog:",
-    "sharp": "^0.35.4",
-    "starlight-typedoc": "^0.23.1",
+    "sharp": "^0.35.5",
+    "starlight-typedoc": "^0.23.3",
+    "typedoc": "^0.28.20",
+    "typedoc-plugin-markdown": "^4.14.1",
     "typescript": "catalog:"
+  },
+  "engines": {
+    "node": ">=22.23.4"
   }
 }

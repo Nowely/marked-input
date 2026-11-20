@@ -22,7 +22,7 @@ for a row with NO kind, while `slotProps.row` reaches every row.
 ### container?
 
 ```ts
-optional container: Record<string, unknown> & object & DataAttributes;
+container?: Record<string, unknown> & object & DataAttributes;
 ```
 
 Defined in: [react/markput/src/types.ts:145](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/types.ts#L145)
@@ -32,27 +32,25 @@ Defined in: [react/markput/src/types.ts:145](https://github.com/Nowely/marked-in
 ##### className?
 
 ```ts
-optional className: string;
+className?: string;
 ```
 
 ##### style?
 
 ```ts
-optional style: CSSProperties;
+style?: CSSProperties;
 ```
 
 #### Overrides
 
-```ts
-CoreSlotProps.container
-```
+`CoreSlotProps.container`
 
 ***
 
 ### row?
 
 ```ts
-optional row: Record<string, unknown> & object & DataAttributes;
+row?: Record<string, unknown> & object & DataAttributes;
 ```
 
 Defined in: [react/markput/src/types.ts:147](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/types.ts#L147)
@@ -64,17 +62,15 @@ Merged onto EVERY row's wrapper — kind or paragraph alike, unlike `slots.parag
 ##### className?
 
 ```ts
-optional className: string;
+className?: string;
 ```
 
 ##### style?
 
 ```ts
-optional style: CSSProperties;
+style?: CSSProperties;
 ```
 
 #### Overrides
 
-```ts
-CoreSlotProps.row
-```
+`CoreSlotProps.row`

@@ -15,8 +15,8 @@ Defined in: [react/markput/src/components/MarkedInput.tsx:118](https://github.co
 
 | Type Parameter | Default type |
 | ------ | ------ |
-| `TMarkProps` | [`MarkProps`](/api/interfaces/markprops/) |
-| `TOverlayProps` *extends* \| \{ `data?`: readonly [`Suggestion`](/api/type-aliases/suggestion/)[]; `trigger?`: `string`; \} \| `undefined` | [`OverlayProps`](/api/interfaces/overlayprops/) |
+| <a id="type-parameter-tmarkprops"></a> `TMarkProps` | [`MarkProps`](/api/interfaces/markprops/) |
+| <a id="type-parameter-toverlayprops"></a> `TOverlayProps` *extends* \| \{ `data?`: readonly [`Suggestion`](/api/type-aliases/suggestion/)[]; `trigger?`: `string`; \} \| `undefined` | [`OverlayProps`](/api/interfaces/overlayprops/) |
 
 ## Parameters
 

@@ -11,7 +11,8 @@ title: "watch"
 function watch<T>(
    dep,
    fn,
-   opts?): () => void;
+   opts?
+): () => void;
 ```
 
 Defined in: [core/src/shared/signals/signal.ts:659](https://github.com/Nowely/marked-input/blob/next/packages/core/src/shared/signals/signal.ts#L659)
@@ -20,7 +21,7 @@ Defined in: [core/src/shared/signals/signal.ts:659](https://github.com/Nowely/ma
 
 | Type Parameter |
 | ------ |
-| `T` |
+| <a id="type-parameter-t"></a> `T` |
 
 ### Parameters
 
@@ -32,13 +33,7 @@ Defined in: [core/src/shared/signals/signal.ts:659](https://github.com/Nowely/ma
 
 ### Returns
 
-```ts
-(): void;
-```
-
-#### Returns
-
-`void`
+() => `void`
 
 ## Call Signature
 
@@ -46,7 +41,8 @@ Defined in: [core/src/shared/signals/signal.ts:659](https://github.com/Nowely/ma
 function watch<T>(
    dep,
    fn,
-   opts?): () => void;
+   opts?
+): () => void;
 ```
 
 Defined in: [core/src/shared/signals/signal.ts:664](https://github.com/Nowely/marked-input/blob/next/packages/core/src/shared/signals/signal.ts#L664)
@@ -55,7 +51,7 @@ Defined in: [core/src/shared/signals/signal.ts:664](https://github.com/Nowely/ma
 
 | Type Parameter |
 | ------ |
-| `T` |
+| <a id="type-parameter-t-1"></a> `T` |
 
 ### Parameters
 
@@ -67,13 +63,7 @@ Defined in: [core/src/shared/signals/signal.ts:664](https://github.com/Nowely/ma
 
 ### Returns
 
-```ts
-(): void;
-```
-
-#### Returns
-
-`void`
+() => `void`
 
 ## Call Signature
 
@@ -81,7 +71,8 @@ Defined in: [core/src/shared/signals/signal.ts:664](https://github.com/Nowely/ma
 function watch<T>(
    dep,
    fn,
-   opts?): () => void;
+   opts?
+): () => void;
 ```
 
 Defined in: [core/src/shared/signals/signal.ts:669](https://github.com/Nowely/marked-input/blob/next/packages/core/src/shared/signals/signal.ts#L669)
@@ -90,7 +81,7 @@ Defined in: [core/src/shared/signals/signal.ts:669](https://github.com/Nowely/ma
 
 | Type Parameter |
 | ------ |
-| `T` |
+| <a id="type-parameter-t-2"></a> `T` |
 
 ### Parameters
 
@@ -102,10 +93,4 @@ Defined in: [core/src/shared/signals/signal.ts:669](https://github.com/Nowely/ma
 
 ### Returns
 
-```ts
-(): void;
-```
-
-#### Returns
-
-`void`
+() => `void`

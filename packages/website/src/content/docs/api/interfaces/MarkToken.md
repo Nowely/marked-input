@@ -42,7 +42,7 @@ Defined in: [core/src/features/tokens/parser/types.ts:26](https://github.com/Now
 ### id?
 
 ```ts
-optional id: number;
+id?: number;
 ```
 
 Defined in: [core/src/features/tokens/parser/types.ts:25](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/parser/types.ts#L25)
@@ -54,7 +54,7 @@ Stable identity id, stamped by the tree's snapshot (`tree/snapshot.ts`) — NOT 
 ### meta?
 
 ```ts
-optional meta: string;
+meta?: string;
 ```
 
 Defined in: [core/src/features/tokens/parser/types.ts:28](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/parser/types.ts#L28)
@@ -86,7 +86,7 @@ start: number;
 ### slot?
 
 ```ts
-optional slot: object;
+slot?: object;
 ```
 
 Defined in: [core/src/features/tokens/parser/types.ts:29](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/parser/types.ts#L29)

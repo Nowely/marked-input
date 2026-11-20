@@ -210,7 +210,7 @@ export default defineConfig({
 			'typescript/prefer-readonly': 'warn',
 			'typescript/prefer-find': 'warn',
 			'typescript/no-unnecessary-qualifier': 'warn',
-			// TODO(ts7): re-enable with the TS 7 migration. tsgolint judges this rule with the TS 7 checker while
+			// TODO(ts7): re-enable with the TS 7 migration. tsrs judges this rule with the TS 7.1 checker while
 			// builds use TS 6, so it flags casts TS 6 requires (build breaks) or that drive generic inference
 			// (silent type widening, e.g. PropsModel.layout) — every finding needs manual vetting until checkers align.
 			'typescript/no-unnecessary-type-assertion': 'off',

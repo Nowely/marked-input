@@ -11,11 +11,11 @@ Defined in: [react/markput/src/lib/hooks/useOverlay.tsx:7](https://github.com/No
 
 | Type Parameter | Default type |
 | ------ | ------ |
-| `TElement` *extends* `HTMLElement` | `HTMLElement` |
+| <a id="type-parameter-telement"></a> `TElement` *extends* `HTMLElement` | `HTMLElement` |
 
 ## Properties
 
-### activate()
+### activate
 
 ```ts
 activate: () => () => void;
@@ -30,13 +30,7 @@ get the same contract.
 
 #### Returns
 
-```ts
-(): void;
-```
-
-##### Returns
-
-`void`
+() => `void`
 
 ***
 
@@ -52,7 +46,7 @@ Index into [OverlayHandler.rows](/api/interfaces/overlayhandler/#rows) of the hi
 
 ***
 
-### choose()
+### choose
 
 ```ts
 choose: (pick) => boolean;
@@ -76,7 +70,7 @@ which is what [select](/api/interfaces/overlayhandler/#select) does.
 
 ***
 
-### close()
+### close
 
 ```ts
 close: () => void;
@@ -136,7 +130,7 @@ neither source; it paints `label` and hands `pick` back to [OverlayHandler.choos
 
 ***
 
-### select()
+### select
 
 ```ts
 select: (value) => void;

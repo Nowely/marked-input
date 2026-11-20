@@ -14,7 +14,7 @@ What an option declares to appear in OverlayListModel.rows.
 ### keywords?
 
 ```ts
-optional keywords: readonly string[];
+keywords?: readonly string[];
 ```
 
 Defined in: [core/src/shared/types.ts:105](https://github.com/Nowely/marked-input/blob/next/packages/core/src/shared/types.ts#L105)
@@ -42,7 +42,7 @@ character is typed.
 ### meta?
 
 ```ts
-optional meta: string;
+meta?: string;
 ```
 
 Defined in: [core/src/shared/types.ts:117](https://github.com/Nowely/marked-input/blob/next/packages/core/src/shared/types.ts#L117)
@@ -62,7 +62,7 @@ splits the construct across two depths.
 ### text?
 
 ```ts
-optional text: string;
+text?: string;
 ```
 
 Defined in: [core/src/shared/types.ts:118](https://github.com/Nowely/marked-input/blob/next/packages/core/src/shared/types.ts#L118)

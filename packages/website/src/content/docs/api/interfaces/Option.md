@@ -26,15 +26,15 @@ const option: Option<ChipProps> = {
 
 | Type Parameter | Default type | Description |
 | ------ | ------ | ------ |
-| `TMarkProps` | [`MarkProps`](/api/interfaces/markprops/) | Type of props for the mark component |
-| `TOverlayProps` *extends* `CoreOption`\[`"overlay"`\] | [`OverlayProps`](/api/interfaces/overlayprops/) | Type of props for the overlay component |
+| <a id="type-parameter-tmarkprops"></a> `TMarkProps` | [`MarkProps`](/api/interfaces/markprops/) | Type of props for the mark component |
+| <a id="type-parameter-toverlayprops"></a> `TOverlayProps` *extends* `CoreOption`\[`"overlay"`\] | [`OverlayProps`](/api/interfaces/overlayprops/) | Type of props for the overlay component |
 
 ## Properties
 
 ### mark?
 
 ```ts
-optional mark: TMarkProps | (props) => TMarkProps;
+mark?: TMarkProps | ((props) => TMarkProps);
 ```
 
 Defined in: [react/markput/src/types.ts:120](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/types.ts#L120)
@@ -47,7 +47,7 @@ Can be a static object or a function that transforms MarkProps.
 ### Mark?
 
 ```ts
-optional Mark: ComponentType<TMarkProps>;
+Mark?: ComponentType<TMarkProps>;
 ```
 
 Defined in: [react/markput/src/types.ts:115](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/types.ts#L115)
@@ -59,7 +59,7 @@ Per-option component for rendering this mark
 ### markup?
 
 ```ts
-optional markup: Markup;
+markup?: Markup;
 ```
 
 Defined in: [core/src/shared/types.ts:63](https://github.com/Nowely/marked-input/blob/next/packages/core/src/shared/types.ts#L63)
@@ -99,16 +99,14 @@ suggestion inserts nothing rather than writing a markup no parser can read back.
 
 #### Inherited from
 
-```ts
-CoreOption.markup
-```
+`CoreOption.markup`
 
 ***
 
 ### menu?
 
 ```ts
-optional menu: MenuSpec;
+menu?: MenuSpec;
 ```
 
 Defined in: [core/src/shared/types.ts:91](https://github.com/Nowely/marked-input/blob/next/packages/core/src/shared/types.ts#L91)
@@ -125,16 +123,14 @@ consumer's, exactly like every other entry.
 
 #### Inherited from
 
-```ts
-CoreOption.menu
-```
+`CoreOption.menu`
 
 ***
 
 ### overlay?
 
 ```ts
-optional overlay: TOverlayProps;
+overlay?: TOverlayProps;
 ```
 
 Defined in: [react/markput/src/types.ts:126](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/types.ts#L126)
@@ -143,16 +139,14 @@ Props for the overlay component.
 
 #### Overrides
 
-```ts
-CoreOption.overlay
-```
+`CoreOption.overlay`
 
 ***
 
 ### Overlay?
 
 ```ts
-optional Overlay: ComponentType<TOverlayProps>;
+Overlay?: ComponentType<TOverlayProps>;
 ```
 
 Defined in: [react/markput/src/types.ts:122](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/types.ts#L122)
@@ -164,7 +158,7 @@ Per-option component for rendering this overlay
 ### row?
 
 ```ts
-optional row: RowSpec;
+row?: RowSpec;
 ```
 
 Defined in: [core/src/shared/types.ts:74](https://github.com/Nowely/marked-input/blob/next/packages/core/src/shared/types.ts#L74)
@@ -180,6 +174,4 @@ an earlier row option already claims, is reported and contributes no row kind.
 
 #### Inherited from
 
-```ts
-CoreOption.row
-```
+`CoreOption.row`

@@ -17,7 +17,7 @@ Defined in: [react/markput/src/lib/hooks/useMarkput.ts:12](https://github.com/No
 
 | Type Parameter |
 | ------ |
-| `T` |
+| <a id="type-parameter-t"></a> `T` |
 
 ### Parameters
 
@@ -41,7 +41,7 @@ Defined in: [react/markput/src/lib/hooks/useMarkput.ts:13](https://github.com/No
 
 | Type Parameter |
 | ------ |
-| `R` *extends* `ObjectSelector` |
+| <a id="type-parameter-r"></a> `R` *extends* `ObjectSelector` |
 
 ### Parameters
 
@@ -78,7 +78,7 @@ union swallows anything. The list grows when a fourth member needs selecting.
 
 | Type Parameter |
 | ------ |
-| `T` *extends* `TokenModel` \| `EditController` \| `RowController` |
+| <a id="type-parameter-t-1"></a> `T` *extends* `TokenModel` \| `EditController` \| `RowController` |
 
 ### Parameters
 

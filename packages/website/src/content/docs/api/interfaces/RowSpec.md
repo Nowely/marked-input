@@ -27,7 +27,7 @@ with no kind, and the only fallback left.
 ### continues?
 
 ```ts
-optional continues: boolean | CoreOption;
+continues?: boolean | CoreOption;
 ```
 
 Defined in: [core/src/shared/types.ts:183](https://github.com/Nowely/marked-input/blob/next/packages/core/src/shared/types.ts#L183)
@@ -57,7 +57,7 @@ positions.
 ### indents?
 
 ```ts
-optional indents: boolean;
+indents?: boolean;
 ```
 
 Defined in: [core/src/shared/types.ts:197](https://github.com/Nowely/marked-input/blob/next/packages/core/src/shared/types.ts#L197)
@@ -79,7 +79,7 @@ indents is worse than either.
 ### split?
 
 ```ts
-optional split: object;
+split?: object;
 ```
 
 Defined in: [core/src/shared/types.ts:212](https://github.com/Nowely/marked-input/blob/next/packages/core/src/shared/types.ts#L212)

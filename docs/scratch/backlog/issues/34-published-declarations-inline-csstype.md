@@ -19,3 +19,15 @@ Needs a decision, because either answer changes what the packages publish:
 
 Whichever is chosen, compare the declaration files before and after, and type-check both with
 `skipLibCheck` off, as 3c1acf94 did.
+
+## Comments
+
+**November deps update.** The inlined copy is not just size: it is a second csstype that drifts
+from the consumer's. csstype 3.2.4 widened `Property.FlexWrap` (adds `"balance"` and
+`string & {}`). With core on 3.2.4 and `@types/react` still resolving 3.2.3, the docs samples that
+pass a slot's `style` to a React element failed with TS2322; pinned back to 3.2.3, `vue-tsc` failed
+the other way, at `packages/vue/markput/src/components/MarkedInput.vue:74`, where
+`@vue/runtime-dom` 3.5.46 brings 3.2.4. In the workspace the fix is one csstype; a consumer cannot
+dedupe against the inlined copy, so a consumer whose framework types resolve a different csstype
+gets the same TS2322 in one direction or the other. The update ships 3.2.4 inlined, the version a
+fresh install resolves today. Keeping csstype external (the first option above) removes the drift.

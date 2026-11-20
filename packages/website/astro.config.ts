@@ -91,6 +91,10 @@ async function trimMarkdownTrailingWhitespace(directory: string): Promise<void> 
 // https://astro.build/config
 export default defineConfig({
 	site: 'https://markput.vercel.app',
+	// Starlight before 0.43 forced `where`. Its new default, Astro's `attribute`, raises the
+	// specificity of every scoped style, Starlight's own included, against `customCss`. Kept until
+	// the site is checked visually under `attribute`.
+	scopedStyleStrategy: 'where',
 	adapter: vercel({
 		imageService: true,
 		webAnalytics: {enabled: true},
