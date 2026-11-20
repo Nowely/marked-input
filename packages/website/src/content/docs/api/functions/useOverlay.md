@@ -15,7 +15,7 @@ Defined in: [react/markput/src/lib/hooks/useOverlay.tsx:50](https://github.com/N
 
 | Type Parameter | Default type |
 | ------ | ------ |
-| `TElement` *extends* `HTMLElement` | `HTMLElement` |
+| <a id="type-parameter-telement"></a> `TElement` *extends* `HTMLElement` | `HTMLElement` |
 
 ## Returns
 

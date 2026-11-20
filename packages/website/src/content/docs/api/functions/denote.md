@@ -9,7 +9,8 @@ title: "denote"
 function denote(
    value,
    callback,
-   markups): string;
+   markups
+): string;
 ```
 
 Defined in: [core/src/features/tokens/parser/utils/denote.ts:36](https://github.com/Nowely/marked-input/blob/next/packages/core/src/features/tokens/parser/utils/denote.ts#L36)

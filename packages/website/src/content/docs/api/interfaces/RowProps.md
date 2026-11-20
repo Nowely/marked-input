@@ -17,7 +17,7 @@ not the document's, so they never reach a component and no caret may enter them.
 ### children?
 
 ```ts
-optional children: ReactNode;
+children?: ReactNode;
 ```
 
 Defined in: [react/markput/src/types.ts:48](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/types.ts#L48)
@@ -29,7 +29,7 @@ The row's own inline content, already rendered.
 ### className?
 
 ```ts
-optional className: string;
+className?: string;
 ```
 
 Defined in: [react/markput/src/types.ts:80](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/types.ts#L80)
@@ -55,7 +55,7 @@ rather than made cheaper is ADR-0013.
 ### meta?
 
 ```ts
-optional meta: string;
+meta?: string;
 ```
 
 Defined in: [react/markput/src/types.ts:46](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/types.ts#L46)
@@ -79,7 +79,7 @@ The live row node: its id, its own text and its verbs.
 ### ref?
 
 ```ts
-optional ref: RefCallback<HTMLElement>;
+ref?: RefCallback<HTMLElement>;
 ```
 
 Defined in: [react/markput/src/types.ts:79](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/types.ts#L79)
@@ -95,7 +95,7 @@ it otherwise; the other two cost a row that looks wrong rather than one the edit
 ### rows?
 
 ```ts
-optional rows: ReactNode;
+rows?: ReactNode;
 ```
 
 Defined in: [react/markput/src/types.ts:61](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/types.ts#L61)
@@ -116,7 +116,7 @@ would walk into a row with no element.
 ### style?
 
 ```ts
-optional style: CSSProperties;
+style?: CSSProperties;
 ```
 
 Defined in: [react/markput/src/types.ts:81](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/types.ts#L81)

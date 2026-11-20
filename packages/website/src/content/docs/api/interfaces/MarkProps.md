@@ -18,7 +18,7 @@ Props passed to Mark components.
 ### children?
 
 ```ts
-optional children: ReactNode;
+children?: ReactNode;
 ```
 
 Defined in: [react/markput/src/types.ts:21](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/types.ts#L21)
@@ -30,7 +30,7 @@ Rendered children content (ReactNode) for nested marks
 ### meta?
 
 ```ts
-optional meta: string;
+meta?: string;
 ```
 
 Defined in: [react/markput/src/types.ts:19](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/types.ts#L19)
@@ -42,7 +42,7 @@ Additional metadata for the mark
 ### value?
 
 ```ts
-optional value: string;
+value?: string;
 ```
 
 Defined in: [react/markput/src/types.ts:17](https://github.com/Nowely/marked-input/blob/next/packages/react/markput/src/types.ts#L17)
