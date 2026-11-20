@@ -37,8 +37,8 @@ catalogs:
       specifier: ^3.2.4
       version: 3.2.4
     playwright:
-      specifier: ^1.63.0
-      version: 1.63.0
+      specifier: ^1.65.1
+      version: 1.65.1
     react:
       specifier: ^19.3.1
       version: 19.3.1
@@ -86,7 +86,7 @@ importers:
         version: 6.0.11(@voidzero-dev/vite-plus-core@1.1.0(@types/node@24.13.6)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))(vue@3.5.46(typescript@6.0.3))
       '@vitest/browser-playwright':
         specifier: 'catalog:'
-        version: 5.0.3(@voidzero-dev/vite-plus-core@1.1.0(@types/node@24.13.6)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))(playwright@1.63.0)(vitest@5.0.3)
+        version: 5.0.3(@voidzero-dev/vite-plus-core@1.1.0(@types/node@24.13.6)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))(playwright@1.65.1)(vitest@5.0.3)
       '@vitest/coverage-v8':
         specifier: 'catalog:'
         version: 5.0.3(@vitest/browser@5.0.3)(vitest@5.0.3)
@@ -95,7 +95,7 @@ importers:
         version: 5.0.3(vitest@5.0.3)
       playwright:
         specifier: 'catalog:'
-        version: 1.63.0
+        version: 1.65.1
       typescript:
         specifier: 'catalog:'
         version: 6.0.3
@@ -104,10 +104,10 @@ importers:
         version: '@voidzero-dev/vite-plus-core@1.1.0(@types/node@24.13.6)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)'
       vite-plus:
         specifier: 'catalog:'
-        version: 1.1.0(@types/node@24.13.6)(@vitest/browser-playwright@5.0.3)(@vitest/coverage-v8@5.0.3)(@vitest/ui@5.0.3)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(playwright@1.63.0)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)
+        version: 1.1.0(@types/node@24.13.6)(@vitest/browser-playwright@5.0.3(@voidzero-dev/vite-plus-core@1.1.0(@types/node@24.13.6)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))(playwright@1.65.1)(vitest@5.0.3))(@vitest/coverage-v8@5.0.3(@vitest/browser@5.0.3)(vitest@5.0.3))(@vitest/ui@5.0.3(vitest@5.0.3))(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(playwright@1.65.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)
       vitest:
         specifier: 'catalog:'
-        version: 5.0.3(@types/node@24.13.6)(@vitest/browser-playwright@5.0.3(@voidzero-dev/vite-plus-core@1.1.0(@types/node@24.13.6)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))(playwright@1.63.0)(vitest@5.0.3))(@vitest/browser-preview@5.0.3)(@vitest/coverage-v8@5.0.3(@vitest/browser@5.0.3)(vitest@5.0.3))(@vitest/ui@5.0.3(vitest@5.0.3))(@voidzero-dev/vite-plus-core@1.1.0(@types/node@24.13.6)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))
+        version: 5.0.3(@types/node@24.13.6)(@vitest/browser-playwright@5.0.3(@voidzero-dev/vite-plus-core@1.1.0(@types/node@24.13.6)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))(playwright@1.65.1)(vitest@5.0.3))(@vitest/browser-preview@5.0.3)(@vitest/coverage-v8@5.0.3(@vitest/browser@5.0.3)(vitest@5.0.3))(@vitest/ui@5.0.3(vitest@5.0.3))(@voidzero-dev/vite-plus-core@1.1.0(@types/node@24.13.6)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))
 
   packages/core:
     devDependencies:
@@ -122,7 +122,7 @@ importers:
         version: '@voidzero-dev/vite-plus-core@1.1.0(@types/node@24.13.6)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)'
       vite-plus:
         specifier: 'catalog:'
-        version: 1.1.0(@types/node@24.13.6)(@vitest/browser-playwright@5.0.3(@voidzero-dev/vite-plus-core@1.1.0(@types/node@24.13.6)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))(playwright@1.63.0)(vitest@5.0.3))(@vitest/coverage-v8@5.0.3(@vitest/browser@5.0.3)(vitest@5.0.3))(@vitest/ui@5.0.3(vitest@5.0.3))(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(playwright@1.63.0)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)
+        version: 1.1.0(@types/node@24.13.6)(@vitest/browser-playwright@5.0.3(@voidzero-dev/vite-plus-core@1.1.0(@types/node@24.13.6)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))(playwright@1.65.1)(vitest@5.0.3))(@vitest/coverage-v8@5.0.3(@vitest/browser@5.0.3)(vitest@5.0.3))(@vitest/ui@5.0.3(vitest@5.0.3))(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(playwright@1.65.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)
 
   packages/react/app:
     dependencies:
@@ -150,7 +150,7 @@ importers:
         version: '@voidzero-dev/vite-plus-core@1.1.0(@types/node@24.13.6)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)'
       vite-plus:
         specifier: 'catalog:'
-        version: 1.1.0(@types/node@24.13.6)(@vitest/browser-playwright@5.0.3(@voidzero-dev/vite-plus-core@1.1.0(@types/node@24.13.6)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))(playwright@1.63.0)(vitest@5.0.3))(@vitest/coverage-v8@5.0.3(@vitest/browser@5.0.3)(vitest@5.0.3))(@vitest/ui@5.0.3(vitest@5.0.3))(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(playwright@1.63.0)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)
+        version: 1.1.0(@types/node@24.13.6)(@vitest/browser-playwright@5.0.3(@voidzero-dev/vite-plus-core@1.1.0(@types/node@24.13.6)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))(playwright@1.65.1)(vitest@5.0.3))(@vitest/coverage-v8@5.0.3(@vitest/browser@5.0.3)(vitest@5.0.3))(@vitest/ui@5.0.3(vitest@5.0.3))(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(playwright@1.65.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)
 
   packages/react/markput:
     devDependencies:
@@ -171,7 +171,7 @@ importers:
         version: '@voidzero-dev/vite-plus-core@1.1.0(@types/node@24.13.6)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)'
       vite-plus:
         specifier: 'catalog:'
-        version: 1.1.0(@types/node@24.13.6)(@vitest/browser-playwright@5.0.3(@voidzero-dev/vite-plus-core@1.1.0(@types/node@24.13.6)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))(playwright@1.63.0)(vitest@5.0.3))(@vitest/coverage-v8@5.0.3(@vitest/browser@5.0.3)(vitest@5.0.3))(@vitest/ui@5.0.3(vitest@5.0.3))(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(playwright@1.63.0)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)
+        version: 1.1.0(@types/node@24.13.6)(@vitest/browser-playwright@5.0.3(@voidzero-dev/vite-plus-core@1.1.0(@types/node@24.13.6)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))(playwright@1.65.1)(vitest@5.0.3))(@vitest/coverage-v8@5.0.3(@vitest/browser@5.0.3)(vitest@5.0.3))(@vitest/ui@5.0.3(vitest@5.0.3))(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(playwright@1.65.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)
 
   packages/storybook:
     dependencies:
@@ -214,19 +214,19 @@ importers:
     devDependencies:
       '@storybook/addon-docs':
         specifier: ^10.6.8
-        version: 10.6.8(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(storybook@10.6.8(@types/react@19.3.0)(prettier@3.8.1)(react@19.3.1)(vite-plus@1.1.0(@types/node@24.13.6)(@vitest/browser-playwright@5.0.3(@voidzero-dev/vite-plus-core@1.1.0(@types/node@24.13.6)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))(playwright@1.63.0)(vitest@5.0.3))(@vitest/coverage-v8@5.0.3(@vitest/browser@5.0.3)(vitest@5.0.3))(@vitest/ui@5.0.3(vitest@5.0.3))(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(playwright@1.63.0)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)))
+        version: 10.6.8(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(storybook@10.6.8(@types/react@19.3.0)(prettier@3.8.1)(react@19.3.1)(vite-plus@1.1.0(@types/node@24.13.6)(@vitest/browser-playwright@5.0.3(@voidzero-dev/vite-plus-core@1.1.0(@types/node@24.13.6)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))(playwright@1.65.1)(vitest@5.0.3))(@vitest/coverage-v8@5.0.3(@vitest/browser@5.0.3)(vitest@5.0.3))(@vitest/ui@5.0.3(vitest@5.0.3))(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(playwright@1.65.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)))
       '@storybook/addon-links':
         specifier: ^10.6.8
-        version: 10.6.8(@types/react@19.3.0)(react@19.3.1)(storybook@10.6.8(@types/react@19.3.0)(prettier@3.8.1)(react@19.3.1)(vite-plus@1.1.0(@types/node@24.13.6)(@vitest/browser-playwright@5.0.3(@voidzero-dev/vite-plus-core@1.1.0(@types/node@24.13.6)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))(playwright@1.63.0)(vitest@5.0.3))(@vitest/coverage-v8@5.0.3(@vitest/browser@5.0.3)(vitest@5.0.3))(@vitest/ui@5.0.3(vitest@5.0.3))(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(playwright@1.63.0)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)))
+        version: 10.6.8(@types/react@19.3.0)(react@19.3.1)(storybook@10.6.8(@types/react@19.3.0)(prettier@3.8.1)(react@19.3.1)(vite-plus@1.1.0(@types/node@24.13.6)(@vitest/browser-playwright@5.0.3(@voidzero-dev/vite-plus-core@1.1.0(@types/node@24.13.6)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))(playwright@1.65.1)(vitest@5.0.3))(@vitest/coverage-v8@5.0.3(@vitest/browser@5.0.3)(vitest@5.0.3))(@vitest/ui@5.0.3(vitest@5.0.3))(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(playwright@1.65.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)))
       '@storybook/react':
         specifier: ^10.6.8
-        version: 10.6.8(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(storybook@10.6.8(@types/react@19.3.0)(prettier@3.8.1)(react@19.3.1)(vite-plus@1.1.0(@types/node@24.13.6)(@vitest/browser-playwright@5.0.3(@voidzero-dev/vite-plus-core@1.1.0(@types/node@24.13.6)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))(playwright@1.63.0)(vitest@5.0.3))(@vitest/coverage-v8@5.0.3(@vitest/browser@5.0.3)(vitest@5.0.3))(@vitest/ui@5.0.3(vitest@5.0.3))(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(playwright@1.63.0)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)))(typescript@6.0.3)
+        version: 10.6.8(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(storybook@10.6.8(@types/react@19.3.0)(prettier@3.8.1)(react@19.3.1)(vite-plus@1.1.0(@types/node@24.13.6)(@vitest/browser-playwright@5.0.3(@voidzero-dev/vite-plus-core@1.1.0(@types/node@24.13.6)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))(playwright@1.65.1)(vitest@5.0.3))(@vitest/coverage-v8@5.0.3(@vitest/browser@5.0.3)(vitest@5.0.3))(@vitest/ui@5.0.3(vitest@5.0.3))(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(playwright@1.65.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)))(typescript@6.0.3)
       '@storybook/react-vite':
         specifier: ^10.6.8
-        version: 10.6.8(8c6a85aa06d0d204bc9b63e60fcdf55b)
+        version: 10.6.8(0627bad82e77f855c43e7f229cdb5d9f)
       '@storybook/vue3-vite':
         specifier: ^10.6.8
-        version: 10.6.8(@voidzero-dev/vite-plus-core@1.1.0(@types/node@24.13.6)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))(storybook@10.6.8(@types/react@19.3.0)(prettier@3.8.1)(react@19.3.1)(vite-plus@1.1.0(@types/node@24.13.6)(@vitest/browser-playwright@5.0.3(@voidzero-dev/vite-plus-core@1.1.0(@types/node@24.13.6)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))(playwright@1.63.0)(vitest@5.0.3))(@vitest/coverage-v8@5.0.3(@vitest/browser@5.0.3)(vitest@5.0.3))(@vitest/ui@5.0.3(vitest@5.0.3))(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(playwright@1.63.0)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)))(typescript@6.0.3)(vue@3.5.46(typescript@6.0.3))
+        version: 10.6.8(@voidzero-dev/vite-plus-core@1.1.0(@types/node@24.13.6)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))(storybook@10.6.8(@types/react@19.3.0)(prettier@3.8.1)(react@19.3.1)(vite-plus@1.1.0(@types/node@24.13.6)(@vitest/browser-playwright@5.0.3(@voidzero-dev/vite-plus-core@1.1.0(@types/node@24.13.6)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))(playwright@1.65.1)(vitest@5.0.3))(@vitest/coverage-v8@5.0.3(@vitest/browser@5.0.3)(vitest@5.0.3))(@vitest/ui@5.0.3(vitest@5.0.3))(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(playwright@1.65.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)))(typescript@6.0.3)(vue@3.5.46(typescript@6.0.3))
       '@types/node':
         specifier: 'catalog:'
         version: 24.13.6
@@ -244,10 +244,10 @@ importers:
         version: 10.1.0
       playwright:
         specifier: 'catalog:'
-        version: 1.63.0
+        version: 1.65.1
       storybook:
         specifier: ^10.6.8
-        version: 10.6.8(@types/react@19.3.0)(prettier@3.8.1)(react@19.3.1)(vite-plus@1.1.0(@types/node@24.13.6)(@vitest/browser-playwright@5.0.3(@voidzero-dev/vite-plus-core@1.1.0(@types/node@24.13.6)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))(playwright@1.63.0)(vitest@5.0.3))(@vitest/coverage-v8@5.0.3(@vitest/browser@5.0.3)(vitest@5.0.3))(@vitest/ui@5.0.3(vitest@5.0.3))(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(playwright@1.63.0)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))
+        version: 10.6.8(@types/react@19.3.0)(prettier@3.8.1)(react@19.3.1)(vite-plus@1.1.0(@types/node@24.13.6)(@vitest/browser-playwright@5.0.3(@voidzero-dev/vite-plus-core@1.1.0(@types/node@24.13.6)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))(playwright@1.65.1)(vitest@5.0.3))(@vitest/coverage-v8@5.0.3(@vitest/browser@5.0.3)(vitest@5.0.3))(@vitest/ui@5.0.3(vitest@5.0.3))(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(playwright@1.65.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))
       typescript:
         specifier: 'catalog:'
         version: 6.0.3
@@ -256,7 +256,7 @@ importers:
         version: '@voidzero-dev/vite-plus-core@1.1.0(@types/node@24.13.6)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)'
       vite-plus:
         specifier: 'catalog:'
-        version: 1.1.0(@types/node@24.13.6)(@vitest/browser-playwright@5.0.3(@voidzero-dev/vite-plus-core@1.1.0(@types/node@24.13.6)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))(playwright@1.63.0)(vitest@5.0.3))(@vitest/coverage-v8@5.0.3(@vitest/browser@5.0.3)(vitest@5.0.3))(@vitest/ui@5.0.3(vitest@5.0.3))(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(playwright@1.63.0)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)
+        version: 1.1.0(@types/node@24.13.6)(@vitest/browser-playwright@5.0.3(@voidzero-dev/vite-plus-core@1.1.0(@types/node@24.13.6)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))(playwright@1.65.1)(vitest@5.0.3))(@vitest/coverage-v8@5.0.3(@vitest/browser@5.0.3)(vitest@5.0.3))(@vitest/ui@5.0.3(vitest@5.0.3))(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(playwright@1.65.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)
       vitest-browser-react:
         specifier: 'catalog:'
         version: 2.3.0(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(vitest@5.0.3)
@@ -287,7 +287,7 @@ importers:
         version: '@voidzero-dev/vite-plus-core@1.1.0(@types/node@24.13.6)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)'
       vite-plus:
         specifier: 'catalog:'
-        version: 1.1.0(@types/node@24.13.6)(@vitest/browser-playwright@5.0.3(@voidzero-dev/vite-plus-core@1.1.0(@types/node@24.13.6)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))(playwright@1.63.0)(vitest@5.0.3))(@vitest/coverage-v8@5.0.3(@vitest/browser@5.0.3)(vitest@5.0.3))(@vitest/ui@5.0.3(vitest@5.0.3))(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(playwright@1.63.0)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)
+        version: 1.1.0(@types/node@24.13.6)(@vitest/browser-playwright@5.0.3(@voidzero-dev/vite-plus-core@1.1.0(@types/node@24.13.6)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))(playwright@1.65.1)(vitest@5.0.3))(@vitest/coverage-v8@5.0.3(@vitest/browser@5.0.3)(vitest@5.0.3))(@vitest/ui@5.0.3(vitest@5.0.3))(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(playwright@1.65.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)
       vue-tsc:
         specifier: 'catalog:'
         version: 3.3.14(typescript@6.0.3)
@@ -308,7 +308,7 @@ importers:
         version: '@voidzero-dev/vite-plus-core@1.1.0(@types/node@24.13.6)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)'
       vite-plus:
         specifier: 'catalog:'
-        version: 1.1.0(@types/node@24.13.6)(@vitest/browser-playwright@5.0.3(@voidzero-dev/vite-plus-core@1.1.0(@types/node@24.13.6)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))(playwright@1.63.0)(vitest@5.0.3))(@vitest/coverage-v8@5.0.3(@vitest/browser@5.0.3)(vitest@5.0.3))(@vitest/ui@5.0.3(vitest@5.0.3))(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(playwright@1.63.0)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)
+        version: 1.1.0(@types/node@24.13.6)(@vitest/browser-playwright@5.0.3(@voidzero-dev/vite-plus-core@1.1.0(@types/node@24.13.6)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))(playwright@1.65.1)(vitest@5.0.3))(@vitest/coverage-v8@5.0.3(@vitest/browser@5.0.3)(vitest@5.0.3))(@vitest/ui@5.0.3(vitest@5.0.3))(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(playwright@1.65.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)
       vue:
         specifier: 'catalog:'
         version: 3.5.46(typescript@6.0.3)
@@ -4662,13 +4662,13 @@ packages:
     resolution: {integrity: sha512-qcJu88Q2IWqJsDD529JKMdwGm/dvInW4HvQnRwiH9JtihJvzGOscDtHE3x1pBKeUOTysQ8kVmLnJ2kJu7yhcGA==}
     engines: {node: '>=12'}
 
-  playwright-core@1.63.0:
-    resolution: {integrity: sha512-rYCsBF/M5HjUch52bbtVONEFjv6Xu8sm8h72dNlR5bzIE1fvC/bxgspzkjSfU+MweEMmPM8KJebG6nnyxo5mCg==}
+  playwright-core@1.65.1:
+    resolution: {integrity: sha512-hqPpz7blSMPxWVdoeE1yiBSzXsKiVOd2k+kjCvmUywD2GPO2Dd9HfcWnq9NN0GHbNZDFgZ9JfBFr+X5/BLo0qw==}
     engines: {node: '>=20'}
     hasBin: true
 
-  playwright@1.63.0:
-    resolution: {integrity: sha512-+7ziBLidS4NaNCdt57SUDT+wYmmd5fmiQejUic/kb+YsYSCPyOOE9sebzMjNmQrsnNpDJqd4WHvV/8lfKfUDUg==}
+  playwright@1.65.1:
+    resolution: {integrity: sha512-vJ1FuoOrNwOKHUIVEvSt3jT1L+wjjDpwhwIstKtfvTh8XIG4FG4bIFuvNdMxi81LGfAhUgUZleVFaOLY4RIUUw==}
     engines: {node: '>=20'}
     hasBin: true
 
@@ -7778,14 +7778,14 @@ snapshots:
 
   '@shikijs/vscode-textmate@10.1.0': {}
 
-  '@storybook/addon-docs@10.6.8(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(storybook@10.6.8(@types/react@19.3.0)(prettier@3.8.1)(react@19.3.1)(vite-plus@1.1.0(@types/node@24.13.6)(@vitest/browser-playwright@5.0.3(@voidzero-dev/vite-plus-core@1.1.0(@types/node@24.13.6)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))(playwright@1.63.0)(vitest@5.0.3))(@vitest/coverage-v8@5.0.3(@vitest/browser@5.0.3)(vitest@5.0.3))(@vitest/ui@5.0.3(vitest@5.0.3))(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(playwright@1.63.0)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)))':
+  '@storybook/addon-docs@10.6.8(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(storybook@10.6.8(@types/react@19.3.0)(prettier@3.8.1)(react@19.3.1)(vite-plus@1.1.0(@types/node@24.13.6)(@vitest/browser-playwright@5.0.3(@voidzero-dev/vite-plus-core@1.1.0(@types/node@24.13.6)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))(playwright@1.65.1)(vitest@5.0.3))(@vitest/coverage-v8@5.0.3(@vitest/browser@5.0.3)(vitest@5.0.3))(@vitest/ui@5.0.3(vitest@5.0.3))(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(playwright@1.65.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)))':
     dependencies:
       '@mdx-js/react': 3.1.1(@types/react@19.3.0)(react@19.3.1)
       '@storybook/icons': 2.1.0(react@19.3.1)
-      '@storybook/react-dom-shim': 10.6.8(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(storybook@10.6.8(@types/react@19.3.0)(prettier@3.8.1)(react@19.3.1)(vite-plus@1.1.0(@types/node@24.13.6)(@vitest/browser-playwright@5.0.3(@voidzero-dev/vite-plus-core@1.1.0(@types/node@24.13.6)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))(playwright@1.63.0)(vitest@5.0.3))(@vitest/coverage-v8@5.0.3(@vitest/browser@5.0.3)(vitest@5.0.3))(@vitest/ui@5.0.3(vitest@5.0.3))(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(playwright@1.63.0)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)))
+      '@storybook/react-dom-shim': 10.6.8(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(storybook@10.6.8(@types/react@19.3.0)(prettier@3.8.1)(react@19.3.1)(vite-plus@1.1.0(@types/node@24.13.6)(@vitest/browser-playwright@5.0.3(@voidzero-dev/vite-plus-core@1.1.0(@types/node@24.13.6)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))(playwright@1.65.1)(vitest@5.0.3))(@vitest/coverage-v8@5.0.3(@vitest/browser@5.0.3)(vitest@5.0.3))(@vitest/ui@5.0.3(vitest@5.0.3))(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(playwright@1.65.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)))
       react: 19.3.1
       react-dom: 19.3.1(react@19.3.1)
-      storybook: 10.6.8(@types/react@19.3.0)(prettier@3.8.1)(react@19.3.1)(vite-plus@1.1.0(@types/node@24.13.6)(@vitest/browser-playwright@5.0.3(@voidzero-dev/vite-plus-core@1.1.0(@types/node@24.13.6)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))(playwright@1.63.0)(vitest@5.0.3))(@vitest/coverage-v8@5.0.3(@vitest/browser@5.0.3)(vitest@5.0.3))(@vitest/ui@5.0.3(vitest@5.0.3))(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(playwright@1.63.0)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))
+      storybook: 10.6.8(@types/react@19.3.0)(prettier@3.8.1)(react@19.3.1)(vite-plus@1.1.0(@types/node@24.13.6)(@vitest/browser-playwright@5.0.3(@voidzero-dev/vite-plus-core@1.1.0(@types/node@24.13.6)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))(playwright@1.65.1)(vitest@5.0.3))(@vitest/coverage-v8@5.0.3(@vitest/browser@5.0.3)(vitest@5.0.3))(@vitest/ui@5.0.3(vitest@5.0.3))(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(playwright@1.65.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))
       ts-dedent: 2.2.0
       unplugin: 2.3.11
     optionalDependencies:
@@ -7793,17 +7793,17 @@ snapshots:
     transitivePeerDependencies:
       - '@types/react-dom'
 
-  '@storybook/addon-links@10.6.8(@types/react@19.3.0)(react@19.3.1)(storybook@10.6.8(@types/react@19.3.0)(prettier@3.8.1)(react@19.3.1)(vite-plus@1.1.0(@types/node@24.13.6)(@vitest/browser-playwright@5.0.3(@voidzero-dev/vite-plus-core@1.1.0(@types/node@24.13.6)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))(playwright@1.63.0)(vitest@5.0.3))(@vitest/coverage-v8@5.0.3(@vitest/browser@5.0.3)(vitest@5.0.3))(@vitest/ui@5.0.3(vitest@5.0.3))(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(playwright@1.63.0)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)))':
+  '@storybook/addon-links@10.6.8(@types/react@19.3.0)(react@19.3.1)(storybook@10.6.8(@types/react@19.3.0)(prettier@3.8.1)(react@19.3.1)(vite-plus@1.1.0(@types/node@24.13.6)(@vitest/browser-playwright@5.0.3(@voidzero-dev/vite-plus-core@1.1.0(@types/node@24.13.6)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))(playwright@1.65.1)(vitest@5.0.3))(@vitest/coverage-v8@5.0.3(@vitest/browser@5.0.3)(vitest@5.0.3))(@vitest/ui@5.0.3(vitest@5.0.3))(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(playwright@1.65.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)))':
     dependencies:
       '@storybook/global': 5.0.0
-      storybook: 10.6.8(@types/react@19.3.0)(prettier@3.8.1)(react@19.3.1)(vite-plus@1.1.0(@types/node@24.13.6)(@vitest/browser-playwright@5.0.3(@voidzero-dev/vite-plus-core@1.1.0(@types/node@24.13.6)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))(playwright@1.63.0)(vitest@5.0.3))(@vitest/coverage-v8@5.0.3(@vitest/browser@5.0.3)(vitest@5.0.3))(@vitest/ui@5.0.3(vitest@5.0.3))(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(playwright@1.63.0)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))
+      storybook: 10.6.8(@types/react@19.3.0)(prettier@3.8.1)(react@19.3.1)(vite-plus@1.1.0(@types/node@24.13.6)(@vitest/browser-playwright@5.0.3(@voidzero-dev/vite-plus-core@1.1.0(@types/node@24.13.6)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))(playwright@1.65.1)(vitest@5.0.3))(@vitest/coverage-v8@5.0.3(@vitest/browser@5.0.3)(vitest@5.0.3))(@vitest/ui@5.0.3(vitest@5.0.3))(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(playwright@1.65.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))
     optionalDependencies:
       '@types/react': 19.3.0
       react: 19.3.1
 
-  '@storybook/builder-vite@10.6.8(@voidzero-dev/vite-plus-core@1.1.0(@types/node@24.13.6)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))(storybook@10.6.8(@types/react@19.3.0)(prettier@3.8.1)(react@19.3.1)(vite-plus@1.1.0(@types/node@24.13.6)(@vitest/browser-playwright@5.0.3(@voidzero-dev/vite-plus-core@1.1.0(@types/node@24.13.6)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))(playwright@1.63.0)(vitest@5.0.3))(@vitest/coverage-v8@5.0.3(@vitest/browser@5.0.3)(vitest@5.0.3))(@vitest/ui@5.0.3(vitest@5.0.3))(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(playwright@1.63.0)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)))':
+  '@storybook/builder-vite@10.6.8(@voidzero-dev/vite-plus-core@1.1.0(@types/node@24.13.6)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))(storybook@10.6.8(@types/react@19.3.0)(prettier@3.8.1)(react@19.3.1)(vite-plus@1.1.0(@types/node@24.13.6)(@vitest/browser-playwright@5.0.3(@voidzero-dev/vite-plus-core@1.1.0(@types/node@24.13.6)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))(playwright@1.65.1)(vitest@5.0.3))(@vitest/coverage-v8@5.0.3(@vitest/browser@5.0.3)(vitest@5.0.3))(@vitest/ui@5.0.3(vitest@5.0.3))(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(playwright@1.65.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)))':
     dependencies:
-      storybook: 10.6.8(@types/react@19.3.0)(prettier@3.8.1)(react@19.3.1)(vite-plus@1.1.0(@types/node@24.13.6)(@vitest/browser-playwright@5.0.3(@voidzero-dev/vite-plus-core@1.1.0(@types/node@24.13.6)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))(playwright@1.63.0)(vitest@5.0.3))(@vitest/coverage-v8@5.0.3(@vitest/browser@5.0.3)(vitest@5.0.3))(@vitest/ui@5.0.3(vitest@5.0.3))(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(playwright@1.63.0)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))
+      storybook: 10.6.8(@types/react@19.3.0)(prettier@3.8.1)(react@19.3.1)(vite-plus@1.1.0(@types/node@24.13.6)(@vitest/browser-playwright@5.0.3(@voidzero-dev/vite-plus-core@1.1.0(@types/node@24.13.6)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))(playwright@1.65.1)(vitest@5.0.3))(@vitest/coverage-v8@5.0.3(@vitest/browser@5.0.3)(vitest@5.0.3))(@vitest/ui@5.0.3(vitest@5.0.3))(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(playwright@1.65.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))
       ts-dedent: 2.2.0
       vite: '@voidzero-dev/vite-plus-core@1.1.0(@types/node@24.13.6)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)'
 
@@ -7813,28 +7813,28 @@ snapshots:
     dependencies:
       react: 19.3.1
 
-  '@storybook/react-dom-shim@10.6.8(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(storybook@10.6.8(@types/react@19.3.0)(prettier@3.8.1)(react@19.3.1)(vite-plus@1.1.0(@types/node@24.13.6)(@vitest/browser-playwright@5.0.3(@voidzero-dev/vite-plus-core@1.1.0(@types/node@24.13.6)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))(playwright@1.63.0)(vitest@5.0.3))(@vitest/coverage-v8@5.0.3(@vitest/browser@5.0.3)(vitest@5.0.3))(@vitest/ui@5.0.3(vitest@5.0.3))(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(playwright@1.63.0)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)))':
+  '@storybook/react-dom-shim@10.6.8(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(storybook@10.6.8(@types/react@19.3.0)(prettier@3.8.1)(react@19.3.1)(vite-plus@1.1.0(@types/node@24.13.6)(@vitest/browser-playwright@5.0.3(@voidzero-dev/vite-plus-core@1.1.0(@types/node@24.13.6)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))(playwright@1.65.1)(vitest@5.0.3))(@vitest/coverage-v8@5.0.3(@vitest/browser@5.0.3)(vitest@5.0.3))(@vitest/ui@5.0.3(vitest@5.0.3))(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(playwright@1.65.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)))':
     dependencies:
       react: 19.3.1
       react-dom: 19.3.1(react@19.3.1)
-      storybook: 10.6.8(@types/react@19.3.0)(prettier@3.8.1)(react@19.3.1)(vite-plus@1.1.0(@types/node@24.13.6)(@vitest/browser-playwright@5.0.3(@voidzero-dev/vite-plus-core@1.1.0(@types/node@24.13.6)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))(playwright@1.63.0)(vitest@5.0.3))(@vitest/coverage-v8@5.0.3(@vitest/browser@5.0.3)(vitest@5.0.3))(@vitest/ui@5.0.3(vitest@5.0.3))(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(playwright@1.63.0)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))
+      storybook: 10.6.8(@types/react@19.3.0)(prettier@3.8.1)(react@19.3.1)(vite-plus@1.1.0(@types/node@24.13.6)(@vitest/browser-playwright@5.0.3(@voidzero-dev/vite-plus-core@1.1.0(@types/node@24.13.6)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))(playwright@1.65.1)(vitest@5.0.3))(@vitest/coverage-v8@5.0.3(@vitest/browser@5.0.3)(vitest@5.0.3))(@vitest/ui@5.0.3(vitest@5.0.3))(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(playwright@1.65.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))
     optionalDependencies:
       '@types/react': 19.3.0
       '@types/react-dom': 19.3.0(@types/react@19.3.0)
 
-  '@storybook/react-vite@10.6.8(8c6a85aa06d0d204bc9b63e60fcdf55b)':
+  '@storybook/react-vite@10.6.8(0627bad82e77f855c43e7f229cdb5d9f)':
     dependencies:
       '@joshwooding/vite-plugin-react-docgen-typescript': 0.7.0(@voidzero-dev/vite-plus-core@1.1.0(@types/node@24.13.6)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))(typescript@6.0.3)
       '@rollup/pluginutils': 5.3.0(rollup@4.59.0)
-      '@storybook/builder-vite': 10.6.8(@voidzero-dev/vite-plus-core@1.1.0(@types/node@24.13.6)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))(storybook@10.6.8(@types/react@19.3.0)(prettier@3.8.1)(react@19.3.1)(vite-plus@1.1.0(@types/node@24.13.6)(@vitest/browser-playwright@5.0.3(@voidzero-dev/vite-plus-core@1.1.0(@types/node@24.13.6)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))(playwright@1.63.0)(vitest@5.0.3))(@vitest/coverage-v8@5.0.3(@vitest/browser@5.0.3)(vitest@5.0.3))(@vitest/ui@5.0.3(vitest@5.0.3))(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(playwright@1.63.0)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)))
-      '@storybook/react': 10.6.8(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(storybook@10.6.8(@types/react@19.3.0)(prettier@3.8.1)(react@19.3.1)(vite-plus@1.1.0(@types/node@24.13.6)(@vitest/browser-playwright@5.0.3(@voidzero-dev/vite-plus-core@1.1.0(@types/node@24.13.6)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))(playwright@1.63.0)(vitest@5.0.3))(@vitest/coverage-v8@5.0.3(@vitest/browser@5.0.3)(vitest@5.0.3))(@vitest/ui@5.0.3(vitest@5.0.3))(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(playwright@1.63.0)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)))(typescript@6.0.3)
+      '@storybook/builder-vite': 10.6.8(@voidzero-dev/vite-plus-core@1.1.0(@types/node@24.13.6)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))(storybook@10.6.8(@types/react@19.3.0)(prettier@3.8.1)(react@19.3.1)(vite-plus@1.1.0(@types/node@24.13.6)(@vitest/browser-playwright@5.0.3(@voidzero-dev/vite-plus-core@1.1.0(@types/node@24.13.6)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))(playwright@1.65.1)(vitest@5.0.3))(@vitest/coverage-v8@5.0.3(@vitest/browser@5.0.3)(vitest@5.0.3))(@vitest/ui@5.0.3(vitest@5.0.3))(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(playwright@1.65.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)))
+      '@storybook/react': 10.6.8(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(storybook@10.6.8(@types/react@19.3.0)(prettier@3.8.1)(react@19.3.1)(vite-plus@1.1.0(@types/node@24.13.6)(@vitest/browser-playwright@5.0.3(@voidzero-dev/vite-plus-core@1.1.0(@types/node@24.13.6)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))(playwright@1.65.1)(vitest@5.0.3))(@vitest/coverage-v8@5.0.3(@vitest/browser@5.0.3)(vitest@5.0.3))(@vitest/ui@5.0.3(vitest@5.0.3))(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(playwright@1.65.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)))(typescript@6.0.3)
       empathic: 2.0.0
       magic-string: 1.4.2
       react: 19.3.1
       react-docgen: 8.0.2
       react-dom: 19.3.1(react@19.3.1)
       resolve: 1.22.11
-      storybook: 10.6.8(@types/react@19.3.0)(prettier@3.8.1)(react@19.3.1)(vite-plus@1.1.0(@types/node@24.13.6)(@vitest/browser-playwright@5.0.3(@voidzero-dev/vite-plus-core@1.1.0(@types/node@24.13.6)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))(playwright@1.63.0)(vitest@5.0.3))(@vitest/coverage-v8@5.0.3(@vitest/browser@5.0.3)(vitest@5.0.3))(@vitest/ui@5.0.3(vitest@5.0.3))(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(playwright@1.63.0)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))
+      storybook: 10.6.8(@types/react@19.3.0)(prettier@3.8.1)(react@19.3.1)(vite-plus@1.1.0(@types/node@24.13.6)(@vitest/browser-playwright@5.0.3(@voidzero-dev/vite-plus-core@1.1.0(@types/node@24.13.6)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))(playwright@1.65.1)(vitest@5.0.3))(@vitest/coverage-v8@5.0.3(@vitest/browser@5.0.3)(vitest@5.0.3))(@vitest/ui@5.0.3(vitest@5.0.3))(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(playwright@1.65.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))
       tsconfig-paths: 4.2.0
       vite: '@voidzero-dev/vite-plus-core@1.1.0(@types/node@24.13.6)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)'
     optionalDependencies:
@@ -7845,15 +7845,15 @@ snapshots:
       - rollup
       - supports-color
 
-  '@storybook/react@10.6.8(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(storybook@10.6.8(@types/react@19.3.0)(prettier@3.8.1)(react@19.3.1)(vite-plus@1.1.0(@types/node@24.13.6)(@vitest/browser-playwright@5.0.3(@voidzero-dev/vite-plus-core@1.1.0(@types/node@24.13.6)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))(playwright@1.63.0)(vitest@5.0.3))(@vitest/coverage-v8@5.0.3(@vitest/browser@5.0.3)(vitest@5.0.3))(@vitest/ui@5.0.3(vitest@5.0.3))(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(playwright@1.63.0)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)))(typescript@6.0.3)':
+  '@storybook/react@10.6.8(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(storybook@10.6.8(@types/react@19.3.0)(prettier@3.8.1)(react@19.3.1)(vite-plus@1.1.0(@types/node@24.13.6)(@vitest/browser-playwright@5.0.3(@voidzero-dev/vite-plus-core@1.1.0(@types/node@24.13.6)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))(playwright@1.65.1)(vitest@5.0.3))(@vitest/coverage-v8@5.0.3(@vitest/browser@5.0.3)(vitest@5.0.3))(@vitest/ui@5.0.3(vitest@5.0.3))(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(playwright@1.65.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)))(typescript@6.0.3)':
     dependencies:
       '@storybook/global': 5.0.0
-      '@storybook/react-dom-shim': 10.6.8(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(storybook@10.6.8(@types/react@19.3.0)(prettier@3.8.1)(react@19.3.1)(vite-plus@1.1.0(@types/node@24.13.6)(@vitest/browser-playwright@5.0.3(@voidzero-dev/vite-plus-core@1.1.0(@types/node@24.13.6)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))(playwright@1.63.0)(vitest@5.0.3))(@vitest/coverage-v8@5.0.3(@vitest/browser@5.0.3)(vitest@5.0.3))(@vitest/ui@5.0.3(vitest@5.0.3))(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(playwright@1.63.0)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)))
+      '@storybook/react-dom-shim': 10.6.8(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(storybook@10.6.8(@types/react@19.3.0)(prettier@3.8.1)(react@19.3.1)(vite-plus@1.1.0(@types/node@24.13.6)(@vitest/browser-playwright@5.0.3(@voidzero-dev/vite-plus-core@1.1.0(@types/node@24.13.6)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))(playwright@1.65.1)(vitest@5.0.3))(@vitest/coverage-v8@5.0.3(@vitest/browser@5.0.3)(vitest@5.0.3))(@vitest/ui@5.0.3(vitest@5.0.3))(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(playwright@1.65.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)))
       react: 19.3.1
       react-docgen: 8.0.2
       react-docgen-typescript: 2.4.0(typescript@6.0.3)
       react-dom: 19.3.1(react@19.3.1)
-      storybook: 10.6.8(@types/react@19.3.0)(prettier@3.8.1)(react@19.3.1)(vite-plus@1.1.0(@types/node@24.13.6)(@vitest/browser-playwright@5.0.3(@voidzero-dev/vite-plus-core@1.1.0(@types/node@24.13.6)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))(playwright@1.63.0)(vitest@5.0.3))(@vitest/coverage-v8@5.0.3(@vitest/browser@5.0.3)(vitest@5.0.3))(@vitest/ui@5.0.3(vitest@5.0.3))(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(playwright@1.63.0)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))
+      storybook: 10.6.8(@types/react@19.3.0)(prettier@3.8.1)(react@19.3.1)(vite-plus@1.1.0(@types/node@24.13.6)(@vitest/browser-playwright@5.0.3(@voidzero-dev/vite-plus-core@1.1.0(@types/node@24.13.6)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))(playwright@1.65.1)(vitest@5.0.3))(@vitest/coverage-v8@5.0.3(@vitest/browser@5.0.3)(vitest@5.0.3))(@vitest/ui@5.0.3(vitest@5.0.3))(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(playwright@1.65.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))
     optionalDependencies:
       '@types/react': 19.3.0
       '@types/react-dom': 19.3.0(@types/react@19.3.0)
@@ -7861,24 +7861,24 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@storybook/vue3-vite@10.6.8(@voidzero-dev/vite-plus-core@1.1.0(@types/node@24.13.6)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))(storybook@10.6.8(@types/react@19.3.0)(prettier@3.8.1)(react@19.3.1)(vite-plus@1.1.0(@types/node@24.13.6)(@vitest/browser-playwright@5.0.3(@voidzero-dev/vite-plus-core@1.1.0(@types/node@24.13.6)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))(playwright@1.63.0)(vitest@5.0.3))(@vitest/coverage-v8@5.0.3(@vitest/browser@5.0.3)(vitest@5.0.3))(@vitest/ui@5.0.3(vitest@5.0.3))(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(playwright@1.63.0)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)))(typescript@6.0.3)(vue@3.5.46(typescript@6.0.3))':
+  '@storybook/vue3-vite@10.6.8(@voidzero-dev/vite-plus-core@1.1.0(@types/node@24.13.6)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))(storybook@10.6.8(@types/react@19.3.0)(prettier@3.8.1)(react@19.3.1)(vite-plus@1.1.0(@types/node@24.13.6)(@vitest/browser-playwright@5.0.3(@voidzero-dev/vite-plus-core@1.1.0(@types/node@24.13.6)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))(playwright@1.65.1)(vitest@5.0.3))(@vitest/coverage-v8@5.0.3(@vitest/browser@5.0.3)(vitest@5.0.3))(@vitest/ui@5.0.3(vitest@5.0.3))(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(playwright@1.65.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)))(typescript@6.0.3)(vue@3.5.46(typescript@6.0.3))':
     dependencies:
-      '@storybook/builder-vite': 10.6.8(@voidzero-dev/vite-plus-core@1.1.0(@types/node@24.13.6)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))(storybook@10.6.8(@types/react@19.3.0)(prettier@3.8.1)(react@19.3.1)(vite-plus@1.1.0(@types/node@24.13.6)(@vitest/browser-playwright@5.0.3(@voidzero-dev/vite-plus-core@1.1.0(@types/node@24.13.6)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))(playwright@1.63.0)(vitest@5.0.3))(@vitest/coverage-v8@5.0.3(@vitest/browser@5.0.3)(vitest@5.0.3))(@vitest/ui@5.0.3(vitest@5.0.3))(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(playwright@1.63.0)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)))
-      '@storybook/vue3': 10.6.8(storybook@10.6.8(@types/react@19.3.0)(prettier@3.8.1)(react@19.3.1)(vite-plus@1.1.0(@types/node@24.13.6)(@vitest/browser-playwright@5.0.3(@voidzero-dev/vite-plus-core@1.1.0(@types/node@24.13.6)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))(playwright@1.63.0)(vitest@5.0.3))(@vitest/coverage-v8@5.0.3(@vitest/browser@5.0.3)(vitest@5.0.3))(@vitest/ui@5.0.3(vitest@5.0.3))(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(playwright@1.63.0)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)))(typescript@6.0.3)(vue@3.5.46(typescript@6.0.3))
+      '@storybook/builder-vite': 10.6.8(@voidzero-dev/vite-plus-core@1.1.0(@types/node@24.13.6)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))(storybook@10.6.8(@types/react@19.3.0)(prettier@3.8.1)(react@19.3.1)(vite-plus@1.1.0(@types/node@24.13.6)(@vitest/browser-playwright@5.0.3(@voidzero-dev/vite-plus-core@1.1.0(@types/node@24.13.6)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))(playwright@1.65.1)(vitest@5.0.3))(@vitest/coverage-v8@5.0.3(@vitest/browser@5.0.3)(vitest@5.0.3))(@vitest/ui@5.0.3(vitest@5.0.3))(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(playwright@1.65.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)))
+      '@storybook/vue3': 10.6.8(storybook@10.6.8(@types/react@19.3.0)(prettier@3.8.1)(react@19.3.1)(vite-plus@1.1.0(@types/node@24.13.6)(@vitest/browser-playwright@5.0.3(@voidzero-dev/vite-plus-core@1.1.0(@types/node@24.13.6)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))(playwright@1.65.1)(vitest@5.0.3))(@vitest/coverage-v8@5.0.3(@vitest/browser@5.0.3)(vitest@5.0.3))(@vitest/ui@5.0.3(vitest@5.0.3))(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(playwright@1.65.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)))(typescript@6.0.3)(vue@3.5.46(typescript@6.0.3))
       magic-string: 1.4.2
-      storybook: 10.6.8(@types/react@19.3.0)(prettier@3.8.1)(react@19.3.1)(vite-plus@1.1.0(@types/node@24.13.6)(@vitest/browser-playwright@5.0.3(@voidzero-dev/vite-plus-core@1.1.0(@types/node@24.13.6)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))(playwright@1.63.0)(vitest@5.0.3))(@vitest/coverage-v8@5.0.3(@vitest/browser@5.0.3)(vitest@5.0.3))(@vitest/ui@5.0.3(vitest@5.0.3))(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(playwright@1.63.0)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))
+      storybook: 10.6.8(@types/react@19.3.0)(prettier@3.8.1)(react@19.3.1)(vite-plus@1.1.0(@types/node@24.13.6)(@vitest/browser-playwright@5.0.3(@voidzero-dev/vite-plus-core@1.1.0(@types/node@24.13.6)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))(playwright@1.65.1)(vitest@5.0.3))(@vitest/coverage-v8@5.0.3(@vitest/browser@5.0.3)(vitest@5.0.3))(@vitest/ui@5.0.3(vitest@5.0.3))(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(playwright@1.65.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))
       vite: '@voidzero-dev/vite-plus-core@1.1.0(@types/node@24.13.6)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)'
     optionalDependencies:
       typescript: 6.0.3
     transitivePeerDependencies:
       - vue
 
-  '@storybook/vue3@10.6.8(storybook@10.6.8(@types/react@19.3.0)(prettier@3.8.1)(react@19.3.1)(vite-plus@1.1.0(@types/node@24.13.6)(@vitest/browser-playwright@5.0.3(@voidzero-dev/vite-plus-core@1.1.0(@types/node@24.13.6)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))(playwright@1.63.0)(vitest@5.0.3))(@vitest/coverage-v8@5.0.3(@vitest/browser@5.0.3)(vitest@5.0.3))(@vitest/ui@5.0.3(vitest@5.0.3))(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(playwright@1.63.0)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)))(typescript@6.0.3)(vue@3.5.46(typescript@6.0.3))':
+  '@storybook/vue3@10.6.8(storybook@10.6.8(@types/react@19.3.0)(prettier@3.8.1)(react@19.3.1)(vite-plus@1.1.0(@types/node@24.13.6)(@vitest/browser-playwright@5.0.3(@voidzero-dev/vite-plus-core@1.1.0(@types/node@24.13.6)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))(playwright@1.65.1)(vitest@5.0.3))(@vitest/coverage-v8@5.0.3(@vitest/browser@5.0.3)(vitest@5.0.3))(@vitest/ui@5.0.3(vitest@5.0.3))(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(playwright@1.65.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)))(typescript@6.0.3)(vue@3.5.46(typescript@6.0.3))':
     dependencies:
       '@storybook/global': 5.0.0
       '@vue/compiler-dom': 3.5.43
       '@vue/language-core': 3.3.11
-      storybook: 10.6.8(@types/react@19.3.0)(prettier@3.8.1)(react@19.3.1)(vite-plus@1.1.0(@types/node@24.13.6)(@vitest/browser-playwright@5.0.3(@voidzero-dev/vite-plus-core@1.1.0(@types/node@24.13.6)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))(playwright@1.63.0)(vitest@5.0.3))(@vitest/coverage-v8@5.0.3(@vitest/browser@5.0.3)(vitest@5.0.3))(@vitest/ui@5.0.3(vitest@5.0.3))(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(playwright@1.63.0)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))
+      storybook: 10.6.8(@types/react@19.3.0)(prettier@3.8.1)(react@19.3.1)(vite-plus@1.1.0(@types/node@24.13.6)(@vitest/browser-playwright@5.0.3(@voidzero-dev/vite-plus-core@1.1.0(@types/node@24.13.6)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))(playwright@1.65.1)(vitest@5.0.3))(@vitest/coverage-v8@5.0.3(@vitest/browser@5.0.3)(vitest@5.0.3))(@vitest/ui@5.0.3(vitest@5.0.3))(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(playwright@1.65.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))
       type-fest: 5.8.0
       vue: 3.5.46(typescript@6.0.3)
       vue-component-meta: 3.3.11(typescript@6.0.3)
@@ -8085,13 +8085,13 @@ snapshots:
       vite: '@voidzero-dev/vite-plus-core@1.1.0(@types/node@24.13.6)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)'
       vue: 3.5.46(typescript@6.0.3)
 
-  '@vitest/browser-playwright@5.0.3(@voidzero-dev/vite-plus-core@1.1.0(@types/node@24.13.6)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))(playwright@1.63.0)(vitest@5.0.3)':
+  '@vitest/browser-playwright@5.0.3(@voidzero-dev/vite-plus-core@1.1.0(@types/node@24.13.6)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))(playwright@1.65.1)(vitest@5.0.3)':
     dependencies:
       '@vitest/browser': 5.0.3(@voidzero-dev/vite-plus-core@1.1.0(@types/node@24.13.6)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))(vitest@5.0.3)
       '@vitest/mocker': 5.0.3(@voidzero-dev/vite-plus-core@1.1.0(@types/node@24.13.6)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))
-      playwright: 1.63.0
+      playwright: 1.65.1
       tinyrainbow: 3.1.1
-      vitest: 5.0.3(@types/node@24.13.6)(@vitest/browser-playwright@5.0.3(@voidzero-dev/vite-plus-core@1.1.0(@types/node@24.13.6)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))(playwright@1.63.0)(vitest@5.0.3))(@vitest/browser-preview@5.0.3)(@vitest/coverage-v8@5.0.3(@vitest/browser@5.0.3)(vitest@5.0.3))(@vitest/ui@5.0.3(vitest@5.0.3))(@voidzero-dev/vite-plus-core@1.1.0(@types/node@24.13.6)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))
+      vitest: 5.0.3(@types/node@24.13.6)(@vitest/browser-playwright@5.0.3(@voidzero-dev/vite-plus-core@1.1.0(@types/node@24.13.6)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))(playwright@1.65.1)(vitest@5.0.3))(@vitest/browser-preview@5.0.3)(@vitest/coverage-v8@5.0.3(@vitest/browser@5.0.3)(vitest@5.0.3))(@vitest/ui@5.0.3(vitest@5.0.3))(@voidzero-dev/vite-plus-core@1.1.0(@types/node@24.13.6)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))
     transitivePeerDependencies:
       - bufferutil
       - msw
@@ -8103,7 +8103,7 @@ snapshots:
       '@testing-library/dom': 10.4.1
       '@testing-library/user-event': 14.6.7(@testing-library/dom@10.4.1)
       '@vitest/browser': 5.0.3(@voidzero-dev/vite-plus-core@1.1.0(@types/node@24.13.6)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))(vitest@5.0.3)
-      vitest: 5.0.3(@types/node@24.13.6)(@vitest/browser-playwright@5.0.3(@voidzero-dev/vite-plus-core@1.1.0(@types/node@24.13.6)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))(playwright@1.63.0)(vitest@5.0.3))(@vitest/browser-preview@5.0.3)(@vitest/coverage-v8@5.0.3(@vitest/browser@5.0.3)(vitest@5.0.3))(@vitest/ui@5.0.3(vitest@5.0.3))(@voidzero-dev/vite-plus-core@1.1.0(@types/node@24.13.6)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))
+      vitest: 5.0.3(@types/node@24.13.6)(@vitest/browser-playwright@5.0.3(@voidzero-dev/vite-plus-core@1.1.0(@types/node@24.13.6)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))(playwright@1.65.1)(vitest@5.0.3))(@vitest/browser-preview@5.0.3)(@vitest/coverage-v8@5.0.3(@vitest/browser@5.0.3)(vitest@5.0.3))(@vitest/ui@5.0.3(vitest@5.0.3))(@voidzero-dev/vite-plus-core@1.1.0(@types/node@24.13.6)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))
     transitivePeerDependencies:
       - bufferutil
       - msw
@@ -8120,7 +8120,7 @@ snapshots:
       pngjs: 7.0.0
       sirv: 3.0.2
       tinyrainbow: 3.1.1
-      vitest: 5.0.3(@types/node@24.13.6)(@vitest/browser-playwright@5.0.3(@voidzero-dev/vite-plus-core@1.1.0(@types/node@24.13.6)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))(playwright@1.63.0)(vitest@5.0.3))(@vitest/browser-preview@5.0.3)(@vitest/coverage-v8@5.0.3(@vitest/browser@5.0.3)(vitest@5.0.3))(@vitest/ui@5.0.3(vitest@5.0.3))(@voidzero-dev/vite-plus-core@1.1.0(@types/node@24.13.6)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))
+      vitest: 5.0.3(@types/node@24.13.6)(@vitest/browser-playwright@5.0.3(@voidzero-dev/vite-plus-core@1.1.0(@types/node@24.13.6)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))(playwright@1.65.1)(vitest@5.0.3))(@vitest/browser-preview@5.0.3)(@vitest/coverage-v8@5.0.3(@vitest/browser@5.0.3)(vitest@5.0.3))(@vitest/ui@5.0.3(vitest@5.0.3))(@voidzero-dev/vite-plus-core@1.1.0(@types/node@24.13.6)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))
       ws: 8.21.3
     transitivePeerDependencies:
       - bufferutil
@@ -8138,7 +8138,7 @@ snapshots:
       obug: 2.1.4
       std-env: 4.2.0
       tinyrainbow: 3.1.1
-      vitest: 5.0.3(@types/node@24.13.6)(@vitest/browser-playwright@5.0.3(@voidzero-dev/vite-plus-core@1.1.0(@types/node@24.13.6)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))(playwright@1.63.0)(vitest@5.0.3))(@vitest/browser-preview@5.0.3)(@vitest/coverage-v8@5.0.3(@vitest/browser@5.0.3)(vitest@5.0.3))(@vitest/ui@5.0.3(vitest@5.0.3))(@voidzero-dev/vite-plus-core@1.1.0(@types/node@24.13.6)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))
+      vitest: 5.0.3(@types/node@24.13.6)(@vitest/browser-playwright@5.0.3(@voidzero-dev/vite-plus-core@1.1.0(@types/node@24.13.6)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))(playwright@1.65.1)(vitest@5.0.3))(@vitest/browser-preview@5.0.3)(@vitest/coverage-v8@5.0.3(@vitest/browser@5.0.3)(vitest@5.0.3))(@vitest/ui@5.0.3(vitest@5.0.3))(@voidzero-dev/vite-plus-core@1.1.0(@types/node@24.13.6)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))
     optionalDependencies:
       '@vitest/browser': 5.0.3(@voidzero-dev/vite-plus-core@1.1.0(@types/node@24.13.6)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))(vitest@5.0.3)
 
@@ -8194,7 +8194,7 @@ snapshots:
       pathe: 2.0.3
       sirv: 3.0.2
       tinyrainbow: 3.1.1
-      vitest: 5.0.3(@types/node@24.13.6)(@vitest/browser-playwright@5.0.3(@voidzero-dev/vite-plus-core@1.1.0(@types/node@24.13.6)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))(playwright@1.63.0)(vitest@5.0.3))(@vitest/browser-preview@5.0.3)(@vitest/coverage-v8@5.0.3(@vitest/browser@5.0.3)(vitest@5.0.3))(@vitest/ui@5.0.3(vitest@5.0.3))(@voidzero-dev/vite-plus-core@1.1.0(@types/node@24.13.6)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))
+      vitest: 5.0.3(@types/node@24.13.6)(@vitest/browser-playwright@5.0.3(@voidzero-dev/vite-plus-core@1.1.0(@types/node@24.13.6)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))(playwright@1.65.1)(vitest@5.0.3))(@vitest/browser-preview@5.0.3)(@vitest/coverage-v8@5.0.3(@vitest/browser@5.0.3)(vitest@5.0.3))(@vitest/ui@5.0.3(vitest@5.0.3))(@voidzero-dev/vite-plus-core@1.1.0(@types/node@24.13.6)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))
 
   '@vitest/utils@3.2.4':
     dependencies:
@@ -10061,7 +10061,7 @@ snapshots:
       '@oxc-resolver/binding-win32-arm64-msvc': 11.21.2
       '@oxc-resolver/binding-win32-x64-msvc': 11.21.2
 
-  oxfmt@0.72.0(vite-plus@1.1.0(@types/node@24.13.6)(@vitest/browser-playwright@5.0.3(@voidzero-dev/vite-plus-core@1.1.0(@types/node@24.13.6)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))(playwright@1.63.0)(vitest@5.0.3))(@vitest/coverage-v8@5.0.3(@vitest/browser@5.0.3)(vitest@5.0.3))(@vitest/ui@5.0.3(vitest@5.0.3))(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(playwright@1.63.0)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)):
+  oxfmt@0.72.0(vite-plus@1.1.0(@types/node@24.13.6)(@vitest/browser-playwright@5.0.3(@voidzero-dev/vite-plus-core@1.1.0(@types/node@24.13.6)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))(playwright@1.65.1)(vitest@5.0.3))(@vitest/coverage-v8@5.0.3(@vitest/browser@5.0.3)(vitest@5.0.3))(@vitest/ui@5.0.3(vitest@5.0.3))(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(playwright@1.65.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)):
     dependencies:
       tinypool: 2.2.0
     optionalDependencies:
@@ -10084,32 +10084,7 @@ snapshots:
       '@oxfmt/binding-win32-arm64-msvc': 0.72.0
       '@oxfmt/binding-win32-ia32-msvc': 0.72.0
       '@oxfmt/binding-win32-x64-msvc': 0.72.0
-      vite-plus: 1.1.0(@types/node@24.13.6)(@vitest/browser-playwright@5.0.3(@voidzero-dev/vite-plus-core@1.1.0(@types/node@24.13.6)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))(playwright@1.63.0)(vitest@5.0.3))(@vitest/coverage-v8@5.0.3(@vitest/browser@5.0.3)(vitest@5.0.3))(@vitest/ui@5.0.3(vitest@5.0.3))(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(playwright@1.63.0)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)
-
-  oxfmt@0.72.0(vite-plus@1.1.0(@types/node@24.13.6)(@vitest/browser-playwright@5.0.3)(@vitest/coverage-v8@5.0.3)(@vitest/ui@5.0.3)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(playwright@1.63.0)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)):
-    dependencies:
-      tinypool: 2.2.0
-    optionalDependencies:
-      '@oxfmt/binding-android-arm-eabi': 0.72.0
-      '@oxfmt/binding-android-arm64': 0.72.0
-      '@oxfmt/binding-darwin-arm64': 0.72.0
-      '@oxfmt/binding-darwin-x64': 0.72.0
-      '@oxfmt/binding-freebsd-x64': 0.72.0
-      '@oxfmt/binding-linux-arm-gnueabihf': 0.72.0
-      '@oxfmt/binding-linux-arm-musleabihf': 0.72.0
-      '@oxfmt/binding-linux-arm64-gnu': 0.72.0
-      '@oxfmt/binding-linux-arm64-musl': 0.72.0
-      '@oxfmt/binding-linux-ppc64-gnu': 0.72.0
-      '@oxfmt/binding-linux-riscv64-gnu': 0.72.0
-      '@oxfmt/binding-linux-riscv64-musl': 0.72.0
-      '@oxfmt/binding-linux-s390x-gnu': 0.72.0
-      '@oxfmt/binding-linux-x64-gnu': 0.72.0
-      '@oxfmt/binding-linux-x64-musl': 0.72.0
-      '@oxfmt/binding-openharmony-arm64': 0.72.0
-      '@oxfmt/binding-win32-arm64-msvc': 0.72.0
-      '@oxfmt/binding-win32-ia32-msvc': 0.72.0
-      '@oxfmt/binding-win32-x64-msvc': 0.72.0
-      vite-plus: 1.1.0(@types/node@24.13.6)(@vitest/browser-playwright@5.0.3)(@vitest/coverage-v8@5.0.3)(@vitest/ui@5.0.3)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(playwright@1.63.0)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)
+      vite-plus: 1.1.0(@types/node@24.13.6)(@vitest/browser-playwright@5.0.3(@voidzero-dev/vite-plus-core@1.1.0(@types/node@24.13.6)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))(playwright@1.65.1)(vitest@5.0.3))(@vitest/coverage-v8@5.0.3(@vitest/browser@5.0.3)(vitest@5.0.3))(@vitest/ui@5.0.3(vitest@5.0.3))(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(playwright@1.65.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)
 
   oxlint-tsgolint@7.0.2003:
     optionalDependencies:
@@ -10120,7 +10095,7 @@ snapshots:
       '@oxlint-tsgolint/win32-arm64': 7.0.2003
       '@oxlint-tsgolint/win32-x64': 7.0.2003
 
-  oxlint@1.87.0(oxlint-tsgolint@7.0.2003)(vite-plus@1.1.0(@types/node@24.13.6)(@vitest/browser-playwright@5.0.3(@voidzero-dev/vite-plus-core@1.1.0(@types/node@24.13.6)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))(playwright@1.63.0)(vitest@5.0.3))(@vitest/coverage-v8@5.0.3(@vitest/browser@5.0.3)(vitest@5.0.3))(@vitest/ui@5.0.3(vitest@5.0.3))(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(playwright@1.63.0)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)):
+  oxlint@1.87.0(oxlint-tsgolint@7.0.2003)(vite-plus@1.1.0(@types/node@24.13.6)(@vitest/browser-playwright@5.0.3(@voidzero-dev/vite-plus-core@1.1.0(@types/node@24.13.6)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))(playwright@1.65.1)(vitest@5.0.3))(@vitest/coverage-v8@5.0.3(@vitest/browser@5.0.3)(vitest@5.0.3))(@vitest/ui@5.0.3(vitest@5.0.3))(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(playwright@1.65.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)):
     optionalDependencies:
       '@oxlint/binding-android-arm-eabi': 1.87.0
       '@oxlint/binding-android-arm64': 1.87.0
@@ -10142,31 +10117,7 @@ snapshots:
       '@oxlint/binding-win32-ia32-msvc': 1.87.0
       '@oxlint/binding-win32-x64-msvc': 1.87.0
       oxlint-tsgolint: 7.0.2003
-      vite-plus: 1.1.0(@types/node@24.13.6)(@vitest/browser-playwright@5.0.3(@voidzero-dev/vite-plus-core@1.1.0(@types/node@24.13.6)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))(playwright@1.63.0)(vitest@5.0.3))(@vitest/coverage-v8@5.0.3(@vitest/browser@5.0.3)(vitest@5.0.3))(@vitest/ui@5.0.3(vitest@5.0.3))(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(playwright@1.63.0)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)
-
-  oxlint@1.87.0(oxlint-tsgolint@7.0.2003)(vite-plus@1.1.0(@types/node@24.13.6)(@vitest/browser-playwright@5.0.3)(@vitest/coverage-v8@5.0.3)(@vitest/ui@5.0.3)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(playwright@1.63.0)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)):
-    optionalDependencies:
-      '@oxlint/binding-android-arm-eabi': 1.87.0
-      '@oxlint/binding-android-arm64': 1.87.0
-      '@oxlint/binding-darwin-arm64': 1.87.0
-      '@oxlint/binding-darwin-x64': 1.87.0
-      '@oxlint/binding-freebsd-x64': 1.87.0
-      '@oxlint/binding-linux-arm-gnueabihf': 1.87.0
-      '@oxlint/binding-linux-arm-musleabihf': 1.87.0
-      '@oxlint/binding-linux-arm64-gnu': 1.87.0
-      '@oxlint/binding-linux-arm64-musl': 1.87.0
-      '@oxlint/binding-linux-ppc64-gnu': 1.87.0
-      '@oxlint/binding-linux-riscv64-gnu': 1.87.0
-      '@oxlint/binding-linux-riscv64-musl': 1.87.0
-      '@oxlint/binding-linux-s390x-gnu': 1.87.0
-      '@oxlint/binding-linux-x64-gnu': 1.87.0
-      '@oxlint/binding-linux-x64-musl': 1.87.0
-      '@oxlint/binding-openharmony-arm64': 1.87.0
-      '@oxlint/binding-win32-arm64-msvc': 1.87.0
-      '@oxlint/binding-win32-ia32-msvc': 1.87.0
-      '@oxlint/binding-win32-x64-msvc': 1.87.0
-      oxlint-tsgolint: 7.0.2003
-      vite-plus: 1.1.0(@types/node@24.13.6)(@vitest/browser-playwright@5.0.3)(@vitest/coverage-v8@5.0.3)(@vitest/ui@5.0.3)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(playwright@1.63.0)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)
+      vite-plus: 1.1.0(@types/node@24.13.6)(@vitest/browser-playwright@5.0.3(@voidzero-dev/vite-plus-core@1.1.0(@types/node@24.13.6)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))(playwright@1.65.1)(vitest@5.0.3))(@vitest/coverage-v8@5.0.3(@vitest/browser@5.0.3)(vitest@5.0.3))(@vitest/ui@5.0.3(vitest@5.0.3))(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(playwright@1.65.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)
 
   p-limit@7.3.0:
     dependencies:
@@ -10255,11 +10206,11 @@ snapshots:
 
   picomatch@4.0.7: {}
 
-  playwright-core@1.63.0: {}
+  playwright-core@1.65.1: {}
 
-  playwright@1.63.0:
+  playwright@1.65.1:
     dependencies:
-      playwright-core: 1.63.0
+      playwright-core: 1.65.1
 
   pngjs@7.0.0: {}
 
@@ -10740,7 +10691,7 @@ snapshots:
 
   std-env@4.2.0: {}
 
-  storybook@10.6.8(@types/react@19.3.0)(prettier@3.8.1)(react@19.3.1)(vite-plus@1.1.0(@types/node@24.13.6)(@vitest/browser-playwright@5.0.3(@voidzero-dev/vite-plus-core@1.1.0(@types/node@24.13.6)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))(playwright@1.63.0)(vitest@5.0.3))(@vitest/coverage-v8@5.0.3(@vitest/browser@5.0.3)(vitest@5.0.3))(@vitest/ui@5.0.3(vitest@5.0.3))(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(playwright@1.63.0)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)):
+  storybook@10.6.8(@types/react@19.3.0)(prettier@3.8.1)(react@19.3.1)(vite-plus@1.1.0(@types/node@24.13.6)(@vitest/browser-playwright@5.0.3(@voidzero-dev/vite-plus-core@1.1.0(@types/node@24.13.6)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))(playwright@1.65.1)(vitest@5.0.3))(@vitest/coverage-v8@5.0.3(@vitest/browser@5.0.3)(vitest@5.0.3))(@vitest/ui@5.0.3(vitest@5.0.3))(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(playwright@1.65.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)):
     dependencies:
       '@storybook/global': 5.0.0
       '@storybook/icons': 2.1.0(react@19.3.1)
@@ -10762,7 +10713,7 @@ snapshots:
     optionalDependencies:
       '@types/react': 19.3.0
       prettier: 3.8.1
-      vite-plus: 1.1.0(@types/node@24.13.6)(@vitest/browser-playwright@5.0.3(@voidzero-dev/vite-plus-core@1.1.0(@types/node@24.13.6)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))(playwright@1.63.0)(vitest@5.0.3))(@vitest/coverage-v8@5.0.3(@vitest/browser@5.0.3)(vitest@5.0.3))(@vitest/ui@5.0.3(vitest@5.0.3))(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(playwright@1.63.0)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)
+      vite-plus: 1.1.0(@types/node@24.13.6)(@vitest/browser-playwright@5.0.3(@voidzero-dev/vite-plus-core@1.1.0(@types/node@24.13.6)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))(playwright@1.65.1)(vitest@5.0.3))(@vitest/coverage-v8@5.0.3(@vitest/browser@5.0.3)(vitest@5.0.3))(@vitest/ui@5.0.3(vitest@5.0.3))(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(playwright@1.65.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)
     transitivePeerDependencies:
       - bufferutil
       - react
@@ -11102,7 +11053,7 @@ snapshots:
       '@types/unist': 3.0.3
       vfile-message: 4.0.3
 
-  vite-plus@1.1.0(@types/node@24.13.6)(@vitest/browser-playwright@5.0.3(@voidzero-dev/vite-plus-core@1.1.0(@types/node@24.13.6)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))(playwright@1.63.0)(vitest@5.0.3))(@vitest/coverage-v8@5.0.3(@vitest/browser@5.0.3)(vitest@5.0.3))(@vitest/ui@5.0.3(vitest@5.0.3))(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(playwright@1.63.0)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1):
+  vite-plus@1.1.0(@types/node@24.13.6)(@vitest/browser-playwright@5.0.3(@voidzero-dev/vite-plus-core@1.1.0(@types/node@24.13.6)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))(playwright@1.65.1)(vitest@5.0.3))(@vitest/coverage-v8@5.0.3(@vitest/browser@5.0.3)(vitest@5.0.3))(@vitest/ui@5.0.3(vitest@5.0.3))(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(playwright@1.65.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1):
     dependencies:
       '@oxc-project/types': 0.153.0
       '@oxlint/plugins': 1.79.0
@@ -11113,13 +11064,13 @@ snapshots:
       '@vitest/snapshot': 5.0.3
       '@vitest/spy': 5.0.3
       '@vitest/utils': 5.0.3
-      oxfmt: 0.72.0(vite-plus@1.1.0(@types/node@24.13.6)(@vitest/browser-playwright@5.0.3(@voidzero-dev/vite-plus-core@1.1.0(@types/node@24.13.6)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))(playwright@1.63.0)(vitest@5.0.3))(@vitest/coverage-v8@5.0.3(@vitest/browser@5.0.3)(vitest@5.0.3))(@vitest/ui@5.0.3(vitest@5.0.3))(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(playwright@1.63.0)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))
-      oxlint: 1.87.0(oxlint-tsgolint@7.0.2003)(vite-plus@1.1.0(@types/node@24.13.6)(@vitest/browser-playwright@5.0.3(@voidzero-dev/vite-plus-core@1.1.0(@types/node@24.13.6)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))(playwright@1.63.0)(vitest@5.0.3))(@vitest/coverage-v8@5.0.3(@vitest/browser@5.0.3)(vitest@5.0.3))(@vitest/ui@5.0.3(vitest@5.0.3))(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(playwright@1.63.0)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))
+      oxfmt: 0.72.0(vite-plus@1.1.0(@types/node@24.13.6)(@vitest/browser-playwright@5.0.3(@voidzero-dev/vite-plus-core@1.1.0(@types/node@24.13.6)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))(playwright@1.65.1)(vitest@5.0.3))(@vitest/coverage-v8@5.0.3(@vitest/browser@5.0.3)(vitest@5.0.3))(@vitest/ui@5.0.3(vitest@5.0.3))(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(playwright@1.65.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))
+      oxlint: 1.87.0(oxlint-tsgolint@7.0.2003)(vite-plus@1.1.0(@types/node@24.13.6)(@vitest/browser-playwright@5.0.3(@voidzero-dev/vite-plus-core@1.1.0(@types/node@24.13.6)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))(playwright@1.65.1)(vitest@5.0.3))(@vitest/coverage-v8@5.0.3(@vitest/browser@5.0.3)(vitest@5.0.3))(@vitest/ui@5.0.3(vitest@5.0.3))(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(playwright@1.65.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))
       oxlint-tsgolint: 7.0.2003
       vite: '@voidzero-dev/vite-plus-core@1.1.0(@types/node@24.13.6)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)'
-      vitest: 5.0.3(@types/node@24.13.6)(@vitest/browser-playwright@5.0.3(@voidzero-dev/vite-plus-core@1.1.0(@types/node@24.13.6)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))(playwright@1.63.0)(vitest@5.0.3))(@vitest/browser-preview@5.0.3)(@vitest/coverage-v8@5.0.3(@vitest/browser@5.0.3)(vitest@5.0.3))(@vitest/ui@5.0.3(vitest@5.0.3))(@voidzero-dev/vite-plus-core@1.1.0(@types/node@24.13.6)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))
+      vitest: 5.0.3(@types/node@24.13.6)(@vitest/browser-playwright@5.0.3(@voidzero-dev/vite-plus-core@1.1.0(@types/node@24.13.6)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))(playwright@1.65.1)(vitest@5.0.3))(@vitest/browser-preview@5.0.3)(@vitest/coverage-v8@5.0.3(@vitest/browser@5.0.3)(vitest@5.0.3))(@vitest/ui@5.0.3(vitest@5.0.3))(@voidzero-dev/vite-plus-core@1.1.0(@types/node@24.13.6)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))
     optionalDependencies:
-      '@vitest/browser-playwright': 5.0.3(@voidzero-dev/vite-plus-core@1.1.0(@types/node@24.13.6)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))(playwright@1.63.0)(vitest@5.0.3)
+      '@vitest/browser-playwright': 5.0.3(@voidzero-dev/vite-plus-core@1.1.0(@types/node@24.13.6)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))(playwright@1.65.1)(vitest@5.0.3)
       '@voidzero-dev/vite-plus-darwin-arm64': 1.1.0
       '@voidzero-dev/vite-plus-darwin-x64': 1.1.0
       '@voidzero-dev/vite-plus-linux-arm64-gnu': 1.1.0
@@ -11128,68 +11079,7 @@ snapshots:
       '@voidzero-dev/vite-plus-linux-x64-musl': 1.1.0
       '@voidzero-dev/vite-plus-win32-arm64-msvc': 1.1.0
       '@voidzero-dev/vite-plus-win32-x64-msvc': 1.1.0
-      playwright: 1.63.0
-    transitivePeerDependencies:
-      - '@arethetypeswrong/core'
-      - '@edge-runtime/vm'
-      - '@opentelemetry/api'
-      - '@types/node'
-      - '@typescript/native-preview'
-      - '@vitejs/devtools'
-      - '@vitest/coverage-istanbul'
-      - '@vitest/coverage-v8'
-      - '@vitest/ui'
-      - '@volar/typescript'
-      - '@vue/language-core'
-      - bufferutil
-      - esbuild
-      - happy-dom
-      - jiti
-      - jsdom
-      - less
-      - msw
-      - publint
-      - sass
-      - sass-embedded
-      - stylus
-      - sugarss
-      - svelte
-      - terser
-      - tsx
-      - typescript
-      - unplugin-unused
-      - unrun
-      - utf-8-validate
-      - vue-tsc
-      - yaml
-
-  vite-plus@1.1.0(@types/node@24.13.6)(@vitest/browser-playwright@5.0.3)(@vitest/coverage-v8@5.0.3)(@vitest/ui@5.0.3)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(playwright@1.63.0)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1):
-    dependencies:
-      '@oxc-project/types': 0.153.0
-      '@oxlint/plugins': 1.79.0
-      '@vitest/browser': 5.0.3(@voidzero-dev/vite-plus-core@1.1.0(@types/node@24.13.6)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))(vitest@5.0.3)
-      '@vitest/browser-preview': 5.0.3(@voidzero-dev/vite-plus-core@1.1.0(@types/node@24.13.6)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))(vitest@5.0.3)
-      '@vitest/mocker': 5.0.3(@voidzero-dev/vite-plus-core@1.1.0(@types/node@24.13.6)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))
-      '@vitest/pretty-format': 5.0.3
-      '@vitest/snapshot': 5.0.3
-      '@vitest/spy': 5.0.3
-      '@vitest/utils': 5.0.3
-      oxfmt: 0.72.0(vite-plus@1.1.0(@types/node@24.13.6)(@vitest/browser-playwright@5.0.3)(@vitest/coverage-v8@5.0.3)(@vitest/ui@5.0.3)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(playwright@1.63.0)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))
-      oxlint: 1.87.0(oxlint-tsgolint@7.0.2003)(vite-plus@1.1.0(@types/node@24.13.6)(@vitest/browser-playwright@5.0.3)(@vitest/coverage-v8@5.0.3)(@vitest/ui@5.0.3)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(playwright@1.63.0)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))
-      oxlint-tsgolint: 7.0.2003
-      vite: '@voidzero-dev/vite-plus-core@1.1.0(@types/node@24.13.6)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)'
-      vitest: 5.0.3(@types/node@24.13.6)(@vitest/browser-playwright@5.0.3(@voidzero-dev/vite-plus-core@1.1.0(@types/node@24.13.6)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))(playwright@1.63.0)(vitest@5.0.3))(@vitest/browser-preview@5.0.3)(@vitest/coverage-v8@5.0.3(@vitest/browser@5.0.3)(vitest@5.0.3))(@vitest/ui@5.0.3(vitest@5.0.3))(@voidzero-dev/vite-plus-core@1.1.0(@types/node@24.13.6)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))
-    optionalDependencies:
-      '@vitest/browser-playwright': 5.0.3(@voidzero-dev/vite-plus-core@1.1.0(@types/node@24.13.6)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))(playwright@1.63.0)(vitest@5.0.3)
-      '@voidzero-dev/vite-plus-darwin-arm64': 1.1.0
-      '@voidzero-dev/vite-plus-darwin-x64': 1.1.0
-      '@voidzero-dev/vite-plus-linux-arm64-gnu': 1.1.0
-      '@voidzero-dev/vite-plus-linux-arm64-musl': 1.1.0
-      '@voidzero-dev/vite-plus-linux-x64-gnu': 1.1.0
-      '@voidzero-dev/vite-plus-linux-x64-musl': 1.1.0
-      '@voidzero-dev/vite-plus-win32-arm64-msvc': 1.1.0
-      '@voidzero-dev/vite-plus-win32-x64-msvc': 1.1.0
-      playwright: 1.63.0
+      playwright: 1.65.1
     transitivePeerDependencies:
       - '@arethetypeswrong/core'
       - '@edge-runtime/vm'
@@ -11232,7 +11122,7 @@ snapshots:
     dependencies:
       react: 19.3.1
       react-dom: 19.3.1(react@19.3.1)
-      vitest: 5.0.3(@types/node@24.13.6)(@vitest/browser-playwright@5.0.3(@voidzero-dev/vite-plus-core@1.1.0(@types/node@24.13.6)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))(playwright@1.63.0)(vitest@5.0.3))(@vitest/browser-preview@5.0.3)(@vitest/coverage-v8@5.0.3(@vitest/browser@5.0.3)(vitest@5.0.3))(@vitest/ui@5.0.3(vitest@5.0.3))(@voidzero-dev/vite-plus-core@1.1.0(@types/node@24.13.6)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))
+      vitest: 5.0.3(@types/node@24.13.6)(@vitest/browser-playwright@5.0.3(@voidzero-dev/vite-plus-core@1.1.0(@types/node@24.13.6)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))(playwright@1.65.1)(vitest@5.0.3))(@vitest/browser-preview@5.0.3)(@vitest/coverage-v8@5.0.3(@vitest/browser@5.0.3)(vitest@5.0.3))(@vitest/ui@5.0.3(vitest@5.0.3))(@voidzero-dev/vite-plus-core@1.1.0(@types/node@24.13.6)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))
     optionalDependencies:
       '@types/react': 19.3.0
       '@types/react-dom': 19.3.0(@types/react@19.3.0)
@@ -11240,10 +11130,10 @@ snapshots:
   vitest-browser-vue@3.1.0(vitest@5.0.3)(vue@3.5.46(typescript@6.0.3)):
     dependencies:
       '@vue/test-utils': 2.4.6
-      vitest: 5.0.3(@types/node@24.13.6)(@vitest/browser-playwright@5.0.3(@voidzero-dev/vite-plus-core@1.1.0(@types/node@24.13.6)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))(playwright@1.63.0)(vitest@5.0.3))(@vitest/browser-preview@5.0.3)(@vitest/coverage-v8@5.0.3(@vitest/browser@5.0.3)(vitest@5.0.3))(@vitest/ui@5.0.3(vitest@5.0.3))(@voidzero-dev/vite-plus-core@1.1.0(@types/node@24.13.6)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))
+      vitest: 5.0.3(@types/node@24.13.6)(@vitest/browser-playwright@5.0.3(@voidzero-dev/vite-plus-core@1.1.0(@types/node@24.13.6)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))(playwright@1.65.1)(vitest@5.0.3))(@vitest/browser-preview@5.0.3)(@vitest/coverage-v8@5.0.3(@vitest/browser@5.0.3)(vitest@5.0.3))(@vitest/ui@5.0.3(vitest@5.0.3))(@voidzero-dev/vite-plus-core@1.1.0(@types/node@24.13.6)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))
       vue: 3.5.46(typescript@6.0.3)
 
-  vitest@5.0.3(@types/node@24.13.6)(@vitest/browser-playwright@5.0.3(@voidzero-dev/vite-plus-core@1.1.0(@types/node@24.13.6)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))(playwright@1.63.0)(vitest@5.0.3))(@vitest/browser-preview@5.0.3)(@vitest/coverage-v8@5.0.3(@vitest/browser@5.0.3)(vitest@5.0.3))(@vitest/ui@5.0.3(vitest@5.0.3))(@voidzero-dev/vite-plus-core@1.1.0(@types/node@24.13.6)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)):
+  vitest@5.0.3(@types/node@24.13.6)(@vitest/browser-playwright@5.0.3(@voidzero-dev/vite-plus-core@1.1.0(@types/node@24.13.6)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))(playwright@1.65.1)(vitest@5.0.3))(@vitest/browser-preview@5.0.3)(@vitest/coverage-v8@5.0.3(@vitest/browser@5.0.3)(vitest@5.0.3))(@vitest/ui@5.0.3(vitest@5.0.3))(@voidzero-dev/vite-plus-core@1.1.0(@types/node@24.13.6)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1)):
     dependencies:
       '@types/chai': 5.2.3
       '@vitest/mocker': 5.0.3(@voidzero-dev/vite-plus-core@1.1.0(@types/node@24.13.6)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))
@@ -11261,7 +11151,7 @@ snapshots:
       why-is-node-running: 3.2.1
     optionalDependencies:
       '@types/node': 24.13.6
-      '@vitest/browser-playwright': 5.0.3(@voidzero-dev/vite-plus-core@1.1.0(@types/node@24.13.6)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))(playwright@1.63.0)(vitest@5.0.3)
+      '@vitest/browser-playwright': 5.0.3(@voidzero-dev/vite-plus-core@1.1.0(@types/node@24.13.6)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))(playwright@1.65.1)(vitest@5.0.3)
       '@vitest/browser-preview': 5.0.3(@voidzero-dev/vite-plus-core@1.1.0(@types/node@24.13.6)(@volar/typescript@2.4.30(typescript@6.0.3))(@vue/language-core@3.3.14)(esbuild@0.28.1)(jiti@2.6.1)(typescript@6.0.3)(vue-tsc@3.3.14(typescript@6.0.3))(yaml@2.9.1))(vitest@5.0.3)
       '@vitest/coverage-v8': 5.0.3(@vitest/browser@5.0.3)(vitest@5.0.3)
       '@vitest/ui': 5.0.3(vitest@5.0.3)
