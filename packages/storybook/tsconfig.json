@@ -1,6 +1,6 @@
 {
-  // For the editor and tsgolint: each file is checked in the first referenced program that includes
-  // it. `typecheck` (vue-tsc) still runs the Vue program, which tsgolint cannot fully see.
+  // For the editor and tsrs: each file is checked in the first referenced program that includes
+  // it. `typecheck` (vue-tsc) still runs the Vue program, which tsrs cannot fully see.
   "files": [],
   "references": [{"path": "./tsconfig.react.json"}, {"path": "./tsconfig.vue.json"}]
 }
